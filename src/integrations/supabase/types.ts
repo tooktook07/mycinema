@@ -86,6 +86,30 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          created_at: string | null
+          id: string
+          theme: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          theme?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          theme?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       sync_history: {
         Row: {
           completed_at: string | null
@@ -198,6 +222,7 @@ export type Database = {
           in_watchlist: boolean | null
           media_id: string | null
           media_type: string
+          sentiment_rating: number | null
           tv_show_id: string | null
           updated_at: string | null
           user_id: string
@@ -211,6 +236,7 @@ export type Database = {
           in_watchlist?: boolean | null
           media_id?: string | null
           media_type?: string
+          sentiment_rating?: number | null
           tv_show_id?: string | null
           updated_at?: string | null
           user_id?: string
@@ -224,6 +250,7 @@ export type Database = {
           in_watchlist?: boolean | null
           media_id?: string | null
           media_type?: string
+          sentiment_rating?: number | null
           tv_show_id?: string | null
           updated_at?: string | null
           user_id?: string

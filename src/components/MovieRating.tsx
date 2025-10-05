@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Star, Heart } from "lucide-react";
+import { ThumbsDown, ThumbsUp, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,24 +9,32 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Slider } from "@/components/ui/slider";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
 
 interface MovieRatingProps {
   movieId: string;
   movieTitle: string;
 }
 
+type SentimentRating = 1 | 5 | 10 | null;
+
+const sentimentLabels = {
+  1: "Not Interested",
+  5: "Like",
+  10: "Love",
+};
+
 export const MovieRating = ({ movieId, movieTitle }: MovieRatingProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [rating, setRating] = useState<number>(5);
-  const [savedRating, setSavedRating] = useState<number | null>(null);
+  const [rating, setRating] = useState<SentimentRating>(null);
+  const [savedRating, setSavedRating] = useState<SentimentRating>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -41,7 +49,7 @@ export const MovieRating = ({ movieId, movieTitle }: MovieRatingProps) => {
     try {
       const { data, error } = await supabase
         .from("user_ratings")
-        .select("user_rating")
+        .select("sentiment_rating")
         .eq("user_id", user.id)
         .eq("media_id", movieId)
         .eq("media_type", "movie")
@@ -49,17 +57,18 @@ export const MovieRating = ({ movieId, movieTitle }: MovieRatingProps) => {
 
       if (error) throw error;
       
-      if (data?.user_rating) {
-        setSavedRating(data.user_rating);
-        setRating(data.user_rating);
+      if (data?.sentiment_rating) {
+        const sentimentValue = data.sentiment_rating as SentimentRating;
+        setSavedRating(sentimentValue);
+        setRating(sentimentValue);
       }
     } catch (error) {
       console.error("Error fetching user rating:", error);
     }
   };
 
-  const handleSaveRating = async () => {
-    if (!user) return;
+  const handleSaveRating = async (sentiment: SentimentRating) => {
+    if (!user || !sentiment) return;
 
     setLoading(true);
     try {
@@ -69,18 +78,19 @@ export const MovieRating = ({ movieId, movieTitle }: MovieRatingProps) => {
           user_id: user.id,
           media_id: movieId,
           media_type: "movie",
-          user_rating: rating,
+          sentiment_rating: sentiment,
         }, {
           onConflict: "user_id,media_id,media_type"
         });
 
       if (error) throw error;
 
-      setSavedRating(rating);
+      setSavedRating(sentiment);
+      setRating(sentiment);
       setOpen(false);
       toast({
         title: "Rating saved!",
-        description: `You rated ${movieTitle} ${rating}/10`,
+        description: `You rated ${movieTitle}: ${sentimentLabels[sentiment]}`,
       });
       
       queryClient.invalidateQueries({ queryKey: ["user-ratings"] });
@@ -103,7 +113,7 @@ export const MovieRating = ({ movieId, movieTitle }: MovieRatingProps) => {
         disabled
         className="gap-1"
       >
-        <Star className="h-3.5 w-3.5" />
+        <Heart className="h-3.5 w-3.5" />
         Sign in to rate
       </Button>
     );
@@ -117,50 +127,61 @@ export const MovieRating = ({ movieId, movieTitle }: MovieRatingProps) => {
           variant={savedRating ? "default" : "outline"}
           className="gap-1"
         >
-          <Star className={savedRating ? "h-3.5 w-3.5 fill-current" : "h-3.5 w-3.5"} />
-          {savedRating ? `Your rating: ${savedRating}/10` : "Rate this movie"}
+          {savedRating === 1 && <ThumbsDown className="h-3.5 w-3.5" />}
+          {savedRating === 5 && <ThumbsUp className="h-3.5 w-3.5" />}
+          {savedRating === 10 && <Heart className="h-3.5 w-3.5 fill-current" />}
+          {!savedRating && <Heart className="h-3.5 w-3.5" />}
+          {savedRating ? sentimentLabels[savedRating] : "Rate this movie"}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Rate {movieTitle}</DialogTitle>
           <DialogDescription>
-            Share your rating with other users
+            How do you feel about this movie?
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-6 py-4">
-          <div className="flex items-center justify-center gap-2">
-            <Star className="h-8 w-8 fill-primary text-primary" />
-            <span className="text-5xl font-bold">{rating}</span>
-            <span className="text-2xl text-muted-foreground">/10</span>
-          </div>
-          <Slider
-            value={[rating]}
-            onValueChange={(values) => setRating(values[0])}
-            min={1}
-            max={10}
-            step={0.5}
-            className="w-full"
-          />
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>Terrible</span>
-            <span>Masterpiece</span>
-          </div>
-        </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-3 py-4">
           <Button
             variant="outline"
-            onClick={() => setOpen(false)}
-            className="flex-1"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSaveRating}
+            size="lg"
+            onClick={() => handleSaveRating(1)}
             disabled={loading}
-            className="flex-1"
+            className={cn(
+              "h-auto py-4 flex flex-col gap-2 hover:bg-destructive/10",
+              rating === 1 && "border-destructive bg-destructive/5"
+            )}
           >
-            {loading ? "Saving..." : "Save Rating"}
+            <ThumbsDown className="h-8 w-8" />
+            <span className="font-semibold">Not Interested</span>
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => handleSaveRating(5)}
+            disabled={loading}
+            className={cn(
+              "h-auto py-4 flex flex-col gap-2 hover:bg-primary/10",
+              rating === 5 && "border-primary bg-primary/5"
+            )}
+          >
+            <ThumbsUp className="h-8 w-8" />
+            <span className="font-semibold">Like</span>
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => handleSaveRating(10)}
+            disabled={loading}
+            className={cn(
+              "h-auto py-4 flex flex-col gap-2 hover:bg-primary/10",
+              rating === 10 && "border-primary bg-primary/5"
+            )}
+          >
+            <Heart className="h-8 w-8" />
+            <span className="font-semibold">Love</span>
           </Button>
         </div>
       </DialogContent>
