@@ -86,6 +86,60 @@ export type Database = {
         }
         Relationships: []
       }
+      sync_history: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          failed: number | null
+          filters: Json | null
+          id: string
+          imported: number | null
+          logs: string[] | null
+          removed: number | null
+          skipped: number | null
+          status: string | null
+          sync_mode: boolean
+          total_found: number | null
+          updated: number | null
+          user_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          failed?: number | null
+          filters?: Json | null
+          id?: string
+          imported?: number | null
+          logs?: string[] | null
+          removed?: number | null
+          skipped?: number | null
+          status?: string | null
+          sync_mode?: boolean
+          total_found?: number | null
+          updated?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          failed?: number | null
+          filters?: Json | null
+          id?: string
+          imported?: number | null
+          logs?: string[] | null
+          removed?: number | null
+          skipped?: number | null
+          status?: string | null
+          sync_mode?: boolean
+          total_found?: number | null
+          updated?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       tv_shows: {
         Row: {
           created_at: string | null

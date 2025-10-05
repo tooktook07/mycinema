@@ -11,9 +11,26 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let supabaseClient: any;
+  let syncId: string | undefined;
+
   try {
     const { minRating = 0, maxRating = 10, yearRange = [2025, 2025], genres, excludedGenres, statuses, languages, minVoteCount = 100, minPopularity = 0, syncMode = false } = await req.json();
     const TMDB_API_KEY = Deno.env.get("TMDB_API_KEY");
+
+    // Get user ID from auth header
+    const authHeader = req.headers.get('Authorization');
+    let userId: string | null = null;
+    
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        userId = payload.sub;
+      } catch (e) {
+        console.error('Error parsing JWT:', e);
+      }
+    }
 
     if (!TMDB_API_KEY) {
       console.error("TMDB_API_KEY not configured");
@@ -28,6 +45,36 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
+
+    // Create sync history record
+    const filters = {
+      minRating,
+      maxRating,
+      yearRange,
+      genres,
+      excludedGenres,
+      statuses,
+      languages,
+      minVoteCount,
+      minPopularity
+    };
+
+    const { data: syncRecord, error: syncError } = await supabaseClient
+      .from("sync_history")
+      .insert({
+        user_id: userId,
+        sync_mode: syncMode,
+        filters,
+        status: 'running'
+      })
+      .select()
+      .single();
+
+    if (syncError) {
+      console.error('Error creating sync history:', syncError);
+    }
+
+    const syncId = syncRecord?.id;
 
     let totalMovies = 0;
     let importedMovies = 0;
@@ -311,6 +358,24 @@ serve(async (req) => {
 
     logMsg(`${syncMode ? 'Sync' : 'Import'} complete: ${importedMovies} imported, ${updatedMovies} updated, ${removedMovies} removed, ${skippedMovies} skipped, ${failedMovies} failed out of ${totalMovies} found`);
 
+    // Update sync history with results
+    if (syncId) {
+      await supabaseClient
+        .from("sync_history")
+        .update({
+          completed_at: new Date().toISOString(),
+          total_found: totalMovies,
+          imported: importedMovies,
+          updated: updatedMovies,
+          removed: removedMovies,
+          skipped: skippedMovies,
+          failed: failedMovies,
+          logs,
+          status: 'completed'
+        })
+        .eq("id", syncId);
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -329,6 +394,19 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error("Error in import-tmdb-movies function:", error);
+    
+    // Update sync history with error if we have a sync ID
+    if (supabaseClient && syncId) {
+      await supabaseClient
+        .from("sync_history")
+        .update({
+          completed_at: new Date().toISOString(),
+          status: 'failed',
+          error_message: error instanceof Error ? error.message : "Unknown error"
+        })
+        .eq("id", syncId);
+    }
+    
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
