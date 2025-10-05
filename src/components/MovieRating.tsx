@@ -37,14 +37,17 @@ export const MovieRating = ({ movieId, movieTitle }: MovieRatingProps) => {
   const [savedRating, setSavedRating] = useState<SentimentRating>(null);
   const [loading, setLoading] = useState(false);
 
+  // Check if user is a real user (not dev mode mock)
+  const isRealUser = user && user.id !== 'dev-user-id';
+
   useEffect(() => {
-    if (user) {
+    if (isRealUser) {
       fetchUserRating();
     }
-  }, [user, movieId]);
+  }, [user, movieId, isRealUser]);
 
   const fetchUserRating = async () => {
-    if (!user) return;
+    if (!isRealUser) return;
 
     try {
       const { data, error } = await supabase
@@ -68,7 +71,14 @@ export const MovieRating = ({ movieId, movieTitle }: MovieRatingProps) => {
   };
 
   const handleSaveRating = async (sentiment: SentimentRating) => {
-    if (!user || !sentiment) return;
+    if (!isRealUser || !sentiment) {
+      toast({
+        title: "Please sign in",
+        description: "You need to be signed in to rate movies",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setLoading(true);
     try {
