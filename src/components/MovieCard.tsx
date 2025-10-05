@@ -30,20 +30,20 @@ export const MovieCard = ({
   const imdbUrl = `https://www.imdb.com/title/${imdbId}/`;
   const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(sanitizedTitle)}+${sanitizedYear}`;
   return (
-    <Card className="group overflow-hidden border-border bg-gradient-to-b from-card to-card/80 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_40px_hsl(262_52%_47%/0.3)]">
+    <Card className="group overflow-hidden transition-all duration-300 hover:shadow-lg">
       <div className="aspect-[2/3] overflow-hidden">
         <img
           src={poster}
           alt={title}
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
       </div>
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-semibold text-foreground line-clamp-2">{title}</h3>
+          <h3 className="font-semibold line-clamp-2">{title}</h3>
           <div className="flex flex-col items-end gap-1 shrink-0">
-            <div className="flex items-center gap-1 text-accent">
-              <Star className="h-4 w-4 fill-accent" />
+            <div className="flex items-center gap-1">
+              <Star className="h-4 w-4 fill-foreground" />
               <span className="font-bold">{rating}</span>
             </div>
             {voteCount !== undefined && (
@@ -65,7 +65,7 @@ export const MovieCard = ({
           {originalLanguage && (
             <Badge 
               variant="outline" 
-              className="text-xs flex items-center gap-1 cursor-pointer hover:bg-accent/10 transition-colors"
+              className="text-xs flex items-center gap-1 cursor-pointer hover:bg-secondary transition-colors"
               onClick={() => onLanguageClick?.(originalLanguage)}
             >
               <Globe className="h-3 w-3" />
