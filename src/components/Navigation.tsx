@@ -92,7 +92,7 @@ export const Navigation = () => {
             )}
 
             <div className="ml-1 pl-1 border-l flex items-center gap-1">
-              <DevModeSwitcher />
+              {import.meta.env.DEV && <DevModeSwitcher />}
               <ThemeToggle />
               {user ? (
                 <DropdownMenu>
