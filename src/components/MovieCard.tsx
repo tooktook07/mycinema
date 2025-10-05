@@ -19,8 +19,7 @@ export const MovieCard = ({ title, rating, year, genre, poster, type, imdbId }: 
   const sanitizedYear = Math.max(1800, Math.min(2100, year));
   
   const imdbUrl = `https://www.imdb.com/title/${encodeURIComponent(imdbId)}/`;
-  const googleSearchQuery = `${sanitizedTitle} ${sanitizedYear}`.replace(/\s+/g, '+');
-  const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(googleSearchQuery)}`;
+  const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(sanitizedTitle)}+${sanitizedYear}`;
   return (
     <Card className="group overflow-hidden border-border bg-gradient-to-b from-card to-card/80 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_40px_hsl(262_52%_47%/0.3)]">
       <div className="aspect-[2/3] overflow-hidden">
@@ -69,7 +68,7 @@ export const MovieCard = ({ title, rating, year, genre, poster, type, imdbId }: 
             className="flex-1"
             asChild
           >
-            <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5">
+            <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer nofollow" className="flex items-center gap-1.5">
               <Search className="h-3.5 w-3.5" />
               Search
             </a>
