@@ -147,7 +147,7 @@ export type Database = {
           sync_mode: boolean
           total_found: number | null
           updated: number | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           completed_at?: string | null
@@ -164,7 +164,7 @@ export type Database = {
           sync_mode?: boolean
           total_found?: number | null
           updated?: number | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           completed_at?: string | null
@@ -181,7 +181,7 @@ export type Database = {
           sync_mode?: boolean
           total_found?: number | null
           updated?: number | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }

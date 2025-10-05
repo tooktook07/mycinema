@@ -11,26 +11,32 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  let supabaseClient: any;
   let syncId: string | undefined;
 
   try {
     const { minRating = 0, maxRating = 10, yearRange = [2025, 2025], genres, excludedGenres, statuses, languages, minVoteCount = 100, minPopularity = 0, syncMode = false } = await req.json();
     const TMDB_API_KEY = Deno.env.get("TMDB_API_KEY");
 
-    // Get user ID from auth header
-    const authHeader = req.headers.get('Authorization');
-    let userId: string | null = null;
+    // Initialize Supabase client with auth
+    const authHeader = req.headers.get('Authorization')!;
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    // Get authenticated user
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '');
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        userId = payload.sub;
-      } catch (e) {
-        console.error('Error parsing JWT:', e);
-      }
+    if (userError || !user) {
+      console.error('Authentication error:', userError);
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
+
+    const userId = user.id;
 
     if (!TMDB_API_KEY) {
       console.error("TMDB_API_KEY not configured");
@@ -40,8 +46,8 @@ serve(async (req) => {
       );
     }
 
-    // Initialize Supabase client
-    const supabaseClient = createClient(
+    // Use service role key for database operations
+    const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
@@ -59,7 +65,7 @@ serve(async (req) => {
       minPopularity
     };
 
-    const { data: syncRecord, error: syncError } = await supabaseClient
+    const { data: syncRecord, error: syncError } = await supabaseAdmin
       .from("sync_history")
       .insert({
         user_id: userId,
@@ -177,7 +183,7 @@ serve(async (req) => {
           const actualImdbId = details.external_ids?.imdb_id || tempId;
           
           // Check if movie already exists using either temp ID or actual IMDB ID
-          const { data: existing } = await supabaseClient
+          const { data: existing } = await supabaseAdmin
             .from("movies")
             .select("*")
             .or(`imdb_id.eq.${tempId},imdb_id.eq.${actualImdbId}`)
@@ -257,7 +263,7 @@ serve(async (req) => {
 
           if (existing && syncMode) {
             // Update existing movie using its database ID
-            const { error } = await supabaseClient
+            const { error } = await supabaseAdmin
               .from("movies")
               .update(movieData)
               .eq("id", existing.id);
@@ -275,7 +281,7 @@ serve(async (req) => {
             logMsg(`⊘ Skipped: "${details.title}" (already exists)`);
           } else {
             // Insert new movie
-            const { error } = await supabaseClient
+            const { error } = await supabaseAdmin
               .from("movies")
               .insert(movieData);
 
@@ -301,7 +307,7 @@ serve(async (req) => {
       logMsg(`Checking for movies to remove that don't match current filters...`);
       
       // Get all movies from database
-      const { data: allMovies, error: fetchError } = await supabaseClient
+      const { data: allMovies, error: fetchError } = await supabaseAdmin
         .from("movies")
         .select("id, imdb_id, title, rating, vote_count, status, genres, original_language");
 
@@ -346,7 +352,7 @@ serve(async (req) => {
           }
 
           if (shouldRemove) {
-            const { error: deleteError } = await supabaseClient
+            const { error: deleteError } = await supabaseAdmin
               .from("movies")
               .delete()
               .eq("id", movie.id);
@@ -367,7 +373,7 @@ serve(async (req) => {
 
     // Update sync history with results
     if (syncId) {
-      await supabaseClient
+      await supabaseAdmin
         .from("sync_history")
         .update({
           completed_at: new Date().toISOString(),
@@ -403,8 +409,12 @@ serve(async (req) => {
     console.error("Error in import-tmdb-movies function:", error);
     
     // Update sync history with error if we have a sync ID
-    if (supabaseClient && syncId) {
-      await supabaseClient
+    if (syncId) {
+      const supabaseAdmin = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      );
+      await supabaseAdmin
         .from("sync_history")
         .update({
           completed_at: new Date().toISOString(),

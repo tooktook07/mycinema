@@ -1,10 +1,10 @@
 project_id = "kkeojjtopbpfbcmxlumx"
 
 [functions.fetch-movie-data]
-verify_jwt = false
+verify_jwt = true
 
 [functions.import-tmdb-movies]
-verify_jwt = false
+verify_jwt = true
 
 [functions.recommend-movies]
 verify_jwt = true
