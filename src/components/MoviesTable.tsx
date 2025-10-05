@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Movie } from "@/data/types";
+import { getOptimizedImageProps } from "@/lib/imageUtils";
 
 interface MoviesTableProps {
   movies: Movie[];
@@ -71,11 +72,13 @@ export const MoviesTable = ({ movies, title }: MoviesTableProps) => {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredMovies.map((movie) => (
+              filteredMovies.map((movie) => {
+                const imageProps = getOptimizedImageProps(movie.poster);
+                return (
                 <TableRow key={movie.id} className="border-border hover:bg-muted/30">
                   <TableCell className="py-2">
                     <img
-                      src={movie.poster}
+                      {...imageProps}
                       alt={movie.title}
                       className="w-16 h-24 object-cover rounded border border-border"
                     />
@@ -132,7 +135,7 @@ export const MoviesTable = ({ movies, title }: MoviesTableProps) => {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
+              )})
             )}
           </TableBody>
         </Table>

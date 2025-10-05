@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TvShow } from "@/data/types";
+import { getOptimizedImageProps } from "@/lib/imageUtils";
 
 interface TvShowsTableProps {
   shows: TvShow[];
@@ -73,11 +74,13 @@ export const TvShowsTable = ({ shows, title }: TvShowsTableProps) => {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredShows.map((show) => (
+              filteredShows.map((show) => {
+                const imageProps = getOptimizedImageProps(show.poster);
+                return (
                 <TableRow key={show.id} className="border-border hover:bg-muted/30">
                   <TableCell className="py-2">
                     <img
-                      src={show.poster}
+                      {...imageProps}
                       alt={show.title}
                       className="w-16 h-24 object-cover rounded border border-border"
                     />
@@ -130,7 +133,7 @@ export const TvShowsTable = ({ shows, title }: TvShowsTableProps) => {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
+              )})
             )}
           </TableBody>
         </Table>
