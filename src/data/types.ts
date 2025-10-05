@@ -12,6 +12,9 @@ export interface Movie {
   runtime?: string;
   voteCount?: number;
   originalLanguage?: string;
+  writing?: string;
+  sound?: string;
+  keywords?: string[];
 }
 
 export interface TvShow {

@@ -113,9 +113,9 @@ serve(async (req) => {
           // Use TMDB ID as temporary identifier for checking existence
           const tempId = `tmdb_${movie.id}`;
           
-          // Fetch detailed movie info to get additional data including IMDB ID
+          // Fetch detailed movie info to get additional data including IMDB ID, credits, and keywords
           const detailsResponse = await fetch(
-            `https://api.themoviedb.org/3/movie/${movie.id}?api_key=${TMDB_API_KEY}&append_to_response=credits,external_ids`
+            `https://api.themoviedb.org/3/movie/${movie.id}?api_key=${TMDB_API_KEY}&append_to_response=credits,external_ids,keywords`
           );
 
           if (!detailsResponse.ok) {
@@ -146,11 +146,30 @@ serve(async (req) => {
           // Get director from credits
           const director = details.credits?.crew?.find((person: any) => person.job === "Director")?.name || null;
 
-          // Get top actors
+          // Get top actors (cast)
           const actors = details.credits?.cast
-            ?.slice(0, 5)
+            ?.slice(0, 10)
             .map((actor: any) => actor.name)
             .join(", ") || null;
+
+          // Get writing credits
+          const writing = details.credits?.crew
+            ?.filter((person: any) => person.department === "Writing")
+            .slice(0, 5)
+            .map((person: any) => person.name)
+            .join(", ") || null;
+
+          // Get sound department
+          const sound = details.credits?.crew
+            ?.filter((person: any) => person.department === "Sound")
+            .slice(0, 5)
+            .map((person: any) => person.name)
+            .join(", ") || null;
+
+          // Get keywords
+          const keywords = details.keywords?.keywords
+            ?.slice(0, 10)
+            .map((keyword: any) => keyword.name) || null;
 
           // Format genres
           const movieGenres = details.genres?.map((g: any) => g.name) || [];
@@ -177,6 +196,9 @@ serve(async (req) => {
             original_language: details.original_language || null,
             tagline: details.tagline || null,
             status: details.status || null,
+            writing,
+            sound,
+            keywords,
           };
 
           if (existing && syncMode) {
