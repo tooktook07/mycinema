@@ -160,9 +160,9 @@ serve(async (req) => {
           // Use TMDB ID as temporary identifier for checking existence
           const tempId = `tmdb_${movie.id}`;
           
-          // Fetch detailed movie info to get additional data including IMDB ID, credits, and keywords
+          // Fetch detailed movie info to get additional data including IMDB ID, credits, keywords, providers, and translations
           const detailsResponse = await fetch(
-            `https://api.themoviedb.org/3/movie/${movie.id}?api_key=${TMDB_API_KEY}&append_to_response=credits,external_ids,keywords`
+            `https://api.themoviedb.org/3/movie/${movie.id}?api_key=${TMDB_API_KEY}&append_to_response=credits,external_ids,keywords,watch/providers,translations`
           );
 
           if (!detailsResponse.ok) {
@@ -246,6 +246,13 @@ serve(async (req) => {
             writing,
             sound,
             keywords,
+            production_companies: details.production_companies || null,
+            production_countries: details.production_countries || null,
+            spoken_languages: details.spoken_languages || null,
+            budget: details.budget || null,
+            revenue: details.revenue || null,
+            watch_providers: details['watch/providers'] || null,
+            translations: details.translations || null,
           };
 
           if (existing && syncMode) {

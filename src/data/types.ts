@@ -15,6 +15,13 @@ export interface Movie {
   writing?: string;
   sound?: string;
   keywords?: string[];
+  productionCompanies?: any;
+  productionCountries?: any;
+  spokenLanguages?: any;
+  budget?: number;
+  revenue?: number;
+  watchProviders?: any;
+  translations?: any;
 }
 
 export interface TvShow {

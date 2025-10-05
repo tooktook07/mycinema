@@ -17,6 +17,7 @@ export type Database = {
       movies: {
         Row: {
           actors: string | null
+          budget: number | null
           created_at: string | null
           director: string | null
           genres: string[] | null
@@ -27,19 +28,26 @@ export type Database = {
           plot: string | null
           popularity: number | null
           poster: string | null
+          production_companies: Json | null
+          production_countries: Json | null
           rating: number | null
+          revenue: number | null
           runtime: string | null
           sound: string | null
+          spoken_languages: Json | null
           status: string | null
           tagline: string | null
           title: string
+          translations: Json | null
           updated_at: string | null
           vote_count: number | null
+          watch_providers: Json | null
           writing: string | null
           year: number
         }
         Insert: {
           actors?: string | null
+          budget?: number | null
           created_at?: string | null
           director?: string | null
           genres?: string[] | null
@@ -50,19 +58,26 @@ export type Database = {
           plot?: string | null
           popularity?: number | null
           poster?: string | null
+          production_companies?: Json | null
+          production_countries?: Json | null
           rating?: number | null
+          revenue?: number | null
           runtime?: string | null
           sound?: string | null
+          spoken_languages?: Json | null
           status?: string | null
           tagline?: string | null
           title: string
+          translations?: Json | null
           updated_at?: string | null
           vote_count?: number | null
+          watch_providers?: Json | null
           writing?: string | null
           year: number
         }
         Update: {
           actors?: string | null
+          budget?: number | null
           created_at?: string | null
           director?: string | null
           genres?: string[] | null
@@ -73,14 +88,20 @@ export type Database = {
           plot?: string | null
           popularity?: number | null
           poster?: string | null
+          production_companies?: Json | null
+          production_countries?: Json | null
           rating?: number | null
+          revenue?: number | null
           runtime?: string | null
           sound?: string | null
+          spoken_languages?: Json | null
           status?: string | null
           tagline?: string | null
           title?: string
+          translations?: Json | null
           updated_at?: string | null
           vote_count?: number | null
+          watch_providers?: Json | null
           writing?: string | null
           year?: number
         }
