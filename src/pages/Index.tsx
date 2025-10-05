@@ -141,10 +141,18 @@ const Index = () => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Edge function error:", error);
+        throw error;
+      }
+      
+      console.log("Recommendations response:", data);
       
       if (data?.recommendations) {
         setRecommendations(data.recommendations);
+        console.log("Set recommendations:", data.recommendations.length);
+      } else if (data?.message) {
+        console.log("Message from function:", data.message);
       }
     } catch (error) {
       console.error("Error fetching recommendations:", error);
@@ -328,11 +336,12 @@ const Index = () => {
                 {loadingRecommendations ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-6 w-6 animate-spin" />
+                    <span className="ml-2 text-sm text-muted-foreground">Analyzing your preferences...</span>
                   </div>
                 ) : recommendations.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Rate some movies to get personalized recommendations!</p>
                 ) : (
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                  <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
                     {recommendations.map((movie) => (
                       <Link
                         key={movie.id}

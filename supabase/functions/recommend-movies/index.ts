@@ -67,14 +67,18 @@ serve(async (req) => {
       });
     }
 
+    console.log('Found user ratings:', userRatings.length);
+
     if (!userRatings || userRatings.length === 0) {
+      console.log('No ratings found for user');
       return new Response(JSON.stringify({ recommendations: [], message: 'No ratings found. Rate some movies first!' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     // Get rated movie IDs
-    const ratedMovieIds = userRatings.map(r => r.media_id);
+    const ratedMovieIds = userRatings.map(r => r.media_id).filter(id => id);
+    console.log('Rated movie IDs count:', ratedMovieIds.length);
 
     // Fetch unrated movies
     const { data: unratedMovies, error: moviesError } = await supabase
@@ -84,12 +88,21 @@ serve(async (req) => {
       .gte('rating', 6.5)
       .not('rating', 'is', null)
       .order('rating', { ascending: false })
-      .limit(100);
+      .limit(150);
 
     if (moviesError) {
       console.error('Error fetching unrated movies:', moviesError);
       return new Response(JSON.stringify({ error: 'Failed to fetch movies' }), {
         status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log('Found unrated movies:', unratedMovies?.length || 0);
+
+    if (!unratedMovies || unratedMovies.length === 0) {
+      console.log('No unrated movies available');
+      return new Response(JSON.stringify({ recommendations: [], message: 'No unrated movies available' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -108,6 +121,8 @@ serve(async (req) => {
         };
       });
 
+    console.log('Prepared rated movies data:', ratedMoviesData.length);
+
     const unratedMoviesData = unratedMovies.map(m => ({
       id: m.id,
       title: m.title,
@@ -116,6 +131,8 @@ serve(async (req) => {
       imdbRating: m.rating,
       plot: m.plot?.substring(0, 150)
     }));
+
+    console.log('Calling AI with', ratedMoviesData.length, 'rated and', unratedMoviesData.length, 'unrated movies');
 
     // Call Lovable AI
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -137,14 +154,14 @@ Consider:
 - Movie themes and styles
 - Balance between popular and hidden gems
 
-Return ONLY a JSON array of exactly 10 movie recommendations in this format:
+Return ONLY a JSON array of exactly 12 movie recommendations in this format:
 [{"id": "uuid", "reason": "short reason why they'd love it"}]
 
-Keep reasons under 25 words and focus on their preferences.`
+Keep reasons under 20 words and focus on their preferences.`
           },
           {
             role: 'user',
-            content: `User's rated movies (rating/10):\n${JSON.stringify(ratedMoviesData, null, 2)}\n\nAvailable unrated movies:\n${JSON.stringify(unratedMoviesData, null, 2)}\n\nRecommend 10 movies from the unrated list.`
+            content: `User's rated movies (rating/10):\n${JSON.stringify(ratedMoviesData, null, 2)}\n\nAvailable unrated movies:\n${JSON.stringify(unratedMoviesData, null, 2)}\n\nRecommend 12 movies from the unrated list.`
           }
         ],
         temperature: 0.7,
@@ -176,15 +193,18 @@ Keep reasons under 25 words and focus on their preferences.`
     }
 
     const aiData = await aiResponse.json();
+    console.log('AI response received');
     const aiContent = aiData.choices[0].message.content;
+    console.log('AI content length:', aiContent?.length);
     
     // Parse AI response
     let recommendedIds;
     try {
       recommendedIds = JSON.parse(aiContent);
+      console.log('Parsed recommendations count:', recommendedIds?.length);
     } catch (e) {
       console.error('Failed to parse AI response:', aiContent);
-      return new Response(JSON.stringify({ error: 'Invalid AI response format' }), {
+      return new Response(JSON.stringify({ error: 'Invalid AI response format', details: aiContent }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -194,14 +214,17 @@ Keep reasons under 25 words and focus on their preferences.`
     const recommendations = recommendedIds
       .map((rec: any) => {
         const movie = unratedMovies.find(m => m.id === rec.id);
-        if (!movie) return null;
+        if (!movie) {
+          console.log('Movie not found for recommendation:', rec.id);
+          return null;
+        }
         return {
           ...movie,
           recommendationReason: rec.reason
         };
       })
       .filter((m: any) => m !== null)
-      .slice(0, 10);
+      .slice(0, 12);
 
     console.log('Successfully generated', recommendations.length, 'recommendations');
 
