@@ -156,22 +156,7 @@ const Index = () => {
   const fetchRecommendations = async () => {
     setLoadingRecommendations(true);
     try {
-      // Try AI recommendations for logged-in users
-      if (user && user.id !== 'dev-user-id') {
-        const session = await supabase.auth.getSession();
-        const { data, error } = await supabase.functions.invoke('recommend-movies', {
-          headers: {
-            Authorization: `Bearer ${session.data.session?.access_token}`,
-          },
-        });
-
-        if (!error && data?.recommendations && Array.isArray(data.recommendations)) {
-          setRecommendations(data.recommendations);
-          return;
-        }
-      }
-      
-      // Fallback: fetch top-rated movies
+      // Fetch top-rated movies
       const { data: topMovies, error } = await supabase
         .from('movies')
         .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords')
