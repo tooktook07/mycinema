@@ -30,6 +30,31 @@ function yearSimilarity(year1: number, year2: number): number {
   return Math.max(0, 1 - (diff / maxDiff));
 }
 
+// Calculate budget similarity (prefer similar budget range)
+function budgetSimilarity(budget1: number, budget2: number): number {
+  if (!budget1 || !budget2 || budget1 === 0 || budget2 === 0) return 0;
+  const ratio = Math.min(budget1, budget2) / Math.max(budget1, budget2);
+  return ratio; // Returns value between 0 and 1
+}
+
+// Extract company names from production_companies JSON
+function extractCompanyNames(companies: any): string[] {
+  if (!companies || !Array.isArray(companies)) return [];
+  return companies.map((c: any) => c.name || '').filter(Boolean);
+}
+
+// Extract country codes from production_countries JSON
+function extractCountryCodes(countries: any): string[] {
+  if (!countries || !Array.isArray(countries)) return [];
+  return countries.map((c: any) => c.iso_3166_1 || c.name || '').filter(Boolean);
+}
+
+// Extract language codes from spoken_languages JSON
+function extractLanguageCodes(languages: any): string[] {
+  if (!languages || !Array.isArray(languages)) return [];
+  return languages.map((l: any) => l.iso_639_1 || l.name || '').filter(Boolean);
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -97,7 +122,7 @@ serve(async (req) => {
 
     const { data: ratedMovies, error: ratedMoviesError } = await supabase
       .from('movies')
-      .select('id, title, year, genres, keywords, actors, director, writing, sound, rating, popularity, vote_count')
+      .select('id, title, year, genres, keywords, actors, director, writing, sound, rating, popularity, vote_count, production_companies, production_countries, spoken_languages, budget')
       .in('id', ratedMovieIds);
 
     if (ratedMoviesError) {
@@ -113,7 +138,7 @@ serve(async (req) => {
     // Fetch unrated movies
     const { data: unratedMovies, error: moviesError } = await supabase
       .from('movies')
-      .select('id, title, year, genres, keywords, actors, director, writing, sound, rating, popularity, vote_count, poster')
+      .select('id, title, year, genres, keywords, actors, director, writing, sound, rating, popularity, vote_count, poster, production_companies, production_countries, spoken_languages, budget')
       .not('id', 'in', `(${ratedMovieIds.join(',')})`)
       .gte('rating', 6.0)
       .not('rating', 'is', null)
@@ -152,37 +177,62 @@ serve(async (req) => {
         const userRating = userRatingMap.get(ratedMovie.id) || 5;
         const weight = userRating / 10; // Higher rated movies have more influence
 
-        // Genre similarity (weight: 0.25)
+        // Genre similarity (weight: 0.20) - reduced slightly
         const genreSim = jaccardSimilarity(movie.genres || [], ratedMovie.genres || []);
-        totalScore += genreSim * weight * 0.25;
+        totalScore += genreSim * weight * 0.20;
 
-        // Keywords similarity (weight: 0.2)
+        // Keywords similarity (weight: 0.18) - reduced slightly
         const keywordSim = jaccardSimilarity(movie.keywords || [], ratedMovie.keywords || []);
-        totalScore += keywordSim * weight * 0.2;
+        totalScore += keywordSim * weight * 0.18;
 
-        // Actors similarity (weight: 0.15)
+        // Actors similarity (weight: 0.12)
         const actorSim = jaccardSimilarity(movie.actors?.split(',') || [], ratedMovie.actors?.split(',') || []);
-        totalScore += actorSim * weight * 0.15;
+        totalScore += actorSim * weight * 0.12;
 
-        // Director match (weight: 0.12)
+        // Director match (weight: 0.10)
         const directorMatch = movie.director === ratedMovie.director && movie.director ? 1 : 0;
-        totalScore += directorMatch * weight * 0.12;
+        totalScore += directorMatch * weight * 0.10;
 
-        // Writing similarity (weight: 0.08)
+        // Production companies similarity (weight: 0.10) - NEW: Studios matter
+        const companySim = jaccardSimilarity(
+          extractCompanyNames(movie.production_companies),
+          extractCompanyNames(ratedMovie.production_companies)
+        );
+        totalScore += companySim * weight * 0.10;
+
+        // Writing similarity (weight: 0.07)
         const writingSim = jaccardSimilarity(movie.writing?.split(',') || [], ratedMovie.writing?.split(',') || []);
-        totalScore += writingSim * weight * 0.08;
+        totalScore += writingSim * weight * 0.07;
 
-        // Sound similarity (weight: 0.05)
-        const soundSim = jaccardSimilarity(movie.sound?.split(',') || [], ratedMovie.sound?.split(',') || []);
-        totalScore += soundSim * weight * 0.05;
+        // Production countries similarity (weight: 0.06) - NEW: Filming locations
+        const countrySim = jaccardSimilarity(
+          extractCountryCodes(movie.production_countries),
+          extractCountryCodes(ratedMovie.production_countries)
+        );
+        totalScore += countrySim * weight * 0.06;
 
-        // Rating similarity (weight: 0.08)
+        // Rating similarity (weight: 0.06)
         const ratingSim = ratingSimilarity(movie.rating || 5, ratedMovie.rating || 5);
-        totalScore += ratingSim * weight * 0.08;
+        totalScore += ratingSim * weight * 0.06;
 
-        // Year similarity (weight: 0.07)
+        // Sound similarity (weight: 0.04)
+        const soundSim = jaccardSimilarity(movie.sound?.split(',') || [], ratedMovie.sound?.split(',') || []);
+        totalScore += soundSim * weight * 0.04;
+
+        // Spoken languages similarity (weight: 0.04) - NEW: Languages in film
+        const languageSim = jaccardSimilarity(
+          extractLanguageCodes(movie.spoken_languages),
+          extractLanguageCodes(ratedMovie.spoken_languages)
+        );
+        totalScore += languageSim * weight * 0.04;
+
+        // Year similarity (weight: 0.02)
         const yearSim = yearSimilarity(movie.year || 2000, ratedMovie.year || 2000);
-        totalScore += yearSim * weight * 0.07;
+        totalScore += yearSim * weight * 0.02;
+
+        // Budget similarity (weight: 0.01) - NEW: Similar budget range
+        const budgetSim = budgetSimilarity(movie.budget || 0, ratedMovie.budget || 0);
+        totalScore += budgetSim * weight * 0.01;
 
         totalWeight += weight;
       });
