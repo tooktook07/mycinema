@@ -7,10 +7,11 @@ import { SyncMovies } from "./Account/SyncMovies";
 import { SyncTvShows } from "./Account/SyncTvShows";
 import { SyncHistoryTab } from "./Account/SyncHistoryTab";
 import { GeneralSettings } from "./Account/GeneralSettings";
-import { useAuth } from "@/contexts/AuthContext";
+import { useEffectiveAuth } from "@/contexts/DevModeContext";
 
 const Account = () => {
-  const { isAdmin, loading } = useAuth();
+  const { isAdmin } = useEffectiveAuth();
+  const loading = false;
   const navigate = useNavigate();
 
   useEffect(() => {
