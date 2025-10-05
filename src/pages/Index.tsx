@@ -102,16 +102,16 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/10">
+    <div className="min-h-screen">
       {/* Hero Section */}
-      <div className="border-b border-border/50 bg-gradient-to-r from-primary/20 via-background to-primary/20 px-4 py-12">
+      <div className="border-b px-4 py-16">
         <div className="container mx-auto max-w-7xl">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <Film className="h-10 w-10 text-accent" />
-            <h1 className="text-4xl font-bold text-foreground md:text-5xl">CineMatch Dashboard</h1>
+            <Film className="h-10 w-10" />
+            <h1 className="text-4xl font-bold md:text-5xl">Dashboard</h1>
           </div>
-          <p className="text-center text-lg text-muted-foreground max-w-2xl mx-auto">
-            Your personal movie and TV show database statistics
+          <p className="text-center text-muted-foreground max-w-2xl mx-auto">
+            Your personal movie and TV show statistics
           </p>
         </div>
       </div>
@@ -175,16 +175,16 @@ const Index = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="flex flex-wrap gap-4 mb-8">
-          <Button onClick={() => navigate("/movies")} size="lg">
+        <div className="flex flex-wrap gap-3 mb-8">
+          <Button onClick={() => navigate("/movies")} variant="outline">
             <Film className="h-4 w-4 mr-2" />
             Browse Movies
           </Button>
-          <Button onClick={() => navigate("/tv-shows")} variant="outline" size="lg">
+          <Button onClick={() => navigate("/tv-shows")} variant="outline">
             <Tv className="h-4 w-4 mr-2" />
             Browse TV Shows
           </Button>
-          <Button onClick={() => navigate("/account")} variant="outline" size="lg">
+          <Button onClick={() => navigate("/account")} variant="outline">
             <TrendingUp className="h-4 w-4 mr-2" />
             Sync Data
           </Button>

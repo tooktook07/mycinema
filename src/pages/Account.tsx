@@ -7,11 +7,11 @@ import { GeneralSettings } from "./Account/GeneralSettings";
 
 const Account = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/10">
+    <div className="min-h-screen">
       <div className="container mx-auto max-w-7xl px-4 py-8">
         <div className="flex items-center gap-3 mb-8">
-          <Settings className="h-8 w-8 text-primary" />
-          <h1 className="text-4xl font-bold text-foreground">Account Settings</h1>
+          <Settings className="h-8 w-8" />
+          <h1 className="text-4xl font-bold">Account</h1>
         </div>
 
         <Tabs defaultValue="sync-movies" className="space-y-6">
