@@ -2,3 +2,6 @@ project_id = "kkeojjtopbpfbcmxlumx"
 
 [functions.fetch-movie-data]
 verify_jwt = false
+
+[functions.import-tmdb-movies]
+verify_jwt = false
