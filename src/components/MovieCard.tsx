@@ -14,8 +14,13 @@ interface MovieCardProps {
 }
 
 export const MovieCard = ({ title, rating, year, genre, poster, type, imdbId }: MovieCardProps) => {
-  const imdbUrl = `https://www.imdb.com/title/${imdbId}/`;
-  const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(title + " " + year)}`;
+  // Sanitize and validate inputs
+  const sanitizedTitle = title.trim().slice(0, 200);
+  const sanitizedYear = Math.max(1800, Math.min(2100, year));
+  
+  const imdbUrl = `https://www.imdb.com/title/${encodeURIComponent(imdbId)}/`;
+  const googleSearchQuery = `${sanitizedTitle} ${sanitizedYear}`.replace(/\s+/g, '+');
+  const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(googleSearchQuery)}`;
   return (
     <Card className="group overflow-hidden border-border bg-gradient-to-b from-card to-card/80 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_40px_hsl(262_52%_47%/0.3)]">
       <div className="aspect-[2/3] overflow-hidden">
