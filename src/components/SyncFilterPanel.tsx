@@ -19,6 +19,8 @@ interface SyncFilterPanelProps {
   onMinVoteCountChange: (value: number) => void;
   minPopularity: number;
   onMinPopularityChange: (value: number) => void;
+  selectedLanguages: string[];
+  onLanguageToggle: (language: string) => void;
 }
 
 const GENRES = [
@@ -46,6 +48,21 @@ const STATUSES = [
   "Canceled",
 ];
 
+const LANGUAGES = [
+  { code: "en", name: "English" },
+  { code: "es", name: "Spanish" },
+  { code: "fr", name: "French" },
+  { code: "de", name: "German" },
+  { code: "it", name: "Italian" },
+  { code: "ja", name: "Japanese" },
+  { code: "ko", name: "Korean" },
+  { code: "zh", name: "Chinese" },
+  { code: "pt", name: "Portuguese" },
+  { code: "ru", name: "Russian" },
+  { code: "ar", name: "Arabic" },
+  { code: "hi", name: "Hindi" },
+];
+
 export const SyncFilterPanel = ({
   selectedGenres,
   onGenreToggle,
@@ -61,10 +78,13 @@ export const SyncFilterPanel = ({
   onMinVoteCountChange,
   minPopularity,
   onMinPopularityChange,
+  selectedLanguages,
+  onLanguageToggle,
 }: SyncFilterPanelProps) => {
   const selectedCount = selectedGenres.length + 
     excludedGenres.length +
     selectedStatuses.length +
+    selectedLanguages.length +
     (ratingRange[0] > 0 || ratingRange[1] < 10 ? 1 : 0) + 
     (yearRange[0] !== 2025 || yearRange[1] !== 2025 ? 1 : 0) +
     (minVoteCount > 100 ? 1 : 0) +
@@ -156,6 +176,32 @@ export const SyncFilterPanel = ({
                 >
                   {isSelected && <span className="mr-1">✓</span>}
                   {status}
+                </Badge>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="space-y-3 md:col-span-2 lg:col-span-1">
+          <div>
+            <Label className="text-base font-semibold text-foreground">Languages</Label>
+            <p className="text-xs text-muted-foreground mt-1">Select languages to sync (leave empty for all)</p>
+          </div>
+          <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-2 rounded border border-border/50 bg-background/50">
+            {LANGUAGES.map((lang) => {
+              const isSelected = selectedLanguages.includes(lang.code);
+              return (
+                <Badge
+                  key={lang.code}
+                  variant={isSelected ? "default" : "outline"}
+                  className={cn(
+                    "cursor-pointer transition-all hover:scale-105",
+                    isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                  )}
+                  onClick={() => onLanguageToggle(lang.code)}
+                >
+                  {isSelected && <span className="mr-1">✓</span>}
+                  {lang.code.toUpperCase()} - {lang.name}
                 </Badge>
               );
             })}

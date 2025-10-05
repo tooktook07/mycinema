@@ -231,6 +231,8 @@ const Movies = () => {
             onRatingRangeChange={setTempRatingRange}
             yearRange={tempYearRange}
             onYearRangeChange={setTempYearRange}
+            selectedLanguage={tempLanguage}
+            onLanguageChange={setTempLanguage}
             onApply={handleApplyFilters}
             onReset={handleResetFilters}
           />

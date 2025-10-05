@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { minRating = 0, maxRating = 10, yearRange = [2025, 2025], genres, excludedGenres, statuses, minVoteCount = 100, minPopularity = 0, syncMode = false } = await req.json();
+    const { minRating = 0, maxRating = 10, yearRange = [2025, 2025], genres, excludedGenres, statuses, languages, minVoteCount = 100, minPopularity = 0, syncMode = false } = await req.json();
     const TMDB_API_KEY = Deno.env.get("TMDB_API_KEY");
 
     if (!TMDB_API_KEY) {
@@ -45,7 +45,7 @@ serve(async (req) => {
       logs.push(`[${new Date().toISOString()}] ${msg}`);
     };
 
-    logMsg(`Starting ${syncMode ? 'sync' : 'import'} with filters: ratingRange=${minRating}-${maxRating}, yearRange=${yearRange.join('-')}, genres=${genres?.join(',') || 'all'}, excludedGenres=${excludedGenres?.join(',') || 'none'}, statuses=${statuses?.join(',') || 'all'}, minVoteCount=${minVoteCount}+, minPopularity=${minPopularity}`);
+    logMsg(`Starting ${syncMode ? 'sync' : 'import'} with filters: ratingRange=${minRating}-${maxRating}, yearRange=${yearRange.join('-')}, genres=${genres?.join(',') || 'all'}, excludedGenres=${excludedGenres?.join(',') || 'none'}, languages=${languages?.join(',') || 'all'}, statuses=${statuses?.join(',') || 'all'}, minVoteCount=${minVoteCount}+, minPopularity=${minPopularity}`);
 
     // Get genre IDs from TMDB if genres or excludedGenres filter is specified
     let genreIds: number[] | undefined;
@@ -80,6 +80,9 @@ serve(async (req) => {
       }
       if (excludedGenreIds && excludedGenreIds.length > 0) {
         queryParams += `&without_genres=${excludedGenreIds.join(',')}`;
+      }
+      if (languages && languages.length > 0) {
+        queryParams += `&with_original_language=${languages.join('|')}`;
       }
       
       // Note: TMDB API doesn't support popularity filtering directly in discover endpoint
@@ -218,7 +221,7 @@ serve(async (req) => {
       // Get all movies from database
       const { data: allMovies, error: fetchError } = await supabaseClient
         .from("movies")
-        .select("id, imdb_id, title, rating, vote_count, status, genres");
+        .select("id, imdb_id, title, rating, vote_count, status, genres, original_language");
 
       if (fetchError) {
         logMsg(`✗ Error fetching movies for cleanup: ${fetchError.message}`);
@@ -253,6 +256,11 @@ serve(async (req) => {
             if (hasExcludedGenre) {
               shouldRemove = true;
             }
+          }
+
+          // Check language
+          if (languages && languages.length > 0 && movie.original_language && !languages.includes(movie.original_language)) {
+            shouldRemove = true;
           }
 
           if (shouldRemove) {

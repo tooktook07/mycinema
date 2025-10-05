@@ -13,11 +13,13 @@ const TvShows = () => {
   const [tempGenres, setTempGenres] = useState<string[]>([]);
   const [tempRatingRange, setTempRatingRange] = useState<[number, number]>([0, 10]);
   const [tempYearRange, setTempYearRange] = useState<[number, number]>([1900, 2030]);
+  const [tempLanguage, setTempLanguage] = useState<string>("");
 
   // Applied filter states
   const [appliedGenres, setAppliedGenres] = useState<string[]>([]);
   const [appliedRatingRange, setAppliedRatingRange] = useState<[number, number]>([0, 10]);
   const [appliedYearRange, setAppliedYearRange] = useState<[number, number]>([1900, 2030]);
+  const [appliedLanguage, setAppliedLanguage] = useState<string>("");
 
   const handleGenreToggle = (genre: string) => {
     setTempGenres((prev) =>
@@ -29,15 +31,18 @@ const TvShows = () => {
     setAppliedGenres(tempGenres);
     setAppliedRatingRange(tempRatingRange);
     setAppliedYearRange(tempYearRange);
+    setAppliedLanguage(tempLanguage);
   };
 
   const handleResetFilters = () => {
     setTempGenres([]);
     setTempRatingRange([0, 10]);
     setTempYearRange([1900, 2030]);
+    setTempLanguage("");
     setAppliedGenres([]);
     setAppliedRatingRange([0, 10]);
     setAppliedYearRange([1900, 2030]);
+    setAppliedLanguage("");
   };
 
   const filteredShows = useMemo(() => {
@@ -66,6 +71,8 @@ const TvShows = () => {
             onRatingRangeChange={setTempRatingRange}
             yearRange={tempYearRange}
             onYearRangeChange={setTempYearRange}
+            selectedLanguage={tempLanguage}
+            onLanguageChange={setTempLanguage}
             onApply={handleApplyFilters}
             onReset={handleResetFilters}
           />

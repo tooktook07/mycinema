@@ -27,6 +27,7 @@ const Account = () => {
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [excludedGenres, setExcludedGenres] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(["Released"]);
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [ratingRange, setRatingRange] = useState<[number, number]>([6.9, 9.5]);
   const [yearRange, setYearRange] = useState<[number, number]>([2025, 2025]);
   const [minVoteCount, setMinVoteCount] = useState(100);
@@ -56,6 +57,14 @@ const Account = () => {
     );
   };
 
+  const handleLanguageToggle = (language: string) => {
+    setSelectedLanguages(prev =>
+      prev.includes(language)
+        ? prev.filter(l => l !== language)
+        : [...prev, language]
+    );
+  };
+
   const handleSyncMovies = async () => {
     setIsSyncing(true);
     setSyncResult(null);
@@ -74,6 +83,7 @@ const Account = () => {
           genres: selectedGenres.length > 0 ? selectedGenres : undefined,
           excludedGenres: excludedGenres.length > 0 ? excludedGenres : undefined,
           statuses: selectedStatuses.length > 0 ? selectedStatuses : undefined,
+          languages: selectedLanguages.length > 0 ? selectedLanguages : undefined,
           minVoteCount,
           minPopularity,
           syncMode: true, // Enable sync mode for updates and deletions
@@ -121,6 +131,8 @@ const Account = () => {
               onExcludedGenreToggle={handleExcludedGenreToggle}
               selectedStatuses={selectedStatuses}
               onStatusToggle={handleStatusToggle}
+              selectedLanguages={selectedLanguages}
+              onLanguageToggle={handleLanguageToggle}
               ratingRange={ratingRange}
               onRatingRangeChange={setRatingRange}
               yearRange={yearRange}
@@ -146,6 +158,7 @@ const Account = () => {
                   setSelectedGenres([]);
                   setExcludedGenres([]);
                   setSelectedStatuses(["Released"]);
+                  setSelectedLanguages([]);
                   setRatingRange([6.9, 9.5]);
                   setYearRange([2025, 2025]);
                   setMinVoteCount(100);

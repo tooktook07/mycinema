@@ -12,6 +12,8 @@ interface FilterPanelProps {
   onRatingRangeChange: (range: [number, number]) => void;
   yearRange: [number, number];
   onYearRangeChange: (range: [number, number]) => void;
+  selectedLanguage: string;
+  onLanguageChange: (language: string) => void;
   onApply: () => void;
   onReset: () => void;
 }
@@ -36,11 +38,15 @@ export const FilterPanel = ({
   onRatingRangeChange,
   yearRange,
   onYearRangeChange,
+  selectedLanguage,
+  onLanguageChange,
   onApply,
   onReset,
 }: FilterPanelProps) => {
-  const selectedCount = selectedGenres.length + (ratingRange[0] > 0 || ratingRange[1] < 10 ? 1 : 0) + 
-    (yearRange[0] !== 1900 || yearRange[1] !== 2030 ? 1 : 0);
+  const selectedCount = selectedGenres.length + 
+    (ratingRange[0] > 0 || ratingRange[1] < 10 ? 1 : 0) + 
+    (yearRange[0] !== 1900 || yearRange[1] !== 2030 ? 1 : 0) +
+    (selectedLanguage ? 1 : 0);
 
   return (
     <div className="space-y-6 rounded-lg border border-border bg-card p-6 shadow-lg">
@@ -55,7 +61,7 @@ export const FilterPanel = ({
         </h3>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-4">
         <div className="space-y-3">
           <div>
             <Label className="text-base font-semibold text-foreground">Genres</Label>
@@ -80,6 +86,22 @@ export const FilterPanel = ({
               );
             })}
           </div>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <Label className="text-base font-semibold text-foreground">Language</Label>
+            <p className="text-xs text-muted-foreground mt-1">Filter by original language</p>
+          </div>
+          <Input
+            type="text"
+            placeholder="e.g. en, es, fr"
+            value={selectedLanguage}
+            onChange={(e) => onLanguageChange(e.target.value)}
+            className="bg-background"
+            maxLength={2}
+          />
+          <p className="text-xs text-muted-foreground">Enter 2-letter ISO language code</p>
         </div>
 
         <div className="space-y-3">
