@@ -49,7 +49,7 @@ export const MovieRating = ({ movieId, movieTitle }: MovieRatingProps) => {
     try {
       const { data, error } = await supabase
         .from("user_ratings")
-        .select("sentiment_rating")
+        .select("user_rating")
         .eq("user_id", user.id)
         .eq("media_id", movieId)
         .eq("media_type", "movie")
@@ -57,8 +57,8 @@ export const MovieRating = ({ movieId, movieTitle }: MovieRatingProps) => {
 
       if (error) throw error;
       
-      if (data?.sentiment_rating) {
-        const sentimentValue = data.sentiment_rating as SentimentRating;
+      if (data?.user_rating) {
+        const sentimentValue = data.user_rating as SentimentRating;
         setSavedRating(sentimentValue);
         setRating(sentimentValue);
       }
@@ -78,7 +78,7 @@ export const MovieRating = ({ movieId, movieTitle }: MovieRatingProps) => {
           user_id: user.id,
           media_id: movieId,
           media_type: "movie",
-          sentiment_rating: sentiment,
+          user_rating: sentiment,
         }, {
           onConflict: "user_id,media_id,media_type"
         });

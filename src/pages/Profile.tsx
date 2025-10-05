@@ -15,7 +15,7 @@ interface RatedItem {
   id: string;
   title: string;
   poster: string | null;
-  sentiment_rating: number;
+  user_rating: number;
   media_type: string;
   updated_at: string;
 }
@@ -41,7 +41,7 @@ export default function Profile() {
           .from('user_ratings')
           .select(`
             id,
-            sentiment_rating,
+            user_rating,
             media_type,
             updated_at,
             movies (
@@ -51,7 +51,7 @@ export default function Profile() {
           `)
           .eq('user_id', user.id)
           .eq('media_type', 'movie')
-          .not('sentiment_rating', 'is', null)
+          .not('user_rating', 'is', null)
           .order('updated_at', { ascending: false });
 
         // Fetch rated TV shows
@@ -59,7 +59,7 @@ export default function Profile() {
           .from('user_ratings')
           .select(`
             id,
-            sentiment_rating,
+            user_rating,
             media_type,
             updated_at,
             tv_shows (
@@ -69,14 +69,14 @@ export default function Profile() {
           `)
           .eq('user_id', user.id)
           .eq('media_type', 'tv_show')
-          .not('sentiment_rating', 'is', null)
+          .not('user_rating', 'is', null)
           .order('updated_at', { ascending: false });
 
         const movies = movieRatings?.map(rating => ({
           id: rating.id,
           title: (rating as any).movies?.title || 'Unknown',
           poster: (rating as any).movies?.poster || null,
-          sentiment_rating: rating.sentiment_rating || 0,
+          user_rating: rating.user_rating || 0,
           media_type: rating.media_type,
           updated_at: rating.updated_at,
         })) || [];
@@ -85,7 +85,7 @@ export default function Profile() {
           id: rating.id,
           title: (rating as any).tv_shows?.title || 'Unknown',
           poster: (rating as any).tv_shows?.poster || null,
-          sentiment_rating: rating.sentiment_rating || 0,
+          user_rating: rating.user_rating || 0,
           media_type: rating.media_type,
           updated_at: rating.updated_at,
         })) || [];
@@ -133,7 +133,7 @@ export default function Profile() {
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-sm truncate">{item.title}</h3>
                 <div className="mt-2">
-                  {getRatingBadge(item.sentiment_rating)}
+                  {getRatingBadge(item.user_rating)}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
                   Rated {new Date(item.updated_at).toLocaleDateString()}
