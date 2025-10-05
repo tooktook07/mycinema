@@ -165,7 +165,7 @@ const Index = () => {
           },
         });
 
-        if (!error && data?.recommendations) {
+        if (!error && data?.recommendations && Array.isArray(data.recommendations)) {
           setRecommendations(data.recommendations);
           return;
         }
@@ -393,7 +393,7 @@ const Index = () => {
                 </div>
               ) : (
                 <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                  {recommendations.map((movie) => (
+                  {recommendations?.map((movie) => (
                     <MovieCard
                       key={movie.id}
                       id={movie.id}
