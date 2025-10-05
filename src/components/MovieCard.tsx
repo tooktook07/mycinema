@@ -1,8 +1,18 @@
-import { Star, ExternalLink, Search, Users, Globe } from "lucide-react";
+import { Star, ExternalLink, Search, Users, Globe, Info } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Movie } from "@/data/types";
+import { useState } from "react";
 
 interface MovieCardProps extends Movie {
   onYearClick?: (year: number) => void;
@@ -19,24 +29,165 @@ export const MovieCard = ({
   imdbId, 
   voteCount, 
   originalLanguage,
+  plot,
+  director,
+  actors,
+  runtime,
+  writing,
+  sound,
+  keywords,
   onYearClick,
   onGenreClick,
   onLanguageClick
 }: MovieCardProps) => {
+  const [open, setOpen] = useState(false);
   const sanitizedTitle = title.trim().slice(0, 200);
   const sanitizedYear = Math.max(1800, Math.min(2100, year));
 
   const hasValidImdbId = imdbId.startsWith('tt');
   const imdbUrl = `https://www.imdb.com/title/${imdbId}/`;
   const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(sanitizedTitle)}+${sanitizedYear}`;
+  
   return (
     <Card className="group overflow-hidden transition-all duration-300 hover:shadow-lg">
-      <div className="aspect-[2/3] overflow-hidden">
+      <div className="aspect-[2/3] overflow-hidden relative">
         <img
           src={poster}
           alt={title}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <Info className="h-4 w-4 mr-1" />
+              More Info
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl max-h-[90vh]">
+            <DialogHeader>
+              <DialogTitle className="text-2xl">{title}</DialogTitle>
+              <DialogDescription>
+                {year} • {runtime || "Runtime N/A"}
+              </DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="max-h-[70vh] pr-4">
+              <div className="space-y-4">
+                {/* Rating and Votes */}
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1">
+                    <Star className="h-5 w-5 fill-foreground" />
+                    <span className="text-lg font-bold">{rating}/10</span>
+                  </div>
+                  {voteCount !== undefined && (
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <Users className="h-4 w-4" />
+                      <span>{voteCount.toLocaleString()} votes</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Plot */}
+                {plot && (
+                  <div>
+                    <h4 className="font-semibold mb-2">Plot</h4>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{plot}</p>
+                  </div>
+                )}
+
+                {/* Director */}
+                {director && (
+                  <div>
+                    <h4 className="font-semibold mb-2">Director</h4>
+                    <p className="text-sm text-muted-foreground">{director}</p>
+                  </div>
+                )}
+
+                {/* Cast */}
+                {actors && (
+                  <div>
+                    <h4 className="font-semibold mb-2">Cast</h4>
+                    <p className="text-sm text-muted-foreground">{actors}</p>
+                  </div>
+                )}
+
+                {/* Writing */}
+                {writing && (
+                  <div>
+                    <h4 className="font-semibold mb-2">Writers</h4>
+                    <p className="text-sm text-muted-foreground">{writing}</p>
+                  </div>
+                )}
+
+                {/* Sound */}
+                {sound && (
+                  <div>
+                    <h4 className="font-semibold mb-2">Sound Department</h4>
+                    <p className="text-sm text-muted-foreground">{sound}</p>
+                  </div>
+                )}
+
+                {/* Genres */}
+                <div>
+                  <h4 className="font-semibold mb-2">Genres</h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {genre.map((g) => (
+                      <Badge key={g} variant="secondary">
+                        {g}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Keywords */}
+                {keywords && keywords.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold mb-2">Keywords</h4>
+                    <div className="flex flex-wrap gap-1.5">
+                      {keywords.map((keyword) => (
+                        <Badge key={keyword} variant="outline" className="text-xs">
+                          {keyword}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Language */}
+                {originalLanguage && (
+                  <div>
+                    <h4 className="font-semibold mb-2">Original Language</h4>
+                    <Badge variant="outline" className="flex items-center gap-1 w-fit">
+                      <Globe className="h-3 w-3" />
+                      {originalLanguage.toUpperCase()}
+                    </Badge>
+                  </div>
+                )}
+
+                {/* Links */}
+                <div className="flex gap-2 pt-4 border-t">
+                  {hasValidImdbId && (
+                    <Button variant="outline" asChild>
+                      <a href={imdbUrl} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        View on IMDB
+                      </a>
+                    </Button>
+                  )}
+                  <Button variant="outline" asChild>
+                    <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer nofollow">
+                      <Search className="h-4 w-4 mr-2" />
+                      Google Search
+                    </a>
+                  </Button>
+                </div>
+              </div>
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
       </div>
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-2">
