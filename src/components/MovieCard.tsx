@@ -26,7 +26,8 @@ export const MovieCard = ({
   const sanitizedTitle = title.trim().slice(0, 200);
   const sanitizedYear = Math.max(1800, Math.min(2100, year));
 
-  const imdbUrl = `https://www.imdb.com/title/${encodeURIComponent(imdbId)}/`;
+  const hasValidImdbId = imdbId.startsWith('tt');
+  const imdbUrl = `https://www.imdb.com/title/${imdbId}/`;
   const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(sanitizedTitle)}+${sanitizedYear}`;
   return (
     <Card className="group overflow-hidden border-border bg-gradient-to-b from-card to-card/80 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_40px_hsl(262_52%_47%/0.3)]">
@@ -83,17 +84,19 @@ export const MovieCard = ({
           ))}
         </div>
         <div className="mt-3 flex gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            className="flex-1"
-            asChild
-          >
-            <a href={imdbUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5">
-              <ExternalLink className="h-3.5 w-3.5" />
-              IMDB
-            </a>
-          </Button>
+          {hasValidImdbId && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1"
+              asChild
+            >
+              <a href={imdbUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5">
+                <ExternalLink className="h-3.5 w-3.5" />
+                IMDB
+              </a>
+            </Button>
+          )}
           <Button
             size="sm"
             variant="outline"
