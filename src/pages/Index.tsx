@@ -19,15 +19,31 @@ interface Stats {
   lastSync: any;
 }
 
+interface Recommendation {
+  id: string;
+  title: string;
+  year: number;
+  genres: string[];
+  poster: string;
+  rating: number;
+  plot: string;
+  recommendationReason: string;
+}
+
 const Index = () => {
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [loadingRecommendations, setLoadingRecommendations] = useState(false);
 
   useEffect(() => {
     fetchStats();
-  }, []);
+    if (user) {
+      fetchRecommendations();
+    }
+  }, [user]);
 
   const fetchStats = async () => {
     try {
@@ -113,6 +129,27 @@ const Index = () => {
       console.error("Error fetching stats:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRecommendations = async () => {
+    setLoadingRecommendations(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('recommend-movies', {
+        headers: {
+          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+        },
+      });
+
+      if (error) throw error;
+      
+      if (data?.recommendations) {
+        setRecommendations(data.recommendations);
+      }
+    } catch (error) {
+      console.error("Error fetching recommendations:", error);
+    } finally {
+      setLoadingRecommendations(false);
     }
   };
 
@@ -277,6 +314,65 @@ const Index = () => {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
+          {/* Recommendations for logged in users */}
+          {user && (
+            <Card className="md:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Star className="h-5 w-5 text-yellow-500" />
+                  AI Recommendations For You
+                </CardTitle>
+                <CardDescription>Based on your ratings, we think you'll love these movies</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loadingRecommendations ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                ) : recommendations.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Rate some movies to get personalized recommendations!</p>
+                ) : (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                    {recommendations.map((movie) => (
+                      <Link
+                        key={movie.id}
+                        to={`/movies?search=${encodeURIComponent(movie.title)}`}
+                        className="group"
+                      >
+                        <div className="space-y-2">
+                          <div className="relative aspect-[2/3] overflow-hidden rounded-lg border bg-muted">
+                            {movie.poster ? (
+                              <img
+                                src={movie.poster}
+                                alt={movie.title}
+                                className="object-cover w-full h-full transition-transform group-hover:scale-105"
+                              />
+                            ) : (
+                              <div className="flex items-center justify-center h-full">
+                                <Film className="h-12 w-12 text-muted-foreground" />
+                              </div>
+                            )}
+                            <Badge className="absolute top-2 right-2">
+                              <Star className="h-3 w-3 mr-1" />
+                              {movie.rating?.toFixed(1)}
+                            </Badge>
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm line-clamp-2">{movie.title}</p>
+                            <p className="text-xs text-muted-foreground">{movie.year}</p>
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                              {movie.recommendationReason}
+                            </p>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Top Genres */}
           <Card>
             <CardHeader>
