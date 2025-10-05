@@ -6,7 +6,7 @@ import { Movie } from "./types";
 
 export const mockMovies: Movie[] = [
   {
-    id: 1,
+    id: "1",
     title: "The Dark Shadows",
     rating: 8.9,
     year: 2023,
@@ -15,7 +15,7 @@ export const mockMovies: Movie[] = [
     imdbId: "tt1375666",
   },
   {
-    id: 2,
+    id: "2",
     title: "Love in Paris",
     rating: 7.6,
     year: 2022,
@@ -24,7 +24,7 @@ export const mockMovies: Movie[] = [
     imdbId: "tt2582802",
   },
   {
-    id: 3,
+    id: "3",
     title: "The Haunting",
     rating: 8.1,
     year: 2021,
@@ -33,7 +33,7 @@ export const mockMovies: Movie[] = [
     imdbId: "tt1457767",
   },
   {
-    id: 4,
+    id: "4",
     title: "Silent Voices",
     rating: 9.0,
     year: 2022,
@@ -42,7 +42,7 @@ export const mockMovies: Movie[] = [
     imdbId: "tt0111161",
   },
   {
-    id: 5,
+    id: "5",
     title: "Midnight Runner",
     rating: 7.8,
     year: 2020,
@@ -51,7 +51,7 @@ export const mockMovies: Movie[] = [
     imdbId: "tt0468569",
   },
   {
-    id: 6,
+    id: "6",
     title: "Summer Dreams",
     rating: 7.2,
     year: 2021,
@@ -60,7 +60,7 @@ export const mockMovies: Movie[] = [
     imdbId: "tt0816692",
   },
   {
-    id: 7,
+    id: "7",
     title: "Dark Waters",
     rating: 7.9,
     year: 2019,
@@ -69,7 +69,7 @@ export const mockMovies: Movie[] = [
     imdbId: "tt1392190",
   },
   {
-    id: 8,
+    id: "8",
     title: "The Last Stand",
     rating: 8.8,
     year: 2024,

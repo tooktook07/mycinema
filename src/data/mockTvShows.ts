@@ -4,7 +4,7 @@ import { TvShow } from "./types";
 
 export const mockTvShows: TvShow[] = [
   {
-    id: 1,
+    id: "1",
     title: "Neon Futures",
     rating: 9.2,
     startYear: 2024,
@@ -20,7 +20,7 @@ export const mockTvShows: TvShow[] = [
     ],
   },
   {
-    id: 2,
+    id: "2",
     title: "Kingdom of Dragons",
     rating: 8.7,
     startYear: 2023,
@@ -37,7 +37,7 @@ export const mockTvShows: TvShow[] = [
     ],
   },
   {
-    id: 3,
+    id: "3",
     title: "Mystic Legends",
     rating: 8.3,
     startYear: 2022,
@@ -53,7 +53,7 @@ export const mockTvShows: TvShow[] = [
     ],
   },
   {
-    id: 4,
+    id: "4",
     title: "Galaxy Wars",
     rating: 8.5,
     startYear: 2020,

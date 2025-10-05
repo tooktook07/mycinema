@@ -1,15 +1,19 @@
 export interface Movie {
-  id: number;
+  id: string;
   title: string;
   rating: number;
   year: number;
   genre: string[];
   poster: string;
   imdbId: string;
+  plot?: string;
+  director?: string;
+  actors?: string;
+  runtime?: string;
 }
 
 export interface TvShow {
-  id: number;
+  id: string;
   title: string;
   rating: number;
   startYear: number;

@@ -3,21 +3,30 @@ import { Film, Grid, Table as TableIcon } from "lucide-react";
 import { MovieCard } from "@/components/MovieCard";
 import { FilterPanel } from "@/components/FilterPanel";
 import { MoviesTable } from "@/components/MoviesTable";
-import { mockMovies } from "@/data/mockMovies";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from "@/components/ui/pagination";
+import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { Movie } from "@/data/types";
 
 const Movies = () => {
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<"rating" | "year" | "title">("rating");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const itemsPerPage = 20;
 
   // Temporary filter states
   const [tempGenres, setTempGenres] = useState<string[]>([]);
   const [tempMinRating, setTempMinRating] = useState(0);
-  const [tempYearRange, setTempYearRange] = useState<[number, number]>([1900, 2024]);
+  const [tempYearRange, setTempYearRange] = useState<[number, number]>([1900, 2030]);
 
   // Applied filter states
   const [appliedGenres, setAppliedGenres] = useState<string[]>([]);
   const [appliedMinRating, setAppliedMinRating] = useState(0);
-  const [appliedYearRange, setAppliedYearRange] = useState<[number, number]>([1900, 2024]);
+  const [appliedYearRange, setAppliedYearRange] = useState<[number, number]>([1900, 2030]);
 
   const handleGenreToggle = (genre: string) => {
     setTempGenres((prev) =>
@@ -29,27 +38,156 @@ const Movies = () => {
     setAppliedGenres(tempGenres);
     setAppliedMinRating(tempMinRating);
     setAppliedYearRange(tempYearRange);
+    setCurrentPage(1); // Reset to first page when filters change
   };
 
   const handleResetFilters = () => {
     setTempGenres([]);
     setTempMinRating(0);
-    setTempYearRange([1900, 2024]);
+    setTempYearRange([1900, 2030]);
     setAppliedGenres([]);
     setAppliedMinRating(0);
-    setAppliedYearRange([1900, 2024]);
+    setAppliedYearRange([1900, 2030]);
+    setCurrentPage(1);
   };
 
-  const filteredMovies = useMemo(() => {
-    return mockMovies.filter((movie) => {
-      const matchesGenre =
-        appliedGenres.length === 0 || movie.genre.some((g) => appliedGenres.includes(g));
-      const matchesRating = movie.rating >= appliedMinRating;
-      const matchesYear = movie.year >= appliedYearRange[0] && movie.year <= appliedYearRange[1];
+  // Fetch movies with filters, pagination, and sorting
+  const { data: moviesData, isLoading, error } = useQuery({
+    queryKey: ["movies", appliedGenres, appliedMinRating, appliedYearRange, currentPage, sortBy, sortOrder],
+    queryFn: async () => {
+      let query = supabase
+        .from("movies")
+        .select("*", { count: "exact" });
 
-      return matchesGenre && matchesRating && matchesYear;
-    });
-  }, [appliedGenres, appliedMinRating, appliedYearRange]);
+      // Apply filters
+      if (appliedGenres.length > 0) {
+        query = query.overlaps("genres", appliedGenres);
+      }
+      if (appliedMinRating > 0) {
+        query = query.gte("rating", appliedMinRating);
+      }
+      query = query.gte("year", appliedYearRange[0]).lte("year", appliedYearRange[1]);
+
+      // Apply sorting
+      query = query.order(sortBy, { ascending: sortOrder === "asc" });
+
+      // Apply pagination
+      const from = (currentPage - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+      query = query.range(from, to);
+
+      const { data, error, count } = await query;
+      
+      if (error) throw error;
+      
+      return {
+        movies: (data || []).map((movie): Movie => ({
+          id: movie.id,
+          title: movie.title,
+          year: movie.year,
+          rating: movie.rating || 0,
+          genre: movie.genres || [],
+          poster: movie.poster || "",
+          plot: movie.plot || "",
+          director: movie.director || "",
+          actors: movie.actors || "",
+          runtime: movie.runtime || "",
+          imdbId: movie.imdb_id,
+        })),
+        totalCount: count || 0,
+      };
+    },
+  });
+
+  const movies = moviesData?.movies || [];
+  const totalCount = moviesData?.totalCount || 0;
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
+
+  const handleSortChange = (value: string) => {
+    const [field, order] = value.split("-") as [typeof sortBy, typeof sortOrder];
+    setSortBy(field);
+    setSortOrder(order);
+    setCurrentPage(1);
+  };
+
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+
+    const pages = [];
+    const maxVisible = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+
+    if (endPage - startPage < maxVisible - 1) {
+      startPage = Math.max(1, endPage - maxVisible + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+
+    return (
+      <Pagination className="mt-8">
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious 
+              onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
+              className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+            />
+          </PaginationItem>
+          
+          {startPage > 1 && (
+            <>
+              <PaginationItem>
+                <PaginationLink onClick={() => setCurrentPage(1)} className="cursor-pointer">
+                  1
+                </PaginationLink>
+              </PaginationItem>
+              {startPage > 2 && (
+                <PaginationItem>
+                  <PaginationEllipsis />
+                </PaginationItem>
+              )}
+            </>
+          )}
+
+          {pages.map((page) => (
+            <PaginationItem key={page}>
+              <PaginationLink
+                onClick={() => setCurrentPage(page)}
+                isActive={currentPage === page}
+                className="cursor-pointer"
+              >
+                {page}
+              </PaginationLink>
+            </PaginationItem>
+          ))}
+
+          {endPage < totalPages && (
+            <>
+              {endPage < totalPages - 1 && (
+                <PaginationItem>
+                  <PaginationEllipsis />
+                </PaginationItem>
+              )}
+              <PaginationItem>
+                <PaginationLink onClick={() => setCurrentPage(totalPages)} className="cursor-pointer">
+                  {totalPages}
+                </PaginationLink>
+              </PaginationItem>
+            </>
+          )}
+
+          <PaginationItem>
+            <PaginationNext 
+              onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
+              className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/10">
@@ -71,14 +209,27 @@ const Movies = () => {
 
         {/* Results */}
         <main>
-          <div className="mb-6 flex items-center justify-between">
+          <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
             <div>
               <h2 className="text-2xl font-semibold text-foreground">Recommended Movies</h2>
               <p className="text-muted-foreground">
-                {filteredMovies.length} {filteredMovies.length === 1 ? "result" : "results"} found
+                {isLoading ? "Loading..." : `${totalCount} ${totalCount === 1 ? "result" : "results"} found`}
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center flex-wrap">
+              <Select value={`${sortBy}-${sortOrder}`} onValueChange={handleSortChange}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="rating-desc">Rating (High to Low)</SelectItem>
+                  <SelectItem value="rating-asc">Rating (Low to High)</SelectItem>
+                  <SelectItem value="year-desc">Year (Newest First)</SelectItem>
+                  <SelectItem value="year-asc">Year (Oldest First)</SelectItem>
+                  <SelectItem value="title-asc">Title (A to Z)</SelectItem>
+                  <SelectItem value="title-desc">Title (Z to A)</SelectItem>
+                </SelectContent>
+              </Select>
               <Button
                 variant={viewMode === "grid" ? "default" : "outline"}
                 size="sm"
@@ -98,7 +249,21 @@ const Movies = () => {
             </div>
           </div>
 
-          {filteredMovies.length === 0 ? (
+          {isLoading ? (
+            <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              {[...Array(8)].map((_, i) => (
+                <Skeleton key={i} className="h-[400px] rounded-lg" />
+              ))}
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <Film className="h-16 w-16 text-muted-foreground/50 mb-4" />
+              <h3 className="text-xl font-semibold text-foreground mb-2">Error loading movies</h3>
+              <p className="text-muted-foreground">
+                {error instanceof Error ? error.message : "Please try again later"}
+              </p>
+            </div>
+          ) : movies.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <Film className="h-16 w-16 text-muted-foreground/50 mb-4" />
               <h3 className="text-xl font-semibold text-foreground mb-2">No results found</h3>
@@ -107,13 +272,19 @@ const Movies = () => {
               </p>
             </div>
           ) : viewMode === "grid" ? (
-            <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {filteredMovies.map((movie) => (
-                <MovieCard key={movie.id} {...movie} />
-              ))}
-            </div>
+            <>
+              <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                {movies.map((movie) => (
+                  <MovieCard key={movie.id} {...movie} />
+                ))}
+              </div>
+              {renderPagination()}
+            </>
           ) : (
-            <MoviesTable movies={filteredMovies} title="Movies" />
+            <>
+              <MoviesTable movies={movies} title="Movies" />
+              {renderPagination()}
+            </>
           )}
         </main>
       </div>
