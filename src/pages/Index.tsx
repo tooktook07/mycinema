@@ -107,20 +107,24 @@ const Index = () => {
         .limit(1)
         .maybeSingle();
 
-      // Fetch user-specific ratings if logged in
+      // Fetch user-specific ratings if logged in (only for real users)
       let userRatingsCount = 0;
       let userAvgRating = 0;
       
-      if (user) {
-        const { data: userRatings } = await supabase
-          .from("user_ratings")
-          .select("user_rating")
-          .eq("user_id", user.id)
-          .not("user_rating", "is", null) as any;
-        
-        if (userRatings && userRatings.length > 0) {
-          userRatingsCount = userRatings.length;
-          userAvgRating = userRatings.reduce((acc: number, r: any) => acc + (r.user_rating || 0), 0) / userRatings.length;
+      if (user && user.id !== 'dev-user-id') {
+        try {
+          const { data: userRatings } = await supabase
+            .from("user_ratings")
+            .select("user_rating")
+            .eq("user_id", user.id)
+            .not("user_rating", "is", null);
+          
+          if (userRatings && userRatings.length > 0) {
+            userRatingsCount = userRatings.length;
+            userAvgRating = userRatings.reduce((acc: number, r: any) => acc + (r.user_rating || 0), 0) / userRatings.length;
+          }
+        } catch (error) {
+          console.error("Error fetching user ratings:", error);
         }
       }
 
@@ -144,8 +148,8 @@ const Index = () => {
   const fetchRecommendations = async () => {
     setLoadingRecommendations(true);
     try {
-      if (user) {
-        // Fetch AI recommendations for logged-in users
+      if (user && user.id !== 'dev-user-id') {
+        // Fetch AI recommendations for logged-in real users only
         const { data, error } = await supabase.functions.invoke('recommend-movies', {
           headers: {
             Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
@@ -166,7 +170,7 @@ const Index = () => {
           console.log("Message from function:", data.message);
         }
       } else {
-        // Fetch random top-rated movies for non-logged in users
+        // Fetch random top-rated movies for visitors and dev mode users
         const { data: randomMovies, error } = await supabase
           .from('movies')
           .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords')
