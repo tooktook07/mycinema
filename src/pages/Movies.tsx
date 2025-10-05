@@ -16,7 +16,7 @@ const Movies = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<"rating" | "year" | "title">("rating");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const itemsPerPage = 20;
+  const [itemsPerPage, setItemsPerPage] = useState(50);
 
   // Temporary filter states
   const [tempGenres, setTempGenres] = useState<string[]>([]);
@@ -53,7 +53,7 @@ const Movies = () => {
 
   // Fetch movies with filters, pagination, and sorting
   const { data: moviesData, isLoading, error } = useQuery({
-    queryKey: ["movies", appliedGenres, appliedRatingRange, appliedYearRange, currentPage, sortBy, sortOrder],
+    queryKey: ["movies", appliedGenres, appliedRatingRange, appliedYearRange, currentPage, sortBy, sortOrder, itemsPerPage],
     queryFn: async () => {
       let query = supabase
         .from("movies")
@@ -228,6 +228,22 @@ const Movies = () => {
                   <SelectItem value="year-asc">Year (Oldest First)</SelectItem>
                   <SelectItem value="title-asc">Title (A to Z)</SelectItem>
                   <SelectItem value="title-desc">Title (Z to A)</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select 
+                value={itemsPerPage.toString()} 
+                onValueChange={(value) => {
+                  setItemsPerPage(parseInt(value));
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger className="w-[130px]">
+                  <SelectValue placeholder="Per page" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="50">50 per page</SelectItem>
+                  <SelectItem value="100">100 per page</SelectItem>
+                  <SelectItem value="200">200 per page</SelectItem>
                 </SelectContent>
               </Select>
               <Button
