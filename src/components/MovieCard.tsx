@@ -7,6 +7,7 @@ import { Movie } from "@/data/types";
 interface MovieCardProps extends Movie {
   onYearClick?: (year: number) => void;
   onGenreClick?: (genre: string) => void;
+  onLanguageClick?: (language: string) => void;
 }
 
 export const MovieCard = ({ 
@@ -19,7 +20,8 @@ export const MovieCard = ({
   voteCount, 
   originalLanguage,
   onYearClick,
-  onGenreClick
+  onGenreClick,
+  onLanguageClick
 }: MovieCardProps) => {
   const sanitizedTitle = title.trim().slice(0, 200);
   const sanitizedYear = Math.max(1800, Math.min(2100, year));
@@ -63,9 +65,7 @@ export const MovieCard = ({
             <Badge 
               variant="outline" 
               className="text-xs flex items-center gap-1 cursor-pointer hover:bg-accent/10 transition-colors"
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
+              onClick={() => onLanguageClick?.(originalLanguage)}
             >
               <Globe className="h-3 w-3" />
               {originalLanguage.toUpperCase()}

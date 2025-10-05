@@ -22,11 +22,13 @@ const Movies = () => {
   const [tempGenres, setTempGenres] = useState<string[]>([]);
   const [tempRatingRange, setTempRatingRange] = useState<[number, number]>([0, 10]);
   const [tempYearRange, setTempYearRange] = useState<[number, number]>([1900, 2030]);
+  const [tempLanguage, setTempLanguage] = useState<string>("");
 
   // Applied filter states
   const [appliedGenres, setAppliedGenres] = useState<string[]>([]);
   const [appliedRatingRange, setAppliedRatingRange] = useState<[number, number]>([0, 10]);
   const [appliedYearRange, setAppliedYearRange] = useState<[number, number]>([1900, 2030]);
+  const [appliedLanguage, setAppliedLanguage] = useState<string>("");
 
   const handleGenreToggle = (genre: string) => {
     setTempGenres((prev) =>
@@ -38,6 +40,7 @@ const Movies = () => {
     setAppliedGenres(tempGenres);
     setAppliedRatingRange(tempRatingRange);
     setAppliedYearRange(tempYearRange);
+    setAppliedLanguage(tempLanguage);
     setCurrentPage(1); // Reset to first page when filters change
   };
 
@@ -45,9 +48,11 @@ const Movies = () => {
     setTempGenres([]);
     setTempRatingRange([0, 10]);
     setTempYearRange([1900, 2030]);
+    setTempLanguage("");
     setAppliedGenres([]);
     setAppliedRatingRange([0, 10]);
     setAppliedYearRange([1900, 2030]);
+    setAppliedLanguage("");
     setCurrentPage(1);
   };
 
@@ -64,9 +69,15 @@ const Movies = () => {
     setCurrentPage(1);
   };
 
+  const handleLanguageClick = (language: string) => {
+    setTempLanguage(language);
+    setAppliedLanguage(language);
+    setCurrentPage(1);
+  };
+
   // Fetch movies with filters, pagination, and sorting
   const { data: moviesData, isLoading, error } = useQuery({
-    queryKey: ["movies", appliedGenres, appliedRatingRange, appliedYearRange, currentPage, sortBy, sortOrder, itemsPerPage],
+    queryKey: ["movies", appliedGenres, appliedRatingRange, appliedYearRange, appliedLanguage, currentPage, sortBy, sortOrder, itemsPerPage],
     queryFn: async () => {
       let query = supabase
         .from("movies")
@@ -80,6 +91,9 @@ const Movies = () => {
         query = query.gte("rating", appliedRatingRange[0]).lte("rating", appliedRatingRange[1]);
       }
       query = query.gte("year", appliedYearRange[0]).lte("year", appliedYearRange[1]);
+      if (appliedLanguage) {
+        query = query.eq("original_language", appliedLanguage.toLowerCase());
+      }
 
       // Apply sorting
       query = query.order(sortBy, { ascending: sortOrder === "asc" });
@@ -311,6 +325,7 @@ const Movies = () => {
                     {...movie} 
                     onYearClick={handleYearClick}
                     onGenreClick={handleGenreClick}
+                    onLanguageClick={handleLanguageClick}
                   />
                 ))}
               </div>
