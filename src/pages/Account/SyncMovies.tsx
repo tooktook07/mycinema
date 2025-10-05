@@ -30,7 +30,7 @@ export const SyncMovies = () => {
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [ratingRange, setRatingRange] = useState<[number, number]>([6.9, 9.5]);
   const [yearRange, setYearRange] = useState<[number, number]>([2025, 2025]);
-  const [minVoteCount, setMinVoteCount] = useState(100);
+  const [minVoteCount, setMinVoteCount] = useState(1000);
   const [minPopularity, setMinPopularity] = useState(0);
 
   const handleGenreToggle = (genre: string) => {
