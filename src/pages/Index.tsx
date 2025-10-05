@@ -150,67 +150,76 @@ const Index = () => {
     try {
       if (user && user.id !== 'dev-user-id') {
         // Fetch AI recommendations for logged-in real users only
-        const { data, error } = await supabase.functions.invoke('recommend-movies', {
-          headers: {
-            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-          },
-        });
+        try {
+          const { data, error } = await supabase.functions.invoke('recommend-movies', {
+            headers: {
+              Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+            },
+          });
 
-        if (error) {
-          console.error("Edge function error:", error);
-          throw error;
+          if (error) {
+            console.error("Edge function error:", error);
+            // Don't throw, just fall back to random movies
+            throw error;
+          }
+          
+          console.log("Recommendations response:", data);
+          
+          if (data?.recommendations) {
+            setRecommendations(data.recommendations);
+            console.log("Set recommendations:", data.recommendations.length);
+            return; // Success, exit early
+          } else if (data?.message) {
+            console.log("Message from function:", data.message);
+          }
+        } catch (edgeFunctionError) {
+          console.error("Failed to get AI recommendations, falling back to top movies:", edgeFunctionError);
+          // Fall through to random movies
         }
-        
-        console.log("Recommendations response:", data);
-        
-        if (data?.recommendations) {
-          setRecommendations(data.recommendations);
-          console.log("Set recommendations:", data.recommendations.length);
-        } else if (data?.message) {
-          console.log("Message from function:", data.message);
-        }
-      } else {
-        // Fetch random top-rated movies for visitors and dev mode users
-        const { data: randomMovies, error } = await supabase
-          .from('movies')
-          .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords')
-          .gte('rating', 7.0)
-          .not('rating', 'is', null)
-          .order('vote_count', { ascending: false })
-          .limit(100);
-
-        if (error) {
-          console.error("Error fetching random movies:", error);
-          throw error;
-        }
-
-        // Randomly select 12 movies from the top 100
-        const shuffled = (randomMovies || []).sort(() => Math.random() - 0.5);
-        const selected = shuffled.slice(0, 12).map(movie => ({
-          id: movie.id,
-          title: movie.title,
-          year: movie.year,
-          genres: movie.genres || [],
-          poster: movie.poster || '',
-          rating: movie.rating || 0,
-          plot: movie.plot || '',
-          imdbId: movie.imdb_id,
-          voteCount: movie.vote_count,
-          originalLanguage: movie.original_language,
-          genre: movie.genres || [],
-          actors: movie.actors || '',
-          director: movie.director || '',
-          runtime: movie.runtime || '',
-          writing: movie.writing || '',
-          sound: movie.sound || '',
-          keywords: movie.keywords || [],
-          recommendationReason: 'Top rated movie'
-        }));
-        
-        setRecommendations(selected);
       }
+      
+      // Fetch random top-rated movies for visitors, dev mode users, or as fallback
+      const { data: randomMovies, error } = await supabase
+        .from('movies')
+        .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords')
+        .gte('rating', 7.0)
+        .not('rating', 'is', null)
+        .order('vote_count', { ascending: false })
+        .limit(100);
+
+      if (error) {
+        console.error("Error fetching random movies:", error);
+        throw error;
+      }
+
+      // Randomly select 12 movies from the top 100
+      const shuffled = (randomMovies || []).sort(() => Math.random() - 0.5);
+      const selected = shuffled.slice(0, 12).map(movie => ({
+        id: movie.id,
+        title: movie.title,
+        year: movie.year,
+        genres: movie.genres || [],
+        poster: movie.poster || '',
+        rating: movie.rating || 0,
+        plot: movie.plot || '',
+        imdbId: movie.imdb_id,
+        voteCount: movie.vote_count,
+        originalLanguage: movie.original_language,
+        genre: movie.genres || [],
+        actors: movie.actors || '',
+        director: movie.director || '',
+        runtime: movie.runtime || '',
+        writing: movie.writing || '',
+        sound: movie.sound || '',
+        keywords: movie.keywords || [],
+        recommendationReason: user ? 'Top rated movie' : 'Highly rated'
+      }));
+      
+      setRecommendations(selected);
     } catch (error) {
       console.error("Error fetching recommendations:", error);
+      // Don't crash the page, just show empty recommendations
+      setRecommendations([]);
     } finally {
       setLoadingRecommendations(false);
     }
