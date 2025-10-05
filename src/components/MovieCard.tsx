@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Movie } from "@/data/types";
+import { MovieRating } from "@/components/MovieRating";
 import { useState } from "react";
 
 interface MovieCardProps extends Movie {
@@ -25,6 +26,7 @@ interface MovieCardProps extends Movie {
 }
 
 export const MovieCard = ({ 
+  id,
   title, 
   rating, 
   year, 
@@ -316,31 +318,34 @@ export const MovieCard = ({
             </Badge>
           ))}
         </div>
-        <div className="mt-3 flex gap-2">
-          {hasValidImdbId && (
+        <div className="mt-3 flex flex-col gap-2">
+          <MovieRating movieId={id} movieTitle={title} />
+          <div className="flex gap-2">
+            {hasValidImdbId && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1"
+                asChild
+              >
+                <a href={imdbUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5">
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  IMDB
+                </a>
+              </Button>
+            )}
             <Button
               size="sm"
               variant="outline"
               className="flex-1"
               asChild
             >
-              <a href={imdbUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5">
-                <ExternalLink className="h-3.5 w-3.5" />
-                IMDB
+              <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer nofollow" className="flex items-center gap-1.5">
+                <Search className="h-3.5 w-3.5" />
+                Search
               </a>
             </Button>
-          )}
-          <Button
-            size="sm"
-            variant="outline"
-            className="flex-1"
-            asChild
-          >
-            <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer nofollow" className="flex items-center gap-1.5">
-              <Search className="h-3.5 w-3.5" />
-              Search
-            </a>
-          </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

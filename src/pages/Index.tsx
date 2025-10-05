@@ -1,10 +1,11 @@
-import { Film, Tv, Star, TrendingUp, Calendar, BarChart3, Loader2 } from "lucide-react";
+import { Film, Tv, Star, TrendingUp, Calendar, BarChart3, Loader2, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 
 interface Stats {
@@ -18,6 +19,7 @@ interface Stats {
 
 const Index = () => {
   const navigate = useNavigate();
+  const { user, isAdmin } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -108,11 +110,24 @@ const Index = () => {
         <div className="container mx-auto max-w-7xl">
           <div className="flex items-center justify-center gap-3 mb-4">
             <Film className="h-10 w-10" />
-            <h1 className="text-4xl font-bold md:text-5xl">Dashboard</h1>
+            <h1 className="text-4xl font-bold md:text-5xl">
+              {user ? "Dashboard" : "Welcome to CineMatch"}
+            </h1>
           </div>
-          <p className="text-center text-muted-foreground max-w-2xl mx-auto">
-            Your personal movie and TV show statistics
+          <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-6">
+            {user 
+              ? "Your personal movie and TV show statistics"
+              : "Discover and rate thousands of movies. Sign in to start rating!"
+            }
           </p>
+          {!user && (
+            <div className="flex justify-center">
+              <Button size="lg" onClick={() => navigate("/auth")}>
+                <LogIn className="h-4 w-4 mr-2" />
+                Sign In to Rate Movies
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -184,10 +199,12 @@ const Index = () => {
             <Tv className="h-4 w-4 mr-2" />
             Browse TV Shows
           </Button>
-          <Button onClick={() => navigate("/account")} variant="outline">
-            <TrendingUp className="h-4 w-4 mr-2" />
-            Sync Data
-          </Button>
+          {isAdmin && (
+            <Button onClick={() => navigate("/account")} variant="outline">
+              <TrendingUp className="h-4 w-4 mr-2" />
+              Sync Data
+            </Button>
+          )}
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">

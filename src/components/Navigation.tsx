@@ -1,9 +1,13 @@
-import { Film, Home, Tv, Settings } from "lucide-react";
+import { Film, Home, Tv, Settings, LogIn, LogOut } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 
 export const Navigation = () => {
+  const { user, isAdmin, signOut } = useAuth();
+
   return (
     <nav className="border-b bg-background sticky top-0 z-50">
       <div className="container mx-auto max-w-7xl px-4">
@@ -60,23 +64,47 @@ export const Navigation = () => {
               <span className="hidden sm:inline">TV Shows</span>
             </NavLink>
             
-            <NavLink
-              to="/account"
-              className={({ isActive }) =>
-                cn(
-                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded text-sm transition-colors",
-                  isActive
-                    ? "bg-foreground text-background"
-                    : "text-muted-foreground hover:text-foreground"
-                )
-              }
-            >
-              <Settings className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Account</span>
-            </NavLink>
+            {isAdmin && (
+              <NavLink
+                to="/account"
+                className={({ isActive }) =>
+                  cn(
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded text-sm transition-colors",
+                    isActive
+                      ? "bg-foreground text-background"
+                      : "text-muted-foreground hover:text-foreground"
+                  )
+                }
+              >
+                <Settings className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Admin</span>
+              </NavLink>
+            )}
 
-            <div className="ml-1 pl-1 border-l">
+            <div className="ml-1 pl-1 border-l flex items-center gap-1">
               <ThemeToggle />
+              {user ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={signOut}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Sign Out</span>
+                </Button>
+              ) : (
+                <NavLink to="/auth">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5"
+                  >
+                    <LogIn className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Sign In</span>
+                  </Button>
+                </NavLink>
+              )}
             </div>
           </div>
         </div>
