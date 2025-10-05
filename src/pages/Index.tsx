@@ -334,12 +334,22 @@ const Index = () => {
               </CardHeader>
               <CardContent>
                 {loadingRecommendations ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                    <span className="ml-2 text-sm text-muted-foreground">Analyzing your preferences...</span>
+                  <div className="flex items-center justify-center py-12">
+                    <div className="text-center space-y-2">
+                      <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+                      <p className="text-sm text-muted-foreground">Analyzing your preferences...</p>
+                    </div>
                   </div>
                 ) : recommendations.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Rate some movies to get personalized recommendations!</p>
+                  <div className="text-center py-12 px-4 bg-muted/30 rounded-lg border-2 border-dashed">
+                    <Star className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-lg font-semibold mb-2">No recommendations yet</p>
+                    <p className="text-sm text-muted-foreground">Rate some movies to get personalized AI-powered suggestions!</p>
+                    <Button onClick={() => navigate("/movies")} className="mt-4" variant="outline">
+                      <Film className="h-4 w-4 mr-2" />
+                      Browse Movies
+                    </Button>
+                  </div>
                 ) : (
                   <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
                     {recommendations.map((movie) => (

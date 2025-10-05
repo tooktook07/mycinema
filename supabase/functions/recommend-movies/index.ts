@@ -42,20 +42,11 @@ serve(async (req) => {
     // Fetch user's rated movies
     const { data: userRatings, error: ratingsError } = await supabase
       .from('user_ratings')
-      .select(`
-        user_rating,
-        media_id,
-        movies:media_id (
-          title,
-          year,
-          genres,
-          plot,
-          rating
-        )
-      `)
+      .select('user_rating, media_id')
       .eq('user_id', user.id)
       .eq('media_type', 'movie')
       .not('user_rating', 'is', null)
+      .not('media_id', 'is', null)
       .order('user_rating', { ascending: false })
       .limit(50);
 
@@ -67,7 +58,7 @@ serve(async (req) => {
       });
     }
 
-    console.log('Found user ratings:', userRatings.length);
+    console.log('Found user ratings:', userRatings?.length || 0);
 
     if (!userRatings || userRatings.length === 0) {
       console.log('No ratings found for user');
@@ -76,9 +67,24 @@ serve(async (req) => {
       });
     }
 
-    // Get rated movie IDs
+    // Get rated movie IDs and fetch their details
     const ratedMovieIds = userRatings.map(r => r.media_id).filter(id => id);
     console.log('Rated movie IDs count:', ratedMovieIds.length);
+
+    const { data: ratedMovies, error: ratedMoviesError } = await supabase
+      .from('movies')
+      .select('id, title, year, genres, plot, rating')
+      .in('id', ratedMovieIds);
+
+    if (ratedMoviesError) {
+      console.error('Error fetching rated movies:', ratedMoviesError);
+      return new Response(JSON.stringify({ error: 'Failed to fetch movie details' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log('Fetched rated movies:', ratedMovies?.length || 0);
 
     // Fetch unrated movies
     const { data: unratedMovies, error: moviesError } = await supabase
@@ -107,19 +113,20 @@ serve(async (req) => {
       });
     }
 
-    // Prepare data for AI
+    // Prepare data for AI - combine ratings with movie details
     const ratedMoviesData = userRatings
-      .filter(r => r.movies && !Array.isArray(r.movies))
-      .map(r => {
-        const movie = r.movies as any;
+      .map(rating => {
+        const movie = ratedMovies?.find(m => m.id === rating.media_id);
+        if (!movie) return null;
         return {
           title: movie.title,
           year: movie.year,
           genres: movie.genres,
-          rating: r.user_rating,
+          rating: rating.user_rating,
           plot: movie.plot?.substring(0, 150)
         };
-      });
+      })
+      .filter(m => m !== null);
 
     console.log('Prepared rated movies data:', ratedMoviesData.length);
 
