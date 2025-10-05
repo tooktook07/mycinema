@@ -6,6 +6,30 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Calculate Jaccard similarity between two arrays
+function jaccardSimilarity(arr1: string[], arr2: string[]): number {
+  if (!arr1 || !arr2 || arr1.length === 0 || arr2.length === 0) return 0;
+  const set1 = new Set(arr1.map(s => s.toLowerCase()));
+  const set2 = new Set(arr2.map(s => s.toLowerCase()));
+  const intersection = new Set([...set1].filter(x => set2.has(x)));
+  const union = new Set([...set1, ...set2]);
+  return intersection.size / union.size;
+}
+
+// Calculate normalized rating similarity
+function ratingSimilarity(rating1: number, rating2: number): number {
+  const maxDiff = 10;
+  const diff = Math.abs(rating1 - rating2);
+  return 1 - (diff / maxDiff);
+}
+
+// Calculate year proximity (prefer similar era movies)
+function yearSimilarity(year1: number, year2: number): number {
+  const maxDiff = 20;
+  const diff = Math.abs(year1 - year2);
+  return Math.max(0, 1 - (diff / maxDiff));
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -14,7 +38,6 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')!;
     
     const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -39,7 +62,7 @@ serve(async (req) => {
 
     console.log('Fetching recommendations for user:', user.id);
 
-    // Fetch user's rated movies
+    // Fetch user's rated movies with full details
     const { data: userRatings, error: ratingsError } = await supabase
       .from('user_ratings')
       .select('user_rating, media_id')
@@ -47,8 +70,9 @@ serve(async (req) => {
       .eq('media_type', 'movie')
       .not('user_rating', 'is', null)
       .not('media_id', 'is', null)
+      .gte('user_rating', 7) // Only consider highly rated movies
       .order('user_rating', { ascending: false })
-      .limit(50);
+      .limit(30);
 
     if (ratingsError) {
       console.error('Error fetching ratings:', ratingsError);
@@ -62,18 +86,18 @@ serve(async (req) => {
 
     if (!userRatings || userRatings.length === 0) {
       console.log('No ratings found for user');
-      return new Response(JSON.stringify({ recommendations: [], message: 'No ratings found. Rate some movies first!' }), {
+      return new Response(JSON.stringify({ recommendations: [], message: 'Rate some movies with 7+ to get recommendations!' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Get rated movie IDs and fetch their details
+    // Get rated movie IDs and fetch their full details
     const ratedMovieIds = userRatings.map(r => r.media_id).filter(id => id);
     console.log('Rated movie IDs count:', ratedMovieIds.length);
 
     const { data: ratedMovies, error: ratedMoviesError } = await supabase
       .from('movies')
-      .select('id, title, year, genres, plot, rating')
+      .select('id, title, year, genres, keywords, actors, director, rating, popularity, vote_count')
       .in('id', ratedMovieIds);
 
     if (ratedMoviesError) {
@@ -89,12 +113,12 @@ serve(async (req) => {
     // Fetch unrated movies
     const { data: unratedMovies, error: moviesError } = await supabase
       .from('movies')
-      .select('id, title, year, genres, plot, rating, poster')
+      .select('id, title, year, genres, keywords, actors, director, rating, popularity, vote_count, poster')
       .not('id', 'in', `(${ratedMovieIds.join(',')})`)
-      .gte('rating', 6.5)
+      .gte('rating', 6.0)
       .not('rating', 'is', null)
-      .order('rating', { ascending: false })
-      .limit(150);
+      .order('popularity', { ascending: false })
+      .limit(500);
 
     if (moviesError) {
       console.error('Error fetching unrated movies:', moviesError);
@@ -113,125 +137,68 @@ serve(async (req) => {
       });
     }
 
-    // Prepare data for AI - combine ratings with movie details
-    const ratedMoviesData = userRatings
-      .map(rating => {
-        const movie = ratedMovies?.find(m => m.id === rating.media_id);
-        if (!movie) return null;
-        return {
-          title: movie.title,
-          year: movie.year,
-          genres: movie.genres,
-          rating: rating.user_rating,
-          plot: movie.plot?.substring(0, 150)
-        };
-      })
-      .filter(m => m !== null);
+    // Create user rating map for weighted calculations
+    const userRatingMap = new Map(
+      userRatings.map(r => [r.media_id, r.user_rating])
+    );
 
-    console.log('Prepared rated movies data:', ratedMoviesData.length);
+    // Calculate similarity scores for each unrated movie
+    const scoredMovies = unratedMovies.map(movie => {
+      let totalScore = 0;
+      let totalWeight = 0;
 
-    const unratedMoviesData = unratedMovies.map(m => ({
-      id: m.id,
-      title: m.title,
-      year: m.year,
-      genres: m.genres,
-      imdbRating: m.rating,
-      plot: m.plot?.substring(0, 150)
-    }));
+      // Compare with each rated movie
+      ratedMovies?.forEach(ratedMovie => {
+        const userRating = userRatingMap.get(ratedMovie.id) || 5;
+        const weight = userRating / 10; // Higher rated movies have more influence
 
-    console.log('Calling AI with', ratedMoviesData.length, 'rated and', unratedMoviesData.length, 'unrated movies');
+        // Genre similarity (weight: 0.3)
+        const genreSim = jaccardSimilarity(movie.genres || [], ratedMovie.genres || []);
+        totalScore += genreSim * weight * 0.3;
 
-    // Call Lovable AI
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: `You are a movie recommendation expert. Analyze the user's rating patterns and recommend movies they would love.
-            
-Consider:
-- Genres they rated highly
-- Rating patterns (what they rated 8+)
-- Movie themes and styles
-- Balance between popular and hidden gems
+        // Keywords similarity (weight: 0.2)
+        const keywordSim = jaccardSimilarity(movie.keywords || [], ratedMovie.keywords || []);
+        totalScore += keywordSim * weight * 0.2;
 
-Return ONLY a JSON array of exactly 12 movie recommendations in this format:
-[{"id": "uuid", "reason": "short reason why they'd love it"}]
+        // Actors similarity (weight: 0.15)
+        const actorSim = jaccardSimilarity(movie.actors?.split(',') || [], ratedMovie.actors?.split(',') || []);
+        totalScore += actorSim * weight * 0.15;
 
-Keep reasons under 20 words and focus on their preferences.`
-          },
-          {
-            role: 'user',
-            content: `User's rated movies (rating/10):\n${JSON.stringify(ratedMoviesData, null, 2)}\n\nAvailable unrated movies:\n${JSON.stringify(unratedMoviesData, null, 2)}\n\nRecommend 12 movies from the unrated list.`
-          }
-        ],
-        temperature: 0.7,
-      }),
+        // Director match (weight: 0.15)
+        const directorMatch = movie.director === ratedMovie.director && movie.director ? 1 : 0;
+        totalScore += directorMatch * weight * 0.15;
+
+        // Rating similarity (weight: 0.1)
+        const ratingSim = ratingSimilarity(movie.rating || 5, ratedMovie.rating || 5);
+        totalScore += ratingSim * weight * 0.1;
+
+        // Year similarity (weight: 0.1)
+        const yearSim = yearSimilarity(movie.year || 2000, ratedMovie.year || 2000);
+        totalScore += yearSim * weight * 0.1;
+
+        totalWeight += weight;
+      });
+
+      // Normalize score by total weight
+      const normalizedScore = totalWeight > 0 ? totalScore / totalWeight : 0;
+
+      // Boost by popularity and vote count (slight adjustment)
+      const popularityBoost = Math.log10((movie.popularity || 1) + 1) * 0.05;
+      const voteBoost = Math.log10((movie.vote_count || 1) + 1) * 0.03;
+      const qualityBoost = ((movie.rating || 5) - 5) * 0.02;
+
+      const finalScore = normalizedScore + popularityBoost + voteBoost + qualityBoost;
+
+      return {
+        ...movie,
+        similarityScore: finalScore,
+        recommendationReason: generateReason(movie, ratedMovies || [])
+      };
     });
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('AI Gateway error:', aiResponse.status, errorText);
-      
-      if (aiResponse.status === 429) {
-        return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      
-      if (aiResponse.status === 402) {
-        return new Response(JSON.stringify({ error: 'AI service requires payment. Please contact support.' }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      return new Response(JSON.stringify({ error: 'Failed to generate recommendations' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const aiData = await aiResponse.json();
-    console.log('AI response received');
-    const aiContent = aiData.choices[0].message.content;
-    console.log('AI content length:', aiContent?.length);
-    
-    // Parse AI response
-    let recommendedIds;
-    try {
-      recommendedIds = JSON.parse(aiContent);
-      console.log('Parsed recommendations count:', recommendedIds?.length);
-    } catch (e) {
-      console.error('Failed to parse AI response:', aiContent);
-      return new Response(JSON.stringify({ error: 'Invalid AI response format', details: aiContent }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Enrich recommendations with full movie data
-    const recommendations = recommendedIds
-      .map((rec: any) => {
-        const movie = unratedMovies.find(m => m.id === rec.id);
-        if (!movie) {
-          console.log('Movie not found for recommendation:', rec.id);
-          return null;
-        }
-        return {
-          ...movie,
-          recommendationReason: rec.reason
-        };
-      })
-      .filter((m: any) => m !== null)
-      .slice(0, 12);
+    // Sort by similarity score and get top 12
+    scoredMovies.sort((a, b) => b.similarityScore - a.similarityScore);
+    const recommendations = scoredMovies.slice(0, 12);
 
     console.log('Successfully generated', recommendations.length, 'recommendations');
 
@@ -248,3 +215,56 @@ Keep reasons under 20 words and focus on their preferences.`
     });
   }
 });
+
+// Generate a human-readable reason for recommendation
+function generateReason(movie: any, ratedMovies: any[]): string {
+  const reasons: string[] = [];
+
+  // Find the most similar rated movie
+  let maxGenreOverlap = 0;
+  let bestMatch: any = null;
+
+  ratedMovies.forEach(rated => {
+    const overlap = (movie.genres || []).filter((g: string) => 
+      (rated.genres || []).includes(g)
+    ).length;
+    
+    if (overlap > maxGenreOverlap) {
+      maxGenreOverlap = overlap;
+      bestMatch = rated;
+    }
+  });
+
+  // Genre-based reason
+  if (maxGenreOverlap > 0 && bestMatch) {
+    const sharedGenres = (movie.genres || []).filter((g: string) => 
+      (bestMatch.genres || []).includes(g)
+    ).slice(0, 2);
+    if (sharedGenres.length > 0) {
+      reasons.push(`Similar ${sharedGenres.join('/')} to ${bestMatch.title}`);
+    }
+  }
+
+  // Director match
+  if (movie.director && ratedMovies.some(r => r.director === movie.director)) {
+    reasons.push(`By ${movie.director}`);
+  }
+
+  // High rating
+  if (movie.rating >= 8.0) {
+    reasons.push(`Highly rated (${movie.rating}/10)`);
+  }
+
+  // Keywords overlap
+  const allRatedKeywords = ratedMovies.flatMap(r => r.keywords || []);
+  const sharedKeywords = (movie.keywords || []).filter((k: string) => 
+    allRatedKeywords.includes(k)
+  ).slice(0, 2);
+  
+  if (sharedKeywords.length > 0 && reasons.length < 2) {
+    reasons.push(`Features ${sharedKeywords.join(', ')}`);
+  }
+
+  return reasons.length > 0 ? reasons.join(' • ') : 'Matches your preferences';
+}
+
