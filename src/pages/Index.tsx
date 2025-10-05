@@ -8,7 +8,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { MovieCard } from "@/components/MovieCard";
-import { useState as useMovieState } from "react";
 
 interface Stats {
   totalMovies: number;
