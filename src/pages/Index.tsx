@@ -1,42 +1,9 @@
-import { Film, Tv, Download } from "lucide-react";
+import { Film, Tv } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [isImporting, setIsImporting] = useState(false);
-
-  const handleImportMovies = async () => {
-    setIsImporting(true);
-    try {
-      toast({
-        title: "Importing movies...",
-        description: "Fetching 2025 movies from TMDB. This may take a moment.",
-      });
-
-      const { data, error } = await supabase.functions.invoke('import-tmdb-movies');
-
-      if (error) throw error;
-
-      toast({
-        title: "Import Complete!",
-        description: data.message || `Found ${data.totalFound} movies, imported ${data.imported}.`,
-      });
-    } catch (error) {
-      console.error('Import error:', error);
-      toast({
-        title: "Import Failed",
-        description: error instanceof Error ? error.message : "Failed to import movies",
-        variant: "destructive",
-      });
-    } finally {
-      setIsImporting(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/10">
@@ -68,16 +35,6 @@ const Index = () => {
             >
               <Tv className="h-5 w-5 mr-2" />
               Browse TV Shows
-            </Button>
-            <Button
-              size="lg"
-              variant="secondary"
-              className="w-full sm:w-auto text-lg px-8 py-6"
-              onClick={handleImportMovies}
-              disabled={isImporting}
-            >
-              <Download className="h-5 w-5 mr-2" />
-              {isImporting ? "Importing..." : "Import 2025 Movies"}
             </Button>
           </div>
         </div>
