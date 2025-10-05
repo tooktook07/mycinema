@@ -97,7 +97,7 @@ serve(async (req) => {
 
     const { data: ratedMovies, error: ratedMoviesError } = await supabase
       .from('movies')
-      .select('id, title, year, genres, keywords, actors, director, rating, popularity, vote_count')
+      .select('id, title, year, genres, keywords, actors, director, writing, sound, rating, popularity, vote_count')
       .in('id', ratedMovieIds);
 
     if (ratedMoviesError) {
@@ -113,7 +113,7 @@ serve(async (req) => {
     // Fetch unrated movies
     const { data: unratedMovies, error: moviesError } = await supabase
       .from('movies')
-      .select('id, title, year, genres, keywords, actors, director, rating, popularity, vote_count, poster')
+      .select('id, title, year, genres, keywords, actors, director, writing, sound, rating, popularity, vote_count, poster')
       .not('id', 'in', `(${ratedMovieIds.join(',')})`)
       .gte('rating', 6.0)
       .not('rating', 'is', null)
@@ -152,9 +152,9 @@ serve(async (req) => {
         const userRating = userRatingMap.get(ratedMovie.id) || 5;
         const weight = userRating / 10; // Higher rated movies have more influence
 
-        // Genre similarity (weight: 0.3)
+        // Genre similarity (weight: 0.25)
         const genreSim = jaccardSimilarity(movie.genres || [], ratedMovie.genres || []);
-        totalScore += genreSim * weight * 0.3;
+        totalScore += genreSim * weight * 0.25;
 
         // Keywords similarity (weight: 0.2)
         const keywordSim = jaccardSimilarity(movie.keywords || [], ratedMovie.keywords || []);
@@ -164,17 +164,25 @@ serve(async (req) => {
         const actorSim = jaccardSimilarity(movie.actors?.split(',') || [], ratedMovie.actors?.split(',') || []);
         totalScore += actorSim * weight * 0.15;
 
-        // Director match (weight: 0.15)
+        // Director match (weight: 0.12)
         const directorMatch = movie.director === ratedMovie.director && movie.director ? 1 : 0;
-        totalScore += directorMatch * weight * 0.15;
+        totalScore += directorMatch * weight * 0.12;
 
-        // Rating similarity (weight: 0.1)
+        // Writing similarity (weight: 0.08)
+        const writingSim = jaccardSimilarity(movie.writing?.split(',') || [], ratedMovie.writing?.split(',') || []);
+        totalScore += writingSim * weight * 0.08;
+
+        // Sound similarity (weight: 0.05)
+        const soundSim = jaccardSimilarity(movie.sound?.split(',') || [], ratedMovie.sound?.split(',') || []);
+        totalScore += soundSim * weight * 0.05;
+
+        // Rating similarity (weight: 0.08)
         const ratingSim = ratingSimilarity(movie.rating || 5, ratedMovie.rating || 5);
-        totalScore += ratingSim * weight * 0.1;
+        totalScore += ratingSim * weight * 0.08;
 
-        // Year similarity (weight: 0.1)
+        // Year similarity (weight: 0.07)
         const yearSim = yearSimilarity(movie.year || 2000, ratedMovie.year || 2000);
-        totalScore += yearSim * weight * 0.1;
+        totalScore += yearSim * weight * 0.07;
 
         totalWeight += weight;
       });

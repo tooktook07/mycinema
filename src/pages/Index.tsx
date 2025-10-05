@@ -40,6 +40,9 @@ const Index = () => {
 
   useEffect(() => {
     fetchStats();
+    if (user) {
+      fetchRecommendations();
+    }
   }, [user]);
 
   const fetchStats = async () => {
@@ -334,17 +337,17 @@ const Index = () => {
                   <div className="flex items-center justify-center py-12">
                     <div className="text-center space-y-2">
                       <Loader2 className="h-8 w-8 animate-spin mx-auto" />
-                      <p className="text-sm text-muted-foreground">Analyzing your preferences...</p>
+                      <p className="text-sm text-muted-foreground">Finding movies you'll love...</p>
                     </div>
                   </div>
                 ) : recommendations.length === 0 ? (
                   <div className="text-center py-12 px-4 bg-muted/30 rounded-lg border-2 border-dashed">
                     <Star className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-lg font-semibold mb-2">Get AI-Powered Recommendations</p>
-                    <p className="text-sm text-muted-foreground mb-4">Let AI analyze your ratings and suggest movies you'll love</p>
-                    <Button onClick={fetchRecommendations} size="lg">
-                      <Star className="h-4 w-4 mr-2" />
-                      Generate Recommendations
+                    <p className="text-lg font-semibold mb-2">No recommendations yet</p>
+                    <p className="text-sm text-muted-foreground mb-4">Rate some movies with 7+ to get recommendations</p>
+                    <Button onClick={() => navigate("/movies")} variant="outline">
+                      <Film className="h-4 w-4 mr-2" />
+                      Browse Movies
                     </Button>
                   </div>
                 ) : (
