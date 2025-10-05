@@ -7,9 +7,33 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useTheme } from "@/components/ThemeProvider"
+import { useAuth } from "@/contexts/AuthContext"
+import { supabase } from "@/integrations/supabase/client"
+import { toast } from "@/hooks/use-toast"
 
 export function ThemeToggle() {
   const { setTheme } = useTheme()
+  const { user } = useAuth()
+
+  const handleThemeChange = async (newTheme: "light" | "dark" | "system") => {
+    setTheme(newTheme)
+    
+    if (user) {
+      const { error } = await supabase
+        .from("profiles" as any)
+        .update({ theme: newTheme })
+        .eq("user_id", user.id)
+      
+      if (error) {
+        console.error("Error saving theme preference:", error)
+        toast({
+          title: "Error",
+          description: "Failed to save theme preference",
+          variant: "destructive",
+        })
+      }
+    }
+  }
 
   return (
     <DropdownMenu>
@@ -21,15 +45,15 @@ export function ThemeToggle() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme("light")}>
+        <DropdownMenuItem onClick={() => handleThemeChange("light")}>
           <Sun className="mr-2 h-4 w-4" />
           <span>Light</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")}>
+        <DropdownMenuItem onClick={() => handleThemeChange("dark")}>
           <Moon className="mr-2 h-4 w-4" />
           <span>Dark</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("system")}>
+        <DropdownMenuItem onClick={() => handleThemeChange("system")}>
           <Monitor className="mr-2 h-4 w-4" />
           <span>System</span>
         </DropdownMenuItem>

@@ -12,6 +12,8 @@ interface Stats {
   totalMovies: number;
   totalTvShows: number;
   avgMovieRating: number;
+  userRatingsCount: number;
+  userAvgRating: number;
   topGenres: { genre: string; count: number }[];
   recentMovies: any[];
   lastSync: any;
@@ -80,10 +82,29 @@ const Index = () => {
         .limit(1)
         .maybeSingle();
 
+      // Fetch user-specific ratings if logged in
+      let userRatingsCount = 0;
+      let userAvgRating = 0;
+      
+      if (user) {
+        const { data: userRatings } = await supabase
+          .from("user_ratings")
+          .select("user_rating")
+          .eq("user_id", user.id)
+          .not("user_rating", "is", null) as any;
+        
+        if (userRatings && userRatings.length > 0) {
+          userRatingsCount = userRatings.length;
+          userAvgRating = userRatings.reduce((acc: number, r: any) => acc + (r.user_rating || 0), 0) / userRatings.length;
+        }
+      }
+
       setStats({
         totalMovies: moviesCount || 0,
         totalTvShows: tvShowsCount || 0,
         avgMovieRating: avgRating,
+        userRatingsCount,
+        userAvgRating,
         topGenres,
         recentMovies: recentMovies || [],
         lastSync,
@@ -111,7 +132,7 @@ const Index = () => {
           <div className="flex items-center justify-center gap-3 mb-4">
             <Film className="h-10 w-10" />
             <h1 className="text-4xl font-bold md:text-5xl">
-              {user ? "Dashboard" : "Welcome to CineMatch"}
+              {user ? "Your Movie Dashboard" : "Welcome to CineMatch"}
             </h1>
           </div>
           <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-6">
@@ -175,14 +196,30 @@ const Index = () => {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Average Rating</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                {user ? "Your Ratings" : "Average Rating"}
+              </CardTitle>
               <Star className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.avgMovieRating.toFixed(1)}/10</div>
-              <p className="text-xs text-muted-foreground">
-                Across all movies
-              </p>
+              {user && stats?.userRatingsCount > 0 ? (
+                <>
+                  <div className="text-2xl font-bold">{stats.userAvgRating.toFixed(1)}/10</div>
+                  <p className="text-xs text-muted-foreground">
+                    {stats.userRatingsCount} {stats.userRatingsCount === 1 ? 'rating' : 'ratings'}
+                  </p>
+                </>
+              ) : user ? (
+                <>
+                  <div className="text-2xl font-bold">0/10</div>
+                  <p className="text-xs text-muted-foreground">No ratings yet</p>
+                </>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{stats?.avgMovieRating.toFixed(1)}/10</div>
+                  <p className="text-xs text-muted-foreground">Across all movies</p>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -255,13 +292,17 @@ const Index = () => {
               ) : (
                 <div className="space-y-3">
                   {stats?.topGenres.map((item, index) => (
-                    <div key={item.genre} className="flex items-center justify-between">
+                    <Link
+                      key={item.genre}
+                      to={`/movies?genre=${encodeURIComponent(item.genre)}`}
+                      className="flex items-center justify-between hover:bg-accent/50 p-2 -mx-2 rounded-md transition-colors"
+                    >
                       <div className="flex items-center gap-3">
                         <Badge variant="secondary">{index + 1}</Badge>
                         <span className="font-medium">{item.genre}</span>
                       </div>
                       <Badge variant="outline">{item.count} movies</Badge>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               )}
