@@ -14,6 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Movie } from "@/data/types";
 import { MovieRating } from "@/components/MovieRating";
 import { useState } from "react";
+import { getOptimizedImageProps } from "@/lib/imageUtils";
 
 interface MovieCardProps extends Movie {
   onYearClick?: (year: number) => void;
@@ -57,12 +58,13 @@ export const MovieCard = ({
   const hasValidImdbId = imdbId && imdbId.startsWith('tt');
   const imdbUrl = `https://www.imdb.com/title/${imdbId}/`;
   const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(sanitizedTitle)}+${sanitizedYear}`;
+  const imageProps = getOptimizedImageProps(poster);
   
   return (
     <Card className="group overflow-hidden transition-all duration-300 hover:shadow-lg">
       <div className="aspect-[2/3] overflow-hidden relative">
         <img
-          src={poster}
+          {...imageProps}
           alt={title}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />

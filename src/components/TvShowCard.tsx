@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TvShow } from "@/data/types";
+import { getOptimizedImageProps } from "@/lib/imageUtils";
 
 interface TvShowCardProps extends TvShow {}
 
@@ -24,12 +25,13 @@ export const TvShowCard = ({
   const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(sanitizedTitle)}+${sanitizedYear}`;
 
   const yearRange = endYear ? `${startYear}-${endYear}` : `${startYear}-Present`;
+  const imageProps = getOptimizedImageProps(poster);
 
   return (
     <Card className="group overflow-hidden border-border bg-gradient-to-b from-card to-card/80 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_40px_hsl(262_52%_47%/0.3)]">
       <div className="aspect-[2/3] overflow-hidden">
         <img
-          src={poster}
+          {...imageProps}
           alt={title}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
         />
