@@ -9,7 +9,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useAuth } from "@/contexts/AuthContext";
+import { useEffectiveAuth } from "@/contexts/DevModeContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -29,7 +29,7 @@ const sentimentLabels = {
 };
 
 export const MovieRating = ({ movieId, movieTitle }: MovieRatingProps) => {
-  const { user } = useAuth();
+  const { user } = useEffectiveAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
