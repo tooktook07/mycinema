@@ -93,6 +93,7 @@ const Movies = () => {
           actors: movie.actors || "",
           runtime: movie.runtime || "",
           imdbId: movie.imdb_id,
+          voteCount: movie.vote_count || 0,
         })),
         totalCount: count || 0,
       };

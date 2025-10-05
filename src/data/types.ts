@@ -10,6 +10,7 @@ export interface Movie {
   director?: string;
   actors?: string;
   runtime?: string;
+  voteCount?: number;
 }
 
 export interface TvShow {

@@ -1,4 +1,4 @@
-import { Star, ExternalLink, Search, Film } from "lucide-react";
+import { Star, ExternalLink, Search, Film, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Movie } from "@/data/types";
 
 interface MovieCardProps extends Movie {}
 
-export const MovieCard = ({ title, rating, year, genre, poster, imdbId }: MovieCardProps) => {
+export const MovieCard = ({ title, rating, year, genre, poster, imdbId, voteCount }: MovieCardProps) => {
   const sanitizedTitle = title.trim().slice(0, 200);
   const sanitizedYear = Math.max(1800, Math.min(2100, year));
 
@@ -24,9 +24,17 @@ export const MovieCard = ({ title, rating, year, genre, poster, imdbId }: MovieC
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-2">
           <h3 className="font-semibold text-foreground line-clamp-2">{title}</h3>
-          <div className="flex items-center gap-1 text-accent shrink-0">
-            <Star className="h-4 w-4 fill-accent" />
-            <span className="font-bold">{rating}</span>
+          <div className="flex flex-col items-end gap-1 shrink-0">
+            <div className="flex items-center gap-1 text-accent">
+              <Star className="h-4 w-4 fill-accent" />
+              <span className="font-bold">{rating}</span>
+            </div>
+            {voteCount !== undefined && (
+              <div className="flex items-center gap-1 text-muted-foreground text-xs">
+                <Users className="h-3 w-3" />
+                <span>{voteCount.toLocaleString()}</span>
+              </div>
+            )}
           </div>
         </div>
         <div className="mt-2 flex flex-wrap gap-1.5">
