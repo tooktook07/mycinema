@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { minRating = 0, maxRating = 10, yearRange = [2025, 2025], genres, excludedGenres, statuses, minVoteCount = 100, minPopularity = 0 } = await req.json();
+    const { minRating = 0, maxRating = 10, yearRange = [2025, 2025], genres, excludedGenres, statuses, minVoteCount = 100, minPopularity = 0, syncMode = false } = await req.json();
     const TMDB_API_KEY = Deno.env.get("TMDB_API_KEY");
 
     if (!TMDB_API_KEY) {
@@ -31,18 +31,21 @@ serve(async (req) => {
 
     let totalMovies = 0;
     let importedMovies = 0;
+    let updatedMovies = 0;
+    let removedMovies = 0;
     let skippedMovies = 0;
     let failedMovies = 0;
     let page = 1;
     let totalPages = 1;
     const logs: string[] = [];
+    const processedImdbIds = new Set<string>();
 
     const logMsg = (msg: string) => {
       console.log(msg);
       logs.push(`[${new Date().toISOString()}] ${msg}`);
     };
 
-    logMsg(`Starting import with filters: ratingRange=${minRating}-${maxRating}, yearRange=${yearRange.join('-')}, genres=${genres?.join(',') || 'all'}, excludedGenres=${excludedGenres?.join(',') || 'none'}, statuses=${statuses?.join(',') || 'all'}, minVoteCount=${minVoteCount}+, minPopularity=${minPopularity}`);
+    logMsg(`Starting ${syncMode ? 'sync' : 'import'} with filters: ratingRange=${minRating}-${maxRating}, yearRange=${yearRange.join('-')}, genres=${genres?.join(',') || 'all'}, excludedGenres=${excludedGenres?.join(',') || 'none'}, statuses=${statuses?.join(',') || 'all'}, minVoteCount=${minVoteCount}+, minPopularity=${minPopularity}`);
 
     // Get genre IDs from TMDB if genres or excludedGenres filter is specified
     let genreIds: number[] | undefined;
@@ -106,17 +109,13 @@ serve(async (req) => {
 
           // Check if movie already exists
           const imdbId = `tmdb_${movie.id}`;
+          processedImdbIds.add(imdbId);
+          
           const { data: existing } = await supabaseClient
             .from("movies")
-            .select("imdb_id")
+            .select("*")
             .eq("imdb_id", imdbId)
-            .single();
-
-          if (existing) {
-            skippedMovies++;
-            logMsg(`⊘ Skipped: "${movie.title}" (already exists)`);
-            continue;
-          }
+            .maybeSingle();
 
           // Fetch detailed movie info to get additional data
           const detailsResponse = await fetch(
@@ -153,33 +152,55 @@ serve(async (req) => {
           // Convert runtime from minutes to "X min" format
           const runtime = details.runtime ? `${details.runtime} min` : null;
 
-          // Insert movie in database
-          const { error } = await supabaseClient
-            .from("movies")
-            .insert({
-              imdb_id: imdbId,
-              title: details.title,
-              year: parseInt(details.release_date?.split("-")[0] || yearRange[0].toString()),
-              rating: details.vote_average || null,
-              vote_count: details.vote_count || null,
-              popularity: details.popularity || null,
-              poster: details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : null,
-              genres: movieGenres,
-              plot: details.overview || null,
-              director,
-              actors,
-              runtime,
-              original_language: details.original_language || null,
-              tagline: details.tagline || null,
-              status: details.status || null,
-            });
+          const movieData = {
+            imdb_id: imdbId,
+            title: details.title,
+            year: parseInt(details.release_date?.split("-")[0] || yearRange[0].toString()),
+            rating: details.vote_average || null,
+            vote_count: details.vote_count || null,
+            popularity: details.popularity || null,
+            poster: details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : null,
+            genres: movieGenres,
+            plot: details.overview || null,
+            director,
+            actors,
+            runtime,
+            original_language: details.original_language || null,
+            tagline: details.tagline || null,
+            status: details.status || null,
+          };
 
-          if (error) {
-            logMsg(`✗ Error inserting: "${details.title}" - ${error.message}`);
-            failedMovies++;
+          if (existing && syncMode) {
+            // Update existing movie
+            const { error } = await supabaseClient
+              .from("movies")
+              .update(movieData)
+              .eq("imdb_id", imdbId);
+
+            if (error) {
+              logMsg(`✗ Error updating: "${details.title}" - ${error.message}`);
+              failedMovies++;
+            } else {
+              updatedMovies++;
+              logMsg(`↻ Updated: "${details.title}" (${details.vote_average}/10)`);
+            }
+          } else if (existing) {
+            // Skip if not in sync mode
+            skippedMovies++;
+            logMsg(`⊘ Skipped: "${details.title}" (already exists)`);
           } else {
-            importedMovies++;
-            logMsg(`✓ Imported: "${details.title}" (${details.vote_average}/10)`);
+            // Insert new movie
+            const { error } = await supabaseClient
+              .from("movies")
+              .insert(movieData);
+
+            if (error) {
+              logMsg(`✗ Error inserting: "${details.title}" - ${error.message}`);
+              failedMovies++;
+            } else {
+              importedMovies++;
+              logMsg(`✓ Imported: "${details.title}" (${details.vote_average}/10)`);
+            }
           }
         } catch (error) {
           logMsg(`✗ Error processing movie: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -190,17 +211,83 @@ serve(async (req) => {
       page++;
     }
 
-    logMsg(`Import complete: ${importedMovies} imported, ${skippedMovies} skipped, ${failedMovies} failed out of ${totalMovies} found`);
+    // Remove movies that don't match filters anymore (only in sync mode)
+    if (syncMode) {
+      logMsg(`Checking for movies to remove that don't match current filters...`);
+      
+      // Get all movies from database
+      const { data: allMovies, error: fetchError } = await supabaseClient
+        .from("movies")
+        .select("id, imdb_id, title, rating, vote_count, status, genres");
+
+      if (fetchError) {
+        logMsg(`✗ Error fetching movies for cleanup: ${fetchError.message}`);
+      } else if (allMovies) {
+        for (const movie of allMovies) {
+          // Skip if this movie was just processed (it matches filters)
+          if (processedImdbIds.has(movie.imdb_id)) {
+            continue;
+          }
+
+          // Check if movie should be removed based on filters
+          let shouldRemove = false;
+
+          // Check rating
+          if (movie.rating !== null && (movie.rating < minRating || movie.rating > maxRating)) {
+            shouldRemove = true;
+          }
+
+          // Check vote count
+          if (movie.vote_count !== null && movie.vote_count < minVoteCount) {
+            shouldRemove = true;
+          }
+
+          // Check status
+          if (statuses && statuses.length > 0 && movie.status && !statuses.includes(movie.status)) {
+            shouldRemove = true;
+          }
+
+          // Check excluded genres
+          if (excludedGenres && excludedGenres.length > 0 && movie.genres) {
+            const hasExcludedGenre = movie.genres.some((g: string) => excludedGenres.includes(g));
+            if (hasExcludedGenre) {
+              shouldRemove = true;
+            }
+          }
+
+          if (shouldRemove) {
+            const { error: deleteError } = await supabaseClient
+              .from("movies")
+              .delete()
+              .eq("id", movie.id);
+
+            if (deleteError) {
+              logMsg(`✗ Error removing: "${movie.title}" - ${deleteError.message}`);
+              failedMovies++;
+            } else {
+              removedMovies++;
+              logMsg(`✕ Removed: "${movie.title}" (doesn't match filters)`);
+            }
+          }
+        }
+      }
+    }
+
+    logMsg(`${syncMode ? 'Sync' : 'Import'} complete: ${importedMovies} imported, ${updatedMovies} updated, ${removedMovies} removed, ${skippedMovies} skipped, ${failedMovies} failed out of ${totalMovies} found`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         totalFound: totalMovies,
         imported: importedMovies,
+        updated: updatedMovies,
+        removed: removedMovies,
         skipped: skippedMovies,
         failed: failedMovies,
         logs,
-        message: `Found ${totalMovies} movies. Imported ${importedMovies}, skipped ${skippedMovies} existing, ${failedMovies} failed.`
+        message: syncMode 
+          ? `Sync complete: ${importedMovies} imported, ${updatedMovies} updated, ${removedMovies} removed, ${skippedMovies} skipped, ${failedMovies} failed.`
+          : `Found ${totalMovies} movies. Imported ${importedMovies}, skipped ${skippedMovies} existing, ${failedMovies} failed.`
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-interface ImportFilterPanelProps {
+interface SyncFilterPanelProps {
   selectedGenres: string[];
   onGenreToggle: (genre: string) => void;
   excludedGenres: string[];
@@ -46,7 +46,7 @@ const STATUSES = [
   "Canceled",
 ];
 
-export const ImportFilterPanel = ({
+export const SyncFilterPanel = ({
   selectedGenres,
   onGenreToggle,
   excludedGenres,
@@ -61,7 +61,7 @@ export const ImportFilterPanel = ({
   onMinVoteCountChange,
   minPopularity,
   onMinPopularityChange,
-}: ImportFilterPanelProps) => {
+}: SyncFilterPanelProps) => {
   const selectedCount = selectedGenres.length + 
     excludedGenres.length +
     selectedStatuses.length +
@@ -74,7 +74,7 @@ export const ImportFilterPanel = ({
     <div className="space-y-6">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-          Import Filters
+          Sync Filters
           {selectedCount > 0 && (
             <Badge variant="default" className="ml-2">
               {selectedCount} active
@@ -87,7 +87,7 @@ export const ImportFilterPanel = ({
         <div className="space-y-3 md:col-span-2 lg:col-span-1">
           <div>
             <Label className="text-base font-semibold text-foreground">Include Genres</Label>
-            <p className="text-xs text-muted-foreground mt-1">Select genres to import (leave empty for all)</p>
+            <p className="text-xs text-muted-foreground mt-1">Select genres to sync (leave empty for all)</p>
           </div>
           <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-2 rounded border border-border/50 bg-background/50">
             {GENRES.map((genre) => {
@@ -113,7 +113,7 @@ export const ImportFilterPanel = ({
         <div className="space-y-3 md:col-span-2 lg:col-span-1">
           <div>
             <Label className="text-base font-semibold text-foreground">Exclude Genres</Label>
-            <p className="text-xs text-muted-foreground mt-1">Select genres to NOT import</p>
+            <p className="text-xs text-muted-foreground mt-1">Select genres to exclude from sync</p>
           </div>
           <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-2 rounded border border-border/50 bg-background/50">
             {GENRES.map((genre) => {
@@ -139,7 +139,7 @@ export const ImportFilterPanel = ({
         <div className="space-y-3 md:col-span-2 lg:col-span-1">
           <div>
             <Label className="text-base font-semibold text-foreground">Movie Status</Label>
-            <p className="text-xs text-muted-foreground mt-1">Select statuses to import (leave empty for all)</p>
+            <p className="text-xs text-muted-foreground mt-1">Select statuses to sync (leave empty for all)</p>
           </div>
           <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-2 rounded border border-border/50 bg-background/50">
             {STATUSES.map((status) => {
