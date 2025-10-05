@@ -54,7 +54,7 @@ export const MovieCard = ({
   const sanitizedTitle = title.trim().slice(0, 200);
   const sanitizedYear = Math.max(1800, Math.min(2100, year));
 
-  const hasValidImdbId = imdbId.startsWith('tt');
+  const hasValidImdbId = imdbId && imdbId.startsWith('tt');
   const imdbUrl = `https://www.imdb.com/title/${imdbId}/`;
   const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(sanitizedTitle)}+${sanitizedYear}`;
   

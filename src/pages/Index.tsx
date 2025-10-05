@@ -49,22 +49,12 @@ const Index = () => {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
 
-  console.log("[Index] Component rendered", { 
-    user: user?.id, 
-    isAdmin, 
-    loading, 
-    hasStats: !!stats, 
-    recommendationsCount: recommendations.length 
-  });
-
   useEffect(() => {
-    console.log("[Index] useEffect triggered", { userId: user?.id });
     fetchStats();
-    fetchRecommendations(); // Fetch for all users
+    fetchRecommendations();
   }, [user]);
 
   const fetchStats = async () => {
-    console.log("[Index] fetchStats started", { userId: user?.id });
     try {
       // Fetch total movies
       const { count: moviesCount } = await supabase
@@ -148,21 +138,14 @@ const Index = () => {
         recentMovies: recentMovies || [],
         lastSync,
       });
-      console.log("[Index] fetchStats completed successfully", { 
-        moviesCount, 
-        tvShowsCount, 
-        userRatingsCount 
-      });
     } catch (error) {
-      console.error("[Index] Error fetching stats:", error);
+      console.error("Error fetching stats:", error);
     } finally {
-      console.log("[Index] fetchStats setting loading to false");
       setLoading(false);
     }
   };
 
   const fetchRecommendations = async () => {
-    console.log("[Index] fetchRecommendations started", { userId: user?.id });
     setLoadingRecommendations(true);
     try {
       if (user && user.id !== 'dev-user-id') {
@@ -233,27 +216,21 @@ const Index = () => {
       }));
       
       setRecommendations(selected);
-      console.log("[Index] fetchRecommendations completed", { count: selected.length });
     } catch (error) {
-      console.error("[Index] Error fetching recommendations:", error);
-      // Don't crash the page, just show empty recommendations
+      console.error("Error fetching recommendations:", error);
       setRecommendations([]);
     } finally {
-      console.log("[Index] fetchRecommendations setting loading to false");
       setLoadingRecommendations(false);
     }
   };
 
   if (loading) {
-    console.log("[Index] Showing loading spinner");
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
-
-  console.log("[Index] Rendering dashboard");
 
   return (
     <div className="min-h-screen">
