@@ -191,12 +191,13 @@ export type Database = {
         }
         Relationships: []
       }
-      user_movie_data: {
+      user_ratings: {
         Row: {
           created_at: string | null
           id: string
           in_watchlist: boolean | null
-          movie_id: string | null
+          media_id: string | null
+          media_type: string
           tv_show_id: string | null
           updated_at: string | null
           user_id: string
@@ -208,7 +209,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           in_watchlist?: boolean | null
-          movie_id?: string | null
+          media_id?: string | null
+          media_type?: string
           tv_show_id?: string | null
           updated_at?: string | null
           user_id?: string
@@ -220,7 +222,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           in_watchlist?: boolean | null
-          movie_id?: string | null
+          media_id?: string | null
+          media_type?: string
           tv_show_id?: string | null
           updated_at?: string | null
           user_id?: string
@@ -231,7 +234,7 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "user_movie_data_movie_id_fkey"
-            columns: ["movie_id"]
+            columns: ["media_id"]
             isOneToOne: false
             referencedRelation: "movies"
             referencedColumns: ["id"]

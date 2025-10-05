@@ -1,8 +1,8 @@
-import { Film, Tv, Star, TrendingUp, Calendar, BarChart3, Loader2, LogIn } from "lucide-react";
+import { Film, Tv, Star, TrendingUp, Calendar, BarChart3, Loader2, LogIn, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -120,8 +120,17 @@ const Index = () => {
               : "Discover and rate thousands of movies. Sign in to start rating!"
             }
           </p>
-          {!user && (
+          {stats?.lastSync && (
             <div className="flex justify-center">
+              <Badge variant="outline" className="text-sm">
+                <Calendar className="h-3.5 w-3.5 mr-1.5" />
+                Last sync: {format(new Date(stats.lastSync.created_at), "PPp")} 
+                ({stats.lastSync.imported + stats.lastSync.updated} movies)
+              </Badge>
+            </div>
+          )}
+          {!user && (
+            <div className="flex justify-center mt-4">
               <Button size="lg" onClick={() => navigate("/auth")}>
                 <LogIn className="h-4 w-4 mr-2" />
                 Sign In to Rate Movies
@@ -134,31 +143,35 @@ const Index = () => {
       <div className="container mx-auto max-w-7xl px-4 py-8">
         {/* Stats Overview */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Movies</CardTitle>
-              <Film className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalMovies.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">
-                In your database
-              </p>
-            </CardContent>
-          </Card>
+          <Link to="/movies">
+            <Card className="cursor-pointer transition-all hover:shadow-lg hover:scale-105">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Movies</CardTitle>
+                <Film className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats?.totalMovies.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  Browse collection <ArrowRight className="h-3 w-3" />
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total TV Shows</CardTitle>
-              <Tv className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalTvShows.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">
-                Series available
-              </p>
-            </CardContent>
-          </Card>
+          <Link to="/tv-shows">
+            <Card className="cursor-pointer transition-all hover:shadow-lg hover:scale-105">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">TV Shows</CardTitle>
+                <Tv className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">Coming Soon</div>
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  Check status <ArrowRight className="h-3 w-3" />
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -173,20 +186,39 @@ const Index = () => {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Last Sync</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {stats?.lastSync ? format(new Date(stats.lastSync.created_at), "MMM d") : "Never"}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {stats?.lastSync ? `${stats.lastSync.imported + stats.lastSync.updated} changes` : "No syncs yet"}
-              </p>
-            </CardContent>
-          </Card>
+          {isAdmin ? (
+            <Link to="/account">
+              <Card className="cursor-pointer transition-all hover:shadow-lg hover:scale-105">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Last Sync</CardTitle>
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {stats?.lastSync ? format(new Date(stats.lastSync.created_at), "MMM d") : "Never"}
+                  </div>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    Manage syncs <ArrowRight className="h-3 w-3" />
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+          ) : (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Last Sync</CardTitle>
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {stats?.lastSync ? format(new Date(stats.lastSync.created_at), "MMM d") : "Never"}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {stats?.lastSync ? `${stats.lastSync.imported + stats.lastSync.updated} changes` : "No syncs yet"}
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Quick Actions */}

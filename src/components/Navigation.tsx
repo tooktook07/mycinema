@@ -14,7 +14,7 @@ export const Navigation = () => {
         <div className="flex items-center justify-between h-12">
           <NavLink to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <Film className="h-4 w-4" />
-            <span className="text-sm font-semibold">CineMatch</span>
+            <span className="text-sm font-semibold">My Cinema</span>
           </NavLink>
           
           <div className="flex items-center gap-1">

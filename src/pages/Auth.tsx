@@ -111,7 +111,7 @@ const Auth = () => {
           <div className="flex justify-center mb-4">
             <Film className="h-12 w-12 text-primary" />
           </div>
-          <CardTitle className="text-3xl">Welcome to CineMatch</CardTitle>
+          <CardTitle className="text-3xl">Welcome to My Cinema</CardTitle>
           <CardDescription>Sign in to rate movies and access features</CardDescription>
         </CardHeader>
         <CardContent>

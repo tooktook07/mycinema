@@ -40,10 +40,11 @@ export const MovieRating = ({ movieId, movieTitle }: MovieRatingProps) => {
 
     try {
       const { data, error } = await supabase
-        .from("user_movie_data")
+        .from("user_ratings")
         .select("user_rating")
         .eq("user_id", user.id)
-        .eq("movie_id", movieId)
+        .eq("media_id", movieId)
+        .eq("media_type", "movie")
         .maybeSingle();
 
       if (error) throw error;
@@ -63,13 +64,14 @@ export const MovieRating = ({ movieId, movieTitle }: MovieRatingProps) => {
     setLoading(true);
     try {
       const { error } = await supabase
-        .from("user_movie_data")
+        .from("user_ratings")
         .upsert({
           user_id: user.id,
-          movie_id: movieId,
+          media_id: movieId,
+          media_type: "movie",
           user_rating: rating,
         }, {
-          onConflict: "user_id,movie_id"
+          onConflict: "user_id,media_id,media_type"
         });
 
       if (error) throw error;
