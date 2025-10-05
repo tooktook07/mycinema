@@ -1,1 +1,4 @@
 project_id = "kkeojjtopbpfbcmxlumx"
+
+[functions.fetch-movie-data]
+verify_jwt = false
