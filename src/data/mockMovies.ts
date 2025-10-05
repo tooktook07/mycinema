@@ -13,6 +13,7 @@ export interface Movie {
   genre: string[];
   poster: string;
   type: "movie" | "series";
+  imdbId: string;
 }
 
 export const mockMovies: Movie[] = [
@@ -24,6 +25,7 @@ export const mockMovies: Movie[] = [
     genre: ["Action", "Thriller"],
     poster: poster1,
     type: "movie",
+    imdbId: "tt1375666",
   },
   {
     id: 2,
@@ -33,6 +35,7 @@ export const mockMovies: Movie[] = [
     genre: ["Romance", "Comedy"],
     poster: poster2,
     type: "movie",
+    imdbId: "tt2582802",
   },
   {
     id: 3,
@@ -42,6 +45,7 @@ export const mockMovies: Movie[] = [
     genre: ["Sci-Fi", "Thriller"],
     poster: poster3,
     type: "series",
+    imdbId: "tt2575988",
   },
   {
     id: 4,
@@ -51,6 +55,7 @@ export const mockMovies: Movie[] = [
     genre: ["Horror", "Thriller"],
     poster: poster4,
     type: "movie",
+    imdbId: "tt1457767",
   },
   {
     id: 5,
@@ -60,6 +65,7 @@ export const mockMovies: Movie[] = [
     genre: ["Fantasy", "Action"],
     poster: poster5,
     type: "series",
+    imdbId: "tt0944947",
   },
   {
     id: 6,
@@ -69,6 +75,7 @@ export const mockMovies: Movie[] = [
     genre: ["Drama"],
     poster: poster6,
     type: "movie",
+    imdbId: "tt0111161",
   },
   {
     id: 7,
@@ -78,6 +85,7 @@ export const mockMovies: Movie[] = [
     genre: ["Action", "Drama"],
     poster: poster1,
     type: "movie",
+    imdbId: "tt0468569",
   },
   {
     id: 8,
@@ -87,6 +95,7 @@ export const mockMovies: Movie[] = [
     genre: ["Romance", "Drama"],
     poster: poster2,
     type: "movie",
+    imdbId: "tt0816692",
   },
   {
     id: 9,
@@ -96,6 +105,7 @@ export const mockMovies: Movie[] = [
     genre: ["Sci-Fi", "Action"],
     poster: poster3,
     type: "series",
+    imdbId: "tt0458339",
   },
   {
     id: 10,
@@ -105,6 +115,7 @@ export const mockMovies: Movie[] = [
     genre: ["Horror", "Thriller"],
     poster: poster4,
     type: "movie",
+    imdbId: "tt1392190",
   },
   {
     id: 11,
@@ -114,6 +125,7 @@ export const mockMovies: Movie[] = [
     genre: ["Fantasy", "Drama"],
     poster: poster5,
     type: "series",
+    imdbId: "tt5753856",
   },
   {
     id: 12,
@@ -123,5 +135,6 @@ export const mockMovies: Movie[] = [
     genre: ["Action", "Drama"],
     poster: poster6,
     type: "movie",
+    imdbId: "tt4154756",
   },
 ];

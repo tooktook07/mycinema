@@ -1,6 +1,7 @@
-import { Star } from "lucide-react";
+import { Star, ExternalLink, Search } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface MovieCardProps {
   title: string;
@@ -9,9 +10,12 @@ interface MovieCardProps {
   genre: string[];
   poster: string;
   type: "movie" | "series";
+  imdbId: string;
 }
 
-export const MovieCard = ({ title, rating, year, genre, poster, type }: MovieCardProps) => {
+export const MovieCard = ({ title, rating, year, genre, poster, type, imdbId }: MovieCardProps) => {
+  const imdbUrl = `https://www.imdb.com/title/${imdbId}/`;
+  const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(title + " " + year)}`;
   return (
     <Card className="group overflow-hidden border-border bg-gradient-to-b from-card to-card/80 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_40px_hsl(262_52%_47%/0.3)]">
       <div className="aspect-[2/3] overflow-hidden">
@@ -41,6 +45,30 @@ export const MovieCard = ({ title, rating, year, genre, poster, type }: MovieCar
               {g}
             </Badge>
           ))}
+        </div>
+        <div className="mt-3 flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1"
+            asChild
+          >
+            <a href={imdbUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5">
+              <ExternalLink className="h-3.5 w-3.5" />
+              IMDB
+            </a>
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1"
+            asChild
+          >
+            <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5">
+              <Search className="h-3.5 w-3.5" />
+              Search
+            </a>
+          </Button>
         </div>
       </CardContent>
     </Card>
