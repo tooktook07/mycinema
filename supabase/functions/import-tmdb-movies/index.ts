@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { minRating = 0, maxRating = 10, yearRange = [2025, 2025], genres, minVoteCount = 0, minPopularity = 0 } = await req.json();
+    const { minRating = 0, maxRating = 10, yearRange = [2025, 2025], genres, minVoteCount = 0, maxVoteCount = 10000, minPopularity = 0 } = await req.json();
     const TMDB_API_KEY = Deno.env.get("TMDB_API_KEY");
 
     if (!TMDB_API_KEY) {
@@ -42,7 +42,7 @@ serve(async (req) => {
       logs.push(`[${new Date().toISOString()}] ${msg}`);
     };
 
-    logMsg(`Starting import with filters: ratingRange=${minRating}-${maxRating}, yearRange=${yearRange.join('-')}, genres=${genres?.join(',') || 'all'}, minVoteCount=${minVoteCount}, minPopularity=${minPopularity}`);
+    logMsg(`Starting import with filters: ratingRange=${minRating}-${maxRating}, yearRange=${yearRange.join('-')}, genres=${genres?.join(',') || 'all'}, voteCountRange=${minVoteCount}-${maxVoteCount}, minPopularity=${minPopularity}`);
 
     // Get genre IDs from TMDB if genres filter is specified
     let genreIds: number[] | undefined;
@@ -87,6 +87,11 @@ serve(async (req) => {
         try {
           // Filter by popularity if specified
           if (minPopularity > 0 && movie.popularity < minPopularity) {
+            continue;
+          }
+
+          // Filter by max vote count if specified
+          if (movie.vote_count > maxVoteCount) {
             continue;
           }
 

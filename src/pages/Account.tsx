@@ -25,7 +25,7 @@ const Account = () => {
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [ratingRange, setRatingRange] = useState<[number, number]>([6.9, 10]);
   const [yearRange, setYearRange] = useState<[number, number]>([2025, 2025]);
-  const [minVoteCount, setMinVoteCount] = useState(0);
+  const [voteCountRange, setVoteCountRange] = useState<[number, number]>([0, 10000]);
   const [minPopularity, setMinPopularity] = useState(0);
 
   const handleGenreToggle = (genre: string) => {
@@ -52,7 +52,8 @@ const Account = () => {
           maxRating: ratingRange[1],
           yearRange,
           genres: selectedGenres.length > 0 ? selectedGenres : undefined,
-          minVoteCount,
+          minVoteCount: voteCountRange[0],
+          maxVoteCount: voteCountRange[1],
           minPopularity,
         }
       });
@@ -98,8 +99,8 @@ const Account = () => {
               onRatingRangeChange={setRatingRange}
               yearRange={yearRange}
               onYearRangeChange={setYearRange}
-              minVoteCount={minVoteCount}
-              onMinVoteCountChange={setMinVoteCount}
+              voteCountRange={voteCountRange}
+              onVoteCountRangeChange={setVoteCountRange}
               minPopularity={minPopularity}
               onMinPopularityChange={setMinPopularity}
             />
@@ -119,7 +120,7 @@ const Account = () => {
                   setSelectedGenres([]);
                   setRatingRange([6.9, 10]);
                   setYearRange([2025, 2025]);
-                  setMinVoteCount(0);
+                  setVoteCountRange([0, 10000]);
                   setMinPopularity(0);
                 }}
                 size="lg"

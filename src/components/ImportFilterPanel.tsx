@@ -11,8 +11,8 @@ interface ImportFilterPanelProps {
   onRatingRangeChange: (range: [number, number]) => void;
   yearRange: [number, number];
   onYearRangeChange: (range: [number, number]) => void;
-  minVoteCount: number;
-  onMinVoteCountChange: (value: number) => void;
+  voteCountRange: [number, number];
+  onVoteCountRangeChange: (range: [number, number]) => void;
   minPopularity: number;
   onMinPopularityChange: (value: number) => void;
 }
@@ -40,15 +40,15 @@ export const ImportFilterPanel = ({
   onRatingRangeChange,
   yearRange,
   onYearRangeChange,
-  minVoteCount,
-  onMinVoteCountChange,
+  voteCountRange,
+  onVoteCountRangeChange,
   minPopularity,
   onMinPopularityChange,
 }: ImportFilterPanelProps) => {
   const selectedCount = selectedGenres.length + 
     (ratingRange[0] > 0 || ratingRange[1] < 10 ? 1 : 0) + 
     (yearRange[0] !== 2025 || yearRange[1] !== 2025 ? 1 : 0) +
-    (minVoteCount > 0 ? 1 : 0) +
+    (voteCountRange[0] > 0 || voteCountRange[1] < 10000 ? 1 : 0) +
     (minPopularity > 0 ? 1 : 0);
 
   return (
@@ -161,17 +161,17 @@ export const ImportFilterPanel = ({
         <div className="space-y-3">
           <div>
             <Label className="text-base font-semibold text-foreground flex items-center justify-between">
-              <span>Minimum Vote Count</span>
+              <span>Vote Count Range</span>
               <Badge variant="secondary" className="text-sm font-bold">
-                {minVoteCount}+
+                {voteCountRange[0].toLocaleString()} - {voteCountRange[1].toLocaleString()}
               </Badge>
             </Label>
-            <p className="text-xs text-muted-foreground mt-1">Filter by minimum number of votes</p>
+            <p className="text-xs text-muted-foreground mt-1">Filter by vote count range</p>
           </div>
           <div className="pt-2">
             <Slider
-              value={[minVoteCount]}
-              onValueChange={([value]) => onMinVoteCountChange(value)}
+              value={voteCountRange}
+              onValueChange={(values) => onVoteCountRangeChange(values as [number, number])}
               min={0}
               max={10000}
               step={100}
