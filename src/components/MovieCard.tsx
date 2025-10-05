@@ -18,6 +18,10 @@ interface MovieCardProps extends Movie {
   onYearClick?: (year: number) => void;
   onGenreClick?: (genre: string) => void;
   onLanguageClick?: (language: string) => void;
+  onActorClick?: (actor: string) => void;
+  onDirectorClick?: (director: string) => void;
+  onWriterClick?: (writer: string) => void;
+  onKeywordClick?: (keyword: string) => void;
 }
 
 export const MovieCard = ({ 
@@ -38,7 +42,11 @@ export const MovieCard = ({
   keywords,
   onYearClick,
   onGenreClick,
-  onLanguageClick
+  onLanguageClick,
+  onActorClick,
+  onDirectorClick,
+  onWriterClick,
+  onKeywordClick
 }: MovieCardProps) => {
   const [open, setOpen] = useState(false);
   const sanitizedTitle = title.trim().slice(0, 200);
@@ -102,7 +110,24 @@ export const MovieCard = ({
                 {director && (
                   <div>
                     <h4 className="font-semibold mb-2">Director</h4>
-                    <p className="text-sm text-muted-foreground">{director}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {director.split(',').map((d) => {
+                        const name = d.trim();
+                        return (
+                          <Badge
+                            key={name}
+                            variant="secondary"
+                            className="cursor-pointer hover:bg-secondary/80 transition-colors"
+                            onClick={() => {
+                              onDirectorClick?.(name);
+                              setOpen(false);
+                            }}
+                          >
+                            {name}
+                          </Badge>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
 
@@ -110,7 +135,24 @@ export const MovieCard = ({
                 {actors && (
                   <div>
                     <h4 className="font-semibold mb-2">Cast</h4>
-                    <p className="text-sm text-muted-foreground">{actors}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {actors.split(',').map((actor) => {
+                        const name = actor.trim();
+                        return (
+                          <Badge
+                            key={name}
+                            variant="secondary"
+                            className="cursor-pointer hover:bg-secondary/80 transition-colors"
+                            onClick={() => {
+                              onActorClick?.(name);
+                              setOpen(false);
+                            }}
+                          >
+                            {name}
+                          </Badge>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
 
@@ -118,7 +160,24 @@ export const MovieCard = ({
                 {writing && (
                   <div>
                     <h4 className="font-semibold mb-2">Writers</h4>
-                    <p className="text-sm text-muted-foreground">{writing}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {writing.split(',').map((writer) => {
+                        const name = writer.trim();
+                        return (
+                          <Badge
+                            key={name}
+                            variant="secondary"
+                            className="cursor-pointer hover:bg-secondary/80 transition-colors"
+                            onClick={() => {
+                              onWriterClick?.(name);
+                              setOpen(false);
+                            }}
+                          >
+                            {name}
+                          </Badge>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
 
@@ -135,7 +194,15 @@ export const MovieCard = ({
                   <h4 className="font-semibold mb-2">Genres</h4>
                   <div className="flex flex-wrap gap-1.5">
                     {genre.map((g) => (
-                      <Badge key={g} variant="secondary">
+                      <Badge
+                        key={g}
+                        variant="secondary"
+                        className="cursor-pointer hover:bg-secondary/80 transition-colors"
+                        onClick={() => {
+                          onGenreClick?.(g);
+                          setOpen(false);
+                        }}
+                      >
                         {g}
                       </Badge>
                     ))}
@@ -148,7 +215,15 @@ export const MovieCard = ({
                     <h4 className="font-semibold mb-2">Keywords</h4>
                     <div className="flex flex-wrap gap-1.5">
                       {keywords.map((keyword) => (
-                        <Badge key={keyword} variant="outline" className="text-xs">
+                        <Badge
+                          key={keyword}
+                          variant="outline"
+                          className="text-xs cursor-pointer hover:bg-secondary transition-colors"
+                          onClick={() => {
+                            onKeywordClick?.(keyword);
+                            setOpen(false);
+                          }}
+                        >
                           {keyword}
                         </Badge>
                       ))}
@@ -160,7 +235,14 @@ export const MovieCard = ({
                 {originalLanguage && (
                   <div>
                     <h4 className="font-semibold mb-2">Original Language</h4>
-                    <Badge variant="outline" className="flex items-center gap-1 w-fit">
+                    <Badge
+                      variant="outline"
+                      className="flex items-center gap-1 w-fit cursor-pointer hover:bg-secondary transition-colors"
+                      onClick={() => {
+                        onLanguageClick?.(originalLanguage);
+                        setOpen(false);
+                      }}
+                    >
                       <Globe className="h-3 w-3" />
                       {originalLanguage.toUpperCase()}
                     </Badge>

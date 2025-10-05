@@ -23,12 +23,14 @@ const Movies = () => {
   const [tempRatingRange, setTempRatingRange] = useState<[number, number]>([0, 10]);
   const [tempYearRange, setTempYearRange] = useState<[number, number]>([1900, 2030]);
   const [tempLanguages, setTempLanguages] = useState<string[]>([]);
+  const [tempSearchText, setTempSearchText] = useState<string>("");
 
   // Applied filter states
   const [appliedGenres, setAppliedGenres] = useState<string[]>([]);
   const [appliedRatingRange, setAppliedRatingRange] = useState<[number, number]>([0, 10]);
   const [appliedYearRange, setAppliedYearRange] = useState<[number, number]>([1900, 2030]);
   const [appliedLanguages, setAppliedLanguages] = useState<string[]>([]);
+  const [appliedSearchText, setAppliedSearchText] = useState<string>("");
 
   const handleGenreToggle = (genre: string) => {
     setTempGenres((prev) =>
@@ -47,6 +49,7 @@ const Movies = () => {
     setAppliedRatingRange(tempRatingRange);
     setAppliedYearRange(tempYearRange);
     setAppliedLanguages(tempLanguages);
+    setAppliedSearchText(tempSearchText);
     setCurrentPage(1); // Reset to first page when filters change
   };
 
@@ -55,10 +58,12 @@ const Movies = () => {
     setTempRatingRange([0, 10]);
     setTempYearRange([1900, 2030]);
     setTempLanguages([]);
+    setTempSearchText("");
     setAppliedGenres([]);
     setAppliedRatingRange([0, 10]);
     setAppliedYearRange([1900, 2030]);
     setAppliedLanguages([]);
+    setAppliedSearchText("");
     setCurrentPage(1);
   };
 
@@ -82,9 +87,33 @@ const Movies = () => {
     setCurrentPage(1);
   };
 
+  const handleActorClick = (actor: string) => {
+    setTempSearchText(actor);
+    setAppliedSearchText(actor);
+    setCurrentPage(1);
+  };
+
+  const handleDirectorClick = (director: string) => {
+    setTempSearchText(director);
+    setAppliedSearchText(director);
+    setCurrentPage(1);
+  };
+
+  const handleWriterClick = (writer: string) => {
+    setTempSearchText(writer);
+    setAppliedSearchText(writer);
+    setCurrentPage(1);
+  };
+
+  const handleKeywordClick = (keyword: string) => {
+    setTempSearchText(keyword);
+    setAppliedSearchText(keyword);
+    setCurrentPage(1);
+  };
+
   // Fetch movies with filters, pagination, and sorting
   const { data: moviesData, isLoading, error } = useQuery({
-    queryKey: ["movies", appliedGenres, appliedRatingRange, appliedYearRange, appliedLanguages, currentPage, sortBy, sortOrder, itemsPerPage],
+    queryKey: ["movies", appliedGenres, appliedRatingRange, appliedYearRange, appliedLanguages, appliedSearchText, currentPage, sortBy, sortOrder, itemsPerPage],
     queryFn: async () => {
       let query = supabase
         .from("movies")
@@ -100,6 +129,11 @@ const Movies = () => {
       query = query.gte("year", appliedYearRange[0]).lte("year", appliedYearRange[1]);
       if (appliedLanguages.length > 0) {
         query = query.in("original_language", appliedLanguages);
+      }
+      
+      // Apply text search across multiple fields
+      if (appliedSearchText) {
+        query = query.or(`title.ilike.%${appliedSearchText}%,actors.ilike.%${appliedSearchText}%,director.ilike.%${appliedSearchText}%,writing.ilike.%${appliedSearchText}%,keywords.cs.{${appliedSearchText}}`);
       }
 
       // Apply sorting
@@ -129,6 +163,9 @@ const Movies = () => {
           imdbId: movie.imdb_id,
           voteCount: movie.vote_count || 0,
           originalLanguage: movie.original_language || "",
+          writing: movie.writing || "",
+          sound: movie.sound || "",
+          keywords: movie.keywords || [],
         })),
         totalCount: count || 0,
       };
@@ -335,6 +372,10 @@ const Movies = () => {
                     onYearClick={handleYearClick}
                     onGenreClick={handleGenreClick}
                     onLanguageClick={handleLanguageClick}
+                    onActorClick={handleActorClick}
+                    onDirectorClick={handleDirectorClick}
+                    onWriterClick={handleWriterClick}
+                    onKeywordClick={handleKeywordClick}
                   />
                 ))}
               </div>
