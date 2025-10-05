@@ -22,12 +22,17 @@ export type Database = {
           genres: string[] | null
           id: string
           imdb_id: string
+          original_language: string | null
           plot: string | null
+          popularity: number | null
           poster: string | null
           rating: number | null
           runtime: string | null
+          status: string | null
+          tagline: string | null
           title: string
           updated_at: string | null
+          vote_count: number | null
           year: number
         }
         Insert: {
@@ -37,12 +42,17 @@ export type Database = {
           genres?: string[] | null
           id?: string
           imdb_id: string
+          original_language?: string | null
           plot?: string | null
+          popularity?: number | null
           poster?: string | null
           rating?: number | null
           runtime?: string | null
+          status?: string | null
+          tagline?: string | null
           title: string
           updated_at?: string | null
+          vote_count?: number | null
           year: number
         }
         Update: {
@@ -52,12 +62,17 @@ export type Database = {
           genres?: string[] | null
           id?: string
           imdb_id?: string
+          original_language?: string | null
           plot?: string | null
+          popularity?: number | null
           poster?: string | null
           rating?: number | null
           runtime?: string | null
+          status?: string | null
+          tagline?: string | null
           title?: string
           updated_at?: string | null
+          vote_count?: number | null
           year?: number
         }
         Relationships: []

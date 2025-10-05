@@ -25,6 +25,8 @@ const Account = () => {
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [ratingRange, setRatingRange] = useState<[number, number]>([6.9, 10]);
   const [yearRange, setYearRange] = useState<[number, number]>([2025, 2025]);
+  const [minVoteCount, setMinVoteCount] = useState(0);
+  const [minPopularity, setMinPopularity] = useState(0);
 
   const handleGenreToggle = (genre: string) => {
     setSelectedGenres(prev =>
@@ -50,6 +52,8 @@ const Account = () => {
           maxRating: ratingRange[1],
           yearRange,
           genres: selectedGenres.length > 0 ? selectedGenres : undefined,
+          minVoteCount,
+          minPopularity,
         }
       });
 
@@ -94,6 +98,10 @@ const Account = () => {
               onRatingRangeChange={setRatingRange}
               yearRange={yearRange}
               onYearRangeChange={setYearRange}
+              minVoteCount={minVoteCount}
+              onMinVoteCountChange={setMinVoteCount}
+              minPopularity={minPopularity}
+              onMinPopularityChange={setMinPopularity}
             />
 
             <div className="flex gap-3 pt-4 border-t border-border">
@@ -111,6 +119,8 @@ const Account = () => {
                   setSelectedGenres([]);
                   setRatingRange([6.9, 10]);
                   setYearRange([2025, 2025]);
+                  setMinVoteCount(0);
+                  setMinPopularity(0);
                 }}
                 size="lg"
               >

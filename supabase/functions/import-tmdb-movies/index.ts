@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { minRating = 0, maxRating = 10, yearRange = [2025, 2025], genres } = await req.json();
+    const { minRating = 0, maxRating = 10, yearRange = [2025, 2025], genres, minVoteCount = 0, minPopularity = 0 } = await req.json();
     const TMDB_API_KEY = Deno.env.get("TMDB_API_KEY");
 
     if (!TMDB_API_KEY) {
@@ -42,7 +42,7 @@ serve(async (req) => {
       logs.push(`[${new Date().toISOString()}] ${msg}`);
     };
 
-    logMsg(`Starting import with filters: ratingRange=${minRating}-${maxRating}, yearRange=${yearRange.join('-')}, genres=${genres?.join(',') || 'all'}`);
+    logMsg(`Starting import with filters: ratingRange=${minRating}-${maxRating}, yearRange=${yearRange.join('-')}, genres=${genres?.join(',') || 'all'}, minVoteCount=${minVoteCount}, minPopularity=${minPopularity}`);
 
     // Get genre IDs from TMDB if genres filter is specified
     let genreIds: number[] | undefined;
@@ -60,10 +60,13 @@ serve(async (req) => {
     // Fetch all pages of results
     while (page <= totalPages) {
       // Build query parameters
-      let queryParams = `api_key=${TMDB_API_KEY}&primary_release_date.gte=${yearRange[0]}-01-01&primary_release_date.lte=${yearRange[1]}-12-31&vote_average.gte=${minRating}&vote_average.lte=${maxRating}&sort_by=vote_average.desc&page=${page}`;
+      let queryParams = `api_key=${TMDB_API_KEY}&primary_release_date.gte=${yearRange[0]}-01-01&primary_release_date.lte=${yearRange[1]}-12-31&vote_average.gte=${minRating}&vote_average.lte=${maxRating}&vote_count.gte=${minVoteCount}&sort_by=vote_average.desc&page=${page}`;
       if (genreIds && genreIds.length > 0) {
         queryParams += `&with_genres=${genreIds.join(',')}`;
       }
+      
+      // Note: TMDB API doesn't support popularity filtering directly in discover endpoint
+      // We'll filter by popularity after fetching
 
       const tmdbResponse = await fetch(
         `https://api.themoviedb.org/3/discover/movie?${queryParams}`
@@ -82,6 +85,11 @@ serve(async (req) => {
       // Process each movie
       for (const movie of data.results) {
         try {
+          // Filter by popularity if specified
+          if (minPopularity > 0 && movie.popularity < minPopularity) {
+            continue;
+          }
+
           // Check if movie already exists
           const imdbId = `tmdb_${movie.id}`;
           const { data: existing } = await supabaseClient
@@ -132,12 +140,17 @@ serve(async (req) => {
               title: details.title,
               year: parseInt(details.release_date?.split("-")[0] || yearRange[0].toString()),
               rating: details.vote_average || null,
+              vote_count: details.vote_count || null,
+              popularity: details.popularity || null,
               poster: details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : null,
               genres: movieGenres,
               plot: details.overview || null,
               director,
               actors,
               runtime,
+              original_language: details.original_language || null,
+              tagline: details.tagline || null,
+              status: details.status || null,
             });
 
           if (error) {
