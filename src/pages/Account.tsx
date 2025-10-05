@@ -23,9 +23,11 @@ const Account = () => {
   
   // Filter states
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [excludedGenres, setExcludedGenres] = useState<string[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [ratingRange, setRatingRange] = useState<[number, number]>([6.9, 10]);
   const [yearRange, setYearRange] = useState<[number, number]>([2025, 2025]);
-  const [voteCountRange, setVoteCountRange] = useState<[number, number]>([0, 10000]);
+  const [minVoteCount, setMinVoteCount] = useState(100);
   const [minPopularity, setMinPopularity] = useState(0);
 
   const handleGenreToggle = (genre: string) => {
@@ -33,6 +35,22 @@ const Account = () => {
       prev.includes(genre)
         ? prev.filter(g => g !== genre)
         : [...prev, genre]
+    );
+  };
+
+  const handleExcludedGenreToggle = (genre: string) => {
+    setExcludedGenres(prev =>
+      prev.includes(genre)
+        ? prev.filter(g => g !== genre)
+        : [...prev, genre]
+    );
+  };
+
+  const handleStatusToggle = (status: string) => {
+    setSelectedStatuses(prev =>
+      prev.includes(status)
+        ? prev.filter(s => s !== status)
+        : [...prev, status]
     );
   };
 
@@ -52,8 +70,9 @@ const Account = () => {
           maxRating: ratingRange[1],
           yearRange,
           genres: selectedGenres.length > 0 ? selectedGenres : undefined,
-          minVoteCount: voteCountRange[0],
-          maxVoteCount: voteCountRange[1],
+          excludedGenres: excludedGenres.length > 0 ? excludedGenres : undefined,
+          statuses: selectedStatuses.length > 0 ? selectedStatuses : undefined,
+          minVoteCount,
           minPopularity,
         }
       });
@@ -95,12 +114,16 @@ const Account = () => {
             <ImportFilterPanel
               selectedGenres={selectedGenres}
               onGenreToggle={handleGenreToggle}
+              excludedGenres={excludedGenres}
+              onExcludedGenreToggle={handleExcludedGenreToggle}
+              selectedStatuses={selectedStatuses}
+              onStatusToggle={handleStatusToggle}
               ratingRange={ratingRange}
               onRatingRangeChange={setRatingRange}
               yearRange={yearRange}
               onYearRangeChange={setYearRange}
-              voteCountRange={voteCountRange}
-              onVoteCountRangeChange={setVoteCountRange}
+              minVoteCount={minVoteCount}
+              onMinVoteCountChange={setMinVoteCount}
               minPopularity={minPopularity}
               onMinPopularityChange={setMinPopularity}
             />
@@ -118,9 +141,11 @@ const Account = () => {
                 variant="outline"
                 onClick={() => {
                   setSelectedGenres([]);
+                  setExcludedGenres([]);
+                  setSelectedStatuses([]);
                   setRatingRange([6.9, 10]);
                   setYearRange([2025, 2025]);
-                  setVoteCountRange([0, 10000]);
+                  setMinVoteCount(100);
                   setMinPopularity(0);
                 }}
                 size="lg"

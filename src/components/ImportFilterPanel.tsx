@@ -7,12 +7,16 @@ import { cn } from "@/lib/utils";
 interface ImportFilterPanelProps {
   selectedGenres: string[];
   onGenreToggle: (genre: string) => void;
+  excludedGenres: string[];
+  onExcludedGenreToggle: (genre: string) => void;
+  selectedStatuses: string[];
+  onStatusToggle: (status: string) => void;
   ratingRange: [number, number];
   onRatingRangeChange: (range: [number, number]) => void;
   yearRange: [number, number];
   onYearRangeChange: (range: [number, number]) => void;
-  voteCountRange: [number, number];
-  onVoteCountRangeChange: (range: [number, number]) => void;
+  minVoteCount: number;
+  onMinVoteCountChange: (value: number) => void;
   minPopularity: number;
   onMinPopularityChange: (value: number) => void;
 }
@@ -33,22 +37,37 @@ const GENRES = [
   "Mystery",
 ];
 
+const STATUSES = [
+  "Released",
+  "Post Production",
+  "In Production",
+  "Planned",
+  "Rumored",
+  "Canceled",
+];
+
 export const ImportFilterPanel = ({
   selectedGenres,
   onGenreToggle,
+  excludedGenres,
+  onExcludedGenreToggle,
+  selectedStatuses,
+  onStatusToggle,
   ratingRange,
   onRatingRangeChange,
   yearRange,
   onYearRangeChange,
-  voteCountRange,
-  onVoteCountRangeChange,
+  minVoteCount,
+  onMinVoteCountChange,
   minPopularity,
   onMinPopularityChange,
 }: ImportFilterPanelProps) => {
   const selectedCount = selectedGenres.length + 
+    excludedGenres.length +
+    selectedStatuses.length +
     (ratingRange[0] > 0 || ratingRange[1] < 10 ? 1 : 0) + 
     (yearRange[0] !== 2025 || yearRange[1] !== 2025 ? 1 : 0) +
-    (voteCountRange[0] > 0 || voteCountRange[1] < 10000 ? 1 : 0) +
+    (minVoteCount > 100 ? 1 : 0) +
     (minPopularity > 0 ? 1 : 0);
 
   return (
@@ -67,8 +86,8 @@ export const ImportFilterPanel = ({
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <div className="space-y-3 md:col-span-2 lg:col-span-1">
           <div>
-            <Label className="text-base font-semibold text-foreground">Genres</Label>
-            <p className="text-xs text-muted-foreground mt-1">Select genres to import</p>
+            <Label className="text-base font-semibold text-foreground">Include Genres</Label>
+            <p className="text-xs text-muted-foreground mt-1">Select genres to import (leave empty for all)</p>
           </div>
           <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-2 rounded border border-border/50 bg-background/50">
             {GENRES.map((genre) => {
@@ -85,6 +104,58 @@ export const ImportFilterPanel = ({
                 >
                   {isSelected && <span className="mr-1">✓</span>}
                   {genre}
+                </Badge>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="space-y-3 md:col-span-2 lg:col-span-1">
+          <div>
+            <Label className="text-base font-semibold text-foreground">Exclude Genres</Label>
+            <p className="text-xs text-muted-foreground mt-1">Select genres to NOT import</p>
+          </div>
+          <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-2 rounded border border-border/50 bg-background/50">
+            {GENRES.map((genre) => {
+              const isExcluded = excludedGenres.includes(genre);
+              return (
+                <Badge
+                  key={genre}
+                  variant={isExcluded ? "destructive" : "outline"}
+                  className={cn(
+                    "cursor-pointer transition-all hover:scale-105",
+                    isExcluded && "ring-2 ring-destructive ring-offset-2 ring-offset-background"
+                  )}
+                  onClick={() => onExcludedGenreToggle(genre)}
+                >
+                  {isExcluded && <span className="mr-1">✗</span>}
+                  {genre}
+                </Badge>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="space-y-3 md:col-span-2 lg:col-span-1">
+          <div>
+            <Label className="text-base font-semibold text-foreground">Movie Status</Label>
+            <p className="text-xs text-muted-foreground mt-1">Select statuses to import (leave empty for all)</p>
+          </div>
+          <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-2 rounded border border-border/50 bg-background/50">
+            {STATUSES.map((status) => {
+              const isSelected = selectedStatuses.includes(status);
+              return (
+                <Badge
+                  key={status}
+                  variant={isSelected ? "default" : "outline"}
+                  className={cn(
+                    "cursor-pointer transition-all hover:scale-105",
+                    isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                  )}
+                  onClick={() => onStatusToggle(status)}
+                >
+                  {isSelected && <span className="mr-1">✓</span>}
+                  {status}
                 </Badge>
               );
             })}
@@ -161,17 +232,17 @@ export const ImportFilterPanel = ({
         <div className="space-y-3">
           <div>
             <Label className="text-base font-semibold text-foreground flex items-center justify-between">
-              <span>Vote Count Range</span>
+              <span>Minimum Vote Count</span>
               <Badge variant="secondary" className="text-sm font-bold">
-                {voteCountRange[0].toLocaleString()} - {voteCountRange[1].toLocaleString()}
+                {minVoteCount.toLocaleString()}+
               </Badge>
             </Label>
-            <p className="text-xs text-muted-foreground mt-1">Filter by vote count range</p>
+            <p className="text-xs text-muted-foreground mt-1">Filter by minimum number of votes</p>
           </div>
           <div className="pt-2">
             <Slider
-              value={voteCountRange}
-              onValueChange={(values) => onVoteCountRangeChange(values as [number, number])}
+              value={[minVoteCount]}
+              onValueChange={([value]) => onMinVoteCountChange(value)}
               min={0}
               max={10000}
               step={100}
@@ -180,7 +251,7 @@ export const ImportFilterPanel = ({
             <div className="flex justify-between text-xs text-muted-foreground mt-2">
               <span>0</span>
               <span>5,000</span>
-              <span>10,000</span>
+              <span>10,000+</span>
             </div>
           </div>
         </div>

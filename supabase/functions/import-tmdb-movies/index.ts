@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { minRating = 0, maxRating = 10, yearRange = [2025, 2025], genres, minVoteCount = 0, maxVoteCount = 10000, minPopularity = 0 } = await req.json();
+    const { minRating = 0, maxRating = 10, yearRange = [2025, 2025], genres, excludedGenres, statuses, minVoteCount = 100, minPopularity = 0 } = await req.json();
     const TMDB_API_KEY = Deno.env.get("TMDB_API_KEY");
 
     if (!TMDB_API_KEY) {
@@ -42,19 +42,30 @@ serve(async (req) => {
       logs.push(`[${new Date().toISOString()}] ${msg}`);
     };
 
-    logMsg(`Starting import with filters: ratingRange=${minRating}-${maxRating}, yearRange=${yearRange.join('-')}, genres=${genres?.join(',') || 'all'}, voteCountRange=${minVoteCount}-${maxVoteCount}, minPopularity=${minPopularity}`);
+    logMsg(`Starting import with filters: ratingRange=${minRating}-${maxRating}, yearRange=${yearRange.join('-')}, genres=${genres?.join(',') || 'all'}, excludedGenres=${excludedGenres?.join(',') || 'none'}, statuses=${statuses?.join(',') || 'all'}, minVoteCount=${minVoteCount}+, minPopularity=${minPopularity}`);
 
-    // Get genre IDs from TMDB if genres filter is specified
+    // Get genre IDs from TMDB if genres or excludedGenres filter is specified
     let genreIds: number[] | undefined;
-    if (genres && genres.length > 0) {
+    let excludedGenreIds: number[] | undefined;
+    if ((genres && genres.length > 0) || (excludedGenres && excludedGenres.length > 0)) {
       const genresResponse = await fetch(
         `https://api.themoviedb.org/3/genre/movie/list?api_key=${TMDB_API_KEY}`
       );
       const genresData = await genresResponse.json();
-      genreIds = genresData.genres
-        .filter((g: any) => genres.includes(g.name))
-        .map((g: any) => g.id);
-      logMsg(`Mapped genres to IDs: ${genreIds?.join(',') || 'none'}`);
+      
+      if (genres && genres.length > 0) {
+        genreIds = genresData.genres
+          .filter((g: any) => genres.includes(g.name))
+          .map((g: any) => g.id);
+        logMsg(`Mapped included genres to IDs: ${genreIds?.join(',') || 'none'}`);
+      }
+      
+      if (excludedGenres && excludedGenres.length > 0) {
+        excludedGenreIds = genresData.genres
+          .filter((g: any) => excludedGenres.includes(g.name))
+          .map((g: any) => g.id);
+        logMsg(`Mapped excluded genres to IDs: ${excludedGenreIds?.join(',') || 'none'}`);
+      }
     }
 
     // Fetch all pages of results
@@ -64,9 +75,12 @@ serve(async (req) => {
       if (genreIds && genreIds.length > 0) {
         queryParams += `&with_genres=${genreIds.join(',')}`;
       }
+      if (excludedGenreIds && excludedGenreIds.length > 0) {
+        queryParams += `&without_genres=${excludedGenreIds.join(',')}`;
+      }
       
       // Note: TMDB API doesn't support popularity filtering directly in discover endpoint
-      // We'll filter by popularity after fetching
+      // We'll filter by popularity and status after fetching
 
       const tmdbResponse = await fetch(
         `https://api.themoviedb.org/3/discover/movie?${queryParams}`
@@ -87,11 +101,6 @@ serve(async (req) => {
         try {
           // Filter by popularity if specified
           if (minPopularity > 0 && movie.popularity < minPopularity) {
-            continue;
-          }
-
-          // Filter by max vote count if specified
-          if (movie.vote_count > maxVoteCount) {
             continue;
           }
 
@@ -121,6 +130,13 @@ serve(async (req) => {
           }
 
           const details = await detailsResponse.json();
+
+          // Filter by status if specified
+          if (statuses && statuses.length > 0 && !statuses.includes(details.status)) {
+            logMsg(`⊘ Skipped: "${movie.title}" (status: ${details.status})`);
+            skippedMovies++;
+            continue;
+          }
 
           // Get director from credits
           const director = details.credits?.crew?.find((person: any) => person.job === "Director")?.name || null;
