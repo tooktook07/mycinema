@@ -222,12 +222,9 @@ export type Database = {
           in_watchlist: boolean | null
           media_id: string | null
           media_type: string
-          tv_show_id: string | null
           updated_at: string | null
           user_id: string
           user_rating: number | null
-          watched: boolean | null
-          watched_at: string | null
         }
         Insert: {
           created_at?: string | null
@@ -235,12 +232,9 @@ export type Database = {
           in_watchlist?: boolean | null
           media_id?: string | null
           media_type?: string
-          tv_show_id?: string | null
           updated_at?: string | null
           user_id?: string
           user_rating?: number | null
-          watched?: boolean | null
-          watched_at?: string | null
         }
         Update: {
           created_at?: string | null
@@ -248,12 +242,9 @@ export type Database = {
           in_watchlist?: boolean | null
           media_id?: string | null
           media_type?: string
-          tv_show_id?: string | null
           updated_at?: string | null
           user_id?: string
           user_rating?: number | null
-          watched?: boolean | null
-          watched_at?: string | null
         }
         Relationships: [
           {
@@ -261,13 +252,6 @@ export type Database = {
             columns: ["media_id"]
             isOneToOne: false
             referencedRelation: "movies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_movie_data_tv_show_id_fkey"
-            columns: ["tv_show_id"]
-            isOneToOne: false
-            referencedRelation: "tv_shows"
             referencedColumns: ["id"]
           },
         ]
