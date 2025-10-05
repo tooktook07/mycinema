@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { minRating = 6.9, yearRange = [2025, 2025], genres } = await req.json();
+    const { minRating = 0, maxRating = 10, yearRange = [2025, 2025], genres } = await req.json();
     const TMDB_API_KEY = Deno.env.get("TMDB_API_KEY");
 
     if (!TMDB_API_KEY) {
@@ -42,7 +42,7 @@ serve(async (req) => {
       logs.push(`[${new Date().toISOString()}] ${msg}`);
     };
 
-    logMsg(`Starting import with filters: minRating=${minRating}, yearRange=${yearRange.join('-')}, genres=${genres?.join(',') || 'all'}`);
+    logMsg(`Starting import with filters: ratingRange=${minRating}-${maxRating}, yearRange=${yearRange.join('-')}, genres=${genres?.join(',') || 'all'}`);
 
     // Get genre IDs from TMDB if genres filter is specified
     let genreIds: number[] | undefined;
@@ -60,7 +60,7 @@ serve(async (req) => {
     // Fetch all pages of results
     while (page <= totalPages) {
       // Build query parameters
-      let queryParams = `api_key=${TMDB_API_KEY}&primary_release_date.gte=${yearRange[0]}-01-01&primary_release_date.lte=${yearRange[1]}-12-31&vote_average.gte=${minRating}&sort_by=vote_average.desc&page=${page}`;
+      let queryParams = `api_key=${TMDB_API_KEY}&primary_release_date.gte=${yearRange[0]}-01-01&primary_release_date.lte=${yearRange[1]}-12-31&vote_average.gte=${minRating}&vote_average.lte=${maxRating}&sort_by=vote_average.desc&page=${page}`;
       if (genreIds && genreIds.length > 0) {
         queryParams += `&with_genres=${genreIds.join(',')}`;
       }

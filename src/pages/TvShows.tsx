@@ -11,13 +11,13 @@ const TvShows = () => {
 
   // Temporary filter states
   const [tempGenres, setTempGenres] = useState<string[]>([]);
-  const [tempMinRating, setTempMinRating] = useState(0);
-  const [tempYearRange, setTempYearRange] = useState<[number, number]>([1900, 2024]);
+  const [tempRatingRange, setTempRatingRange] = useState<[number, number]>([0, 10]);
+  const [tempYearRange, setTempYearRange] = useState<[number, number]>([1900, 2030]);
 
   // Applied filter states
   const [appliedGenres, setAppliedGenres] = useState<string[]>([]);
-  const [appliedMinRating, setAppliedMinRating] = useState(0);
-  const [appliedYearRange, setAppliedYearRange] = useState<[number, number]>([1900, 2024]);
+  const [appliedRatingRange, setAppliedRatingRange] = useState<[number, number]>([0, 10]);
+  const [appliedYearRange, setAppliedYearRange] = useState<[number, number]>([1900, 2030]);
 
   const handleGenreToggle = (genre: string) => {
     setTempGenres((prev) =>
@@ -27,31 +27,31 @@ const TvShows = () => {
 
   const handleApplyFilters = () => {
     setAppliedGenres(tempGenres);
-    setAppliedMinRating(tempMinRating);
+    setAppliedRatingRange(tempRatingRange);
     setAppliedYearRange(tempYearRange);
   };
 
   const handleResetFilters = () => {
     setTempGenres([]);
-    setTempMinRating(0);
-    setTempYearRange([1900, 2024]);
+    setTempRatingRange([0, 10]);
+    setTempYearRange([1900, 2030]);
     setAppliedGenres([]);
-    setAppliedMinRating(0);
-    setAppliedYearRange([1900, 2024]);
+    setAppliedRatingRange([0, 10]);
+    setAppliedYearRange([1900, 2030]);
   };
 
   const filteredShows = useMemo(() => {
     return mockTvShows.filter((show) => {
       const matchesGenre =
         appliedGenres.length === 0 || show.genre.some((g) => appliedGenres.includes(g));
-      const matchesRating = show.rating >= appliedMinRating;
+      const matchesRating = show.rating >= appliedRatingRange[0] && show.rating <= appliedRatingRange[1];
       const matchesYear =
         show.startYear >= appliedYearRange[0] &&
         show.startYear <= appliedYearRange[1];
 
       return matchesGenre && matchesRating && matchesYear;
     });
-  }, [appliedGenres, appliedMinRating, appliedYearRange]);
+  }, [appliedGenres, appliedRatingRange, appliedYearRange]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/10">
@@ -62,8 +62,8 @@ const TvShows = () => {
           <FilterPanel
             selectedGenres={tempGenres}
             onGenreToggle={handleGenreToggle}
-            minRating={tempMinRating}
-            onMinRatingChange={setTempMinRating}
+            ratingRange={tempRatingRange}
+            onRatingRangeChange={setTempRatingRange}
             yearRange={tempYearRange}
             onYearRangeChange={setTempYearRange}
             onApply={handleApplyFilters}

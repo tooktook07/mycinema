@@ -20,12 +20,12 @@ const Movies = () => {
 
   // Temporary filter states
   const [tempGenres, setTempGenres] = useState<string[]>([]);
-  const [tempMinRating, setTempMinRating] = useState(0);
+  const [tempRatingRange, setTempRatingRange] = useState<[number, number]>([0, 10]);
   const [tempYearRange, setTempYearRange] = useState<[number, number]>([1900, 2030]);
 
   // Applied filter states
   const [appliedGenres, setAppliedGenres] = useState<string[]>([]);
-  const [appliedMinRating, setAppliedMinRating] = useState(0);
+  const [appliedRatingRange, setAppliedRatingRange] = useState<[number, number]>([0, 10]);
   const [appliedYearRange, setAppliedYearRange] = useState<[number, number]>([1900, 2030]);
 
   const handleGenreToggle = (genre: string) => {
@@ -36,24 +36,24 @@ const Movies = () => {
 
   const handleApplyFilters = () => {
     setAppliedGenres(tempGenres);
-    setAppliedMinRating(tempMinRating);
+    setAppliedRatingRange(tempRatingRange);
     setAppliedYearRange(tempYearRange);
     setCurrentPage(1); // Reset to first page when filters change
   };
 
   const handleResetFilters = () => {
     setTempGenres([]);
-    setTempMinRating(0);
+    setTempRatingRange([0, 10]);
     setTempYearRange([1900, 2030]);
     setAppliedGenres([]);
-    setAppliedMinRating(0);
+    setAppliedRatingRange([0, 10]);
     setAppliedYearRange([1900, 2030]);
     setCurrentPage(1);
   };
 
   // Fetch movies with filters, pagination, and sorting
   const { data: moviesData, isLoading, error } = useQuery({
-    queryKey: ["movies", appliedGenres, appliedMinRating, appliedYearRange, currentPage, sortBy, sortOrder],
+    queryKey: ["movies", appliedGenres, appliedRatingRange, appliedYearRange, currentPage, sortBy, sortOrder],
     queryFn: async () => {
       let query = supabase
         .from("movies")
@@ -63,8 +63,8 @@ const Movies = () => {
       if (appliedGenres.length > 0) {
         query = query.overlaps("genres", appliedGenres);
       }
-      if (appliedMinRating > 0) {
-        query = query.gte("rating", appliedMinRating);
+      if (appliedRatingRange[0] > 0 || appliedRatingRange[1] < 10) {
+        query = query.gte("rating", appliedRatingRange[0]).lte("rating", appliedRatingRange[1]);
       }
       query = query.gte("year", appliedYearRange[0]).lte("year", appliedYearRange[1]);
 
@@ -198,8 +198,8 @@ const Movies = () => {
           <FilterPanel
             selectedGenres={tempGenres}
             onGenreToggle={handleGenreToggle}
-            minRating={tempMinRating}
-            onMinRatingChange={setTempMinRating}
+            ratingRange={tempRatingRange}
+            onRatingRangeChange={setTempRatingRange}
             yearRange={tempYearRange}
             onYearRangeChange={setTempYearRange}
             onApply={handleApplyFilters}

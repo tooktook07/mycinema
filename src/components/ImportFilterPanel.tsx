@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils";
 interface ImportFilterPanelProps {
   selectedGenres: string[];
   onGenreToggle: (genre: string) => void;
-  minRating: number;
-  onMinRatingChange: (value: number) => void;
+  ratingRange: [number, number];
+  onRatingRangeChange: (range: [number, number]) => void;
   yearRange: [number, number];
   onYearRangeChange: (range: [number, number]) => void;
 }
@@ -32,12 +32,12 @@ const GENRES = [
 export const ImportFilterPanel = ({
   selectedGenres,
   onGenreToggle,
-  minRating,
-  onMinRatingChange,
+  ratingRange,
+  onRatingRangeChange,
   yearRange,
   onYearRangeChange,
 }: ImportFilterPanelProps) => {
-  const selectedCount = selectedGenres.length + (minRating > 0 ? 1 : 0) + 
+  const selectedCount = selectedGenres.length + (ratingRange[0] > 0 || ratingRange[1] < 10 ? 1 : 0) + 
     (yearRange[0] !== 2025 || yearRange[1] !== 2025 ? 1 : 0);
 
   return (
@@ -83,17 +83,17 @@ export const ImportFilterPanel = ({
         <div className="space-y-3">
           <div>
             <Label className="text-base font-semibold text-foreground flex items-center justify-between">
-              <span>Minimum IMDB Score</span>
+              <span>IMDB Score Range</span>
               <Badge variant="secondary" className="text-sm font-bold">
-                {minRating.toFixed(1)}+
+                {ratingRange[0].toFixed(1)} - {ratingRange[1].toFixed(1)}
               </Badge>
             </Label>
-            <p className="text-xs text-muted-foreground mt-1">Filter by minimum rating</p>
+            <p className="text-xs text-muted-foreground mt-1">Filter by rating range</p>
           </div>
           <div className="pt-2">
             <Slider
-              value={[minRating]}
-              onValueChange={([value]) => onMinRatingChange(value)}
+              value={ratingRange}
+              onValueChange={(values) => onRatingRangeChange(values as [number, number])}
               min={0}
               max={10}
               step={0.1}

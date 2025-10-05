@@ -23,7 +23,7 @@ const Account = () => {
   
   // Filter states
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
-  const [minRating, setMinRating] = useState(6.9);
+  const [ratingRange, setRatingRange] = useState<[number, number]>([6.9, 10]);
   const [yearRange, setYearRange] = useState<[number, number]>([2025, 2025]);
 
   const handleGenreToggle = (genre: string) => {
@@ -46,7 +46,8 @@ const Account = () => {
 
       const { data, error } = await supabase.functions.invoke('import-tmdb-movies', {
         body: {
-          minRating,
+          minRating: ratingRange[0],
+          maxRating: ratingRange[1],
           yearRange,
           genres: selectedGenres.length > 0 ? selectedGenres : undefined,
         }
@@ -89,8 +90,8 @@ const Account = () => {
             <ImportFilterPanel
               selectedGenres={selectedGenres}
               onGenreToggle={handleGenreToggle}
-              minRating={minRating}
-              onMinRatingChange={setMinRating}
+              ratingRange={ratingRange}
+              onRatingRangeChange={setRatingRange}
               yearRange={yearRange}
               onYearRangeChange={setYearRange}
             />
@@ -108,7 +109,7 @@ const Account = () => {
                 variant="outline"
                 onClick={() => {
                   setSelectedGenres([]);
-                  setMinRating(6.9);
+                  setRatingRange([6.9, 10]);
                   setYearRange([2025, 2025]);
                 }}
                 size="lg"
