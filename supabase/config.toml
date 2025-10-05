@@ -5,6 +5,3 @@ verify_jwt = true
 
 [functions.import-tmdb-movies]
 verify_jwt = true
-
-[functions.recommend-movies]
-verify_jwt = true
