@@ -5,26 +5,47 @@ import { FilterPanel } from "@/components/FilterPanel";
 import { mockMovies } from "@/data/mockMovies";
 
 const Index = () => {
-  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
-  const [minRating, setMinRating] = useState(0);
-  const [yearRange, setYearRange] = useState<[number, number]>([1900, 2024]);
+  // Temporary filter states (updated as user changes controls)
+  const [tempGenres, setTempGenres] = useState<string[]>([]);
+  const [tempMinRating, setTempMinRating] = useState(0);
+  const [tempYearRange, setTempYearRange] = useState<[number, number]>([1900, 2024]);
+
+  // Applied filter states (only updated when Apply is clicked)
+  const [appliedGenres, setAppliedGenres] = useState<string[]>([]);
+  const [appliedMinRating, setAppliedMinRating] = useState(0);
+  const [appliedYearRange, setAppliedYearRange] = useState<[number, number]>([1900, 2024]);
 
   const handleGenreToggle = (genre: string) => {
-    setSelectedGenres((prev) =>
+    setTempGenres((prev) =>
       prev.includes(genre) ? prev.filter((g) => g !== genre) : [...prev, genre]
     );
+  };
+
+  const handleApplyFilters = () => {
+    setAppliedGenres(tempGenres);
+    setAppliedMinRating(tempMinRating);
+    setAppliedYearRange(tempYearRange);
+  };
+
+  const handleResetFilters = () => {
+    setTempGenres([]);
+    setTempMinRating(0);
+    setTempYearRange([1900, 2024]);
+    setAppliedGenres([]);
+    setAppliedMinRating(0);
+    setAppliedYearRange([1900, 2024]);
   };
 
   const filteredMovies = useMemo(() => {
     return mockMovies.filter((movie) => {
       const matchesGenre =
-        selectedGenres.length === 0 || movie.genre.some((g) => selectedGenres.includes(g));
-      const matchesRating = movie.rating >= minRating;
-      const matchesYear = movie.year >= yearRange[0] && movie.year <= yearRange[1];
+        appliedGenres.length === 0 || movie.genre.some((g) => appliedGenres.includes(g));
+      const matchesRating = movie.rating >= appliedMinRating;
+      const matchesYear = movie.year >= appliedYearRange[0] && movie.year <= appliedYearRange[1];
 
       return matchesGenre && matchesRating && matchesYear;
     });
-  }, [selectedGenres, minRating, yearRange]);
+  }, [appliedGenres, appliedMinRating, appliedYearRange]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/10">
@@ -43,21 +64,22 @@ const Index = () => {
 
       {/* Main Content */}
       <div className="container mx-auto max-w-7xl px-4 py-8">
-        <div className="grid gap-8 lg:grid-cols-[300px_1fr]">
-          {/* Filters */}
-          <aside>
-            <FilterPanel
-              selectedGenres={selectedGenres}
-              onGenreToggle={handleGenreToggle}
-              minRating={minRating}
-              onMinRatingChange={setMinRating}
-              yearRange={yearRange}
-              onYearRangeChange={setYearRange}
-            />
-          </aside>
+        {/* Filters */}
+        <div className="mb-8">
+          <FilterPanel
+            selectedGenres={tempGenres}
+            onGenreToggle={handleGenreToggle}
+            minRating={tempMinRating}
+            onMinRatingChange={setTempMinRating}
+            yearRange={tempYearRange}
+            onYearRangeChange={setTempYearRange}
+            onApply={handleApplyFilters}
+            onReset={handleResetFilters}
+          />
+        </div>
 
-          {/* Results */}
-          <main>
+        {/* Results */}
+        <main>
             <div className="mb-6">
               <h2 className="text-2xl font-semibold text-foreground">
                 Recommended for You
@@ -82,8 +104,7 @@ const Index = () => {
                 ))}
               </div>
             )}
-          </main>
-        </div>
+        </main>
       </div>
     </div>
   );
