@@ -113,12 +113,6 @@ serve(async (req) => {
           // Use TMDB ID as temporary identifier for checking existence
           const tempId = `tmdb_${movie.id}`;
           
-          const { data: existing } = await supabaseClient
-            .from("movies")
-            .select("*")
-            .eq("imdb_id", tempId)
-            .maybeSingle();
-
           // Fetch detailed movie info to get additional data including IMDB ID
           const detailsResponse = await fetch(
             `https://api.themoviedb.org/3/movie/${movie.id}?api_key=${TMDB_API_KEY}&append_to_response=credits,external_ids`
@@ -133,7 +127,14 @@ serve(async (req) => {
           const details = await detailsResponse.json();
           
           // Get actual IMDB ID from external_ids, fallback to tmdb_ prefix if not available
-          const actualImdbId = details.external_ids?.imdb_id || `tmdb_${movie.id}`;
+          const actualImdbId = details.external_ids?.imdb_id || tempId;
+          
+          // Check if movie already exists using either temp ID or actual IMDB ID
+          const { data: existing } = await supabaseClient
+            .from("movies")
+            .select("*")
+            .or(`imdb_id.eq.${tempId},imdb_id.eq.${actualImdbId}`)
+            .maybeSingle();
 
           // Filter by status if specified
           if (statuses && statuses.length > 0 && !statuses.includes(details.status)) {
@@ -179,11 +180,11 @@ serve(async (req) => {
           };
 
           if (existing && syncMode) {
-            // Update existing movie
+            // Update existing movie using its database ID
             const { error } = await supabaseClient
               .from("movies")
               .update(movieData)
-              .eq("imdb_id", tempId);
+              .eq("id", existing.id);
 
             if (error) {
               logMsg(`✗ Error updating: "${details.title}" - ${error.message}`);
