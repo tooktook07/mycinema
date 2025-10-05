@@ -1,4 +1,4 @@
-import { Film, Tv, Star, TrendingUp, Calendar, BarChart3, Loader2, LogIn, ArrowRight } from "lucide-react";
+import { Film, Tv, Star, TrendingUp, Calendar, BarChart3, Loader2, LogIn, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
+import { MovieCard } from "@/components/MovieCard";
+import { useState as useMovieState } from "react";
 
 interface Stats {
   totalMovies: number;
@@ -24,10 +26,20 @@ interface Recommendation {
   title: string;
   year: number;
   genres: string[];
+  genre: string[];
   poster: string;
   rating: number;
   plot: string;
   recommendationReason: string;
+  imdbId: string;
+  voteCount?: number;
+  originalLanguage?: string;
+  actors?: string;
+  director?: string;
+  runtime?: string;
+  writing?: string;
+  sound?: string;
+  keywords?: string[];
 }
 
 const Index = () => {
@@ -40,9 +52,7 @@ const Index = () => {
 
   useEffect(() => {
     fetchStats();
-    if (user) {
-      fetchRecommendations();
-    }
+    fetchRecommendations(); // Fetch for all users
   }, [user]);
 
   const fetchStats = async () => {
@@ -135,24 +145,66 @@ const Index = () => {
   const fetchRecommendations = async () => {
     setLoadingRecommendations(true);
     try {
-      const { data, error } = await supabase.functions.invoke('recommend-movies', {
-        headers: {
-          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-        },
-      });
+      if (user) {
+        // Fetch AI recommendations for logged-in users
+        const { data, error } = await supabase.functions.invoke('recommend-movies', {
+          headers: {
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          },
+        });
 
-      if (error) {
-        console.error("Edge function error:", error);
-        throw error;
-      }
-      
-      console.log("Recommendations response:", data);
-      
-      if (data?.recommendations) {
-        setRecommendations(data.recommendations);
-        console.log("Set recommendations:", data.recommendations.length);
-      } else if (data?.message) {
-        console.log("Message from function:", data.message);
+        if (error) {
+          console.error("Edge function error:", error);
+          throw error;
+        }
+        
+        console.log("Recommendations response:", data);
+        
+        if (data?.recommendations) {
+          setRecommendations(data.recommendations);
+          console.log("Set recommendations:", data.recommendations.length);
+        } else if (data?.message) {
+          console.log("Message from function:", data.message);
+        }
+      } else {
+        // Fetch random top-rated movies for non-logged in users
+        const { data: randomMovies, error } = await supabase
+          .from('movies')
+          .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords')
+          .gte('rating', 7.0)
+          .not('rating', 'is', null)
+          .order('vote_count', { ascending: false })
+          .limit(100);
+
+        if (error) {
+          console.error("Error fetching random movies:", error);
+          throw error;
+        }
+
+        // Randomly select 12 movies from the top 100
+        const shuffled = (randomMovies || []).sort(() => Math.random() - 0.5);
+        const selected = shuffled.slice(0, 12).map(movie => ({
+          id: movie.id,
+          title: movie.title,
+          year: movie.year,
+          genres: movie.genres || [],
+          poster: movie.poster || '',
+          rating: movie.rating || 0,
+          plot: movie.plot || '',
+          imdbId: movie.imdb_id,
+          voteCount: movie.vote_count,
+          originalLanguage: movie.original_language,
+          genre: movie.genres || [],
+          actors: movie.actors || '',
+          director: movie.director || '',
+          runtime: movie.runtime || '',
+          writing: movie.writing || '',
+          sound: movie.sound || '',
+          keywords: movie.keywords || [],
+          recommendationReason: 'Top rated movie'
+        }));
+        
+        setRecommendations(selected);
       }
     } catch (error) {
       console.error("Error fetching recommendations:", error);
@@ -322,75 +374,83 @@ const Index = () => {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
-          {/* Recommendations for logged in users */}
-          {user && (
-            <Card className="md:col-span-2">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Star className="h-5 w-5 text-yellow-500" />
-                  AI Recommendations For You
-                </CardTitle>
-                <CardDescription>Based on your ratings, we think you'll love these movies</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {loadingRecommendations ? (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="text-center space-y-2">
-                      <Loader2 className="h-8 w-8 animate-spin mx-auto" />
-                      <p className="text-sm text-muted-foreground">Finding movies you'll love...</p>
-                    </div>
-                  </div>
-                ) : recommendations.length === 0 ? (
-                  <div className="text-center py-12 px-4 bg-muted/30 rounded-lg border-2 border-dashed">
-                    <Star className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-lg font-semibold mb-2">No recommendations yet</p>
-                    <p className="text-sm text-muted-foreground mb-4">Rate some movies with 7+ to get recommendations</p>
-                    <Button onClick={() => navigate("/movies")} variant="outline">
-                      <Film className="h-4 w-4 mr-2" />
-                      Browse Movies
-                    </Button>
-                  </div>
+          {/* Recommendations for all users */}
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                {user ? (
+                  <>
+                    <Sparkles className="h-5 w-5 text-yellow-500" />
+                    AI Recommendations For You
+                  </>
                 ) : (
-                  <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-                    {recommendations.map((movie) => (
-                      <Link
-                        key={movie.id}
-                        to={`/movies?search=${encodeURIComponent(movie.title)}`}
-                        className="group"
-                      >
-                        <div className="space-y-2">
-                          <div className="relative aspect-[2/3] overflow-hidden rounded-lg border bg-muted">
-                            {movie.poster ? (
-                              <img
-                                src={movie.poster}
-                                alt={movie.title}
-                                className="object-cover w-full h-full transition-transform group-hover:scale-105"
-                              />
-                            ) : (
-                              <div className="flex items-center justify-center h-full">
-                                <Film className="h-12 w-12 text-muted-foreground" />
-                              </div>
-                            )}
-                            <Badge className="absolute top-2 right-2">
-                              <Star className="h-3 w-3 mr-1" />
-                              {movie.rating?.toFixed(1)}
-                            </Badge>
-                          </div>
-                          <div>
-                            <p className="font-medium text-sm line-clamp-2">{movie.title}</p>
-                            <p className="text-xs text-muted-foreground">{movie.year}</p>
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                              {movie.recommendationReason}
-                            </p>
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
+                  <>
+                    <Star className="h-5 w-5 text-yellow-500" />
+                    Top Rated Movies
+                  </>
                 )}
-              </CardContent>
-            </Card>
-          )}
+              </CardTitle>
+              <CardDescription>
+                {user 
+                  ? "Based on your ratings, we think you'll love these movies"
+                  : "Discover highly-rated movies from our collection"
+                }
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingRecommendations ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center space-y-2">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+                    <p className="text-sm text-muted-foreground">
+                      {user ? "Finding movies you'll love..." : "Loading top movies..."}
+                    </p>
+                  </div>
+                </div>
+              ) : recommendations.length === 0 ? (
+                <div className="text-center py-12 px-4 bg-muted/30 rounded-lg border-2 border-dashed">
+                  <Star className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-lg font-semibold mb-2">
+                    {user ? "No recommendations yet" : "No movies available"}
+                  </p>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {user 
+                      ? "Rate some movies with 7+ to get personalized recommendations"
+                      : "Check back later for top-rated movies"
+                    }
+                  </p>
+                  <Button onClick={() => navigate("/movies")} variant="outline">
+                    <Film className="h-4 w-4 mr-2" />
+                    Browse Movies
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                  {recommendations.map((movie) => (
+                    <MovieCard
+                      key={movie.id}
+                      id={movie.id}
+                      title={movie.title}
+                      year={movie.year}
+                      rating={movie.rating}
+                      genre={movie.genre}
+                      poster={movie.poster}
+                      imdbId={movie.imdbId}
+                      plot={movie.plot}
+                      voteCount={movie.voteCount}
+                      originalLanguage={movie.originalLanguage}
+                      actors={movie.actors}
+                      director={movie.director}
+                      runtime={movie.runtime}
+                      writing={movie.writing}
+                      sound={movie.sound}
+                      keywords={movie.keywords}
+                    />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Top Genres */}
           <Card>
