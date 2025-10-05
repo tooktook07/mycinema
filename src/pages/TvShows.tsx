@@ -9,42 +9,25 @@ import { Button } from "@/components/ui/button";
 const TvShows = () => {
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
 
-  // Temporary filter states
-  const [tempGenres, setTempGenres] = useState<string[]>([]);
-  const [tempRatingRange, setTempRatingRange] = useState<[number, number]>([0, 10]);
-  const [tempYearRange, setTempYearRange] = useState<[number, number]>([1900, 2030]);
-  const [tempLanguages, setTempLanguages] = useState<string[]>([]);
-
-  // Applied filter states
+  // Filter states
   const [appliedGenres, setAppliedGenres] = useState<string[]>([]);
   const [appliedRatingRange, setAppliedRatingRange] = useState<[number, number]>([0, 10]);
   const [appliedYearRange, setAppliedYearRange] = useState<[number, number]>([1900, 2030]);
   const [appliedLanguages, setAppliedLanguages] = useState<string[]>([]);
 
   const handleGenreToggle = (genre: string) => {
-    setTempGenres((prev) =>
+    setAppliedGenres((prev) =>
       prev.includes(genre) ? prev.filter((g) => g !== genre) : [...prev, genre]
     );
   };
 
   const handleLanguageToggle = (language: string) => {
-    setTempLanguages((prev) =>
+    setAppliedLanguages((prev) =>
       prev.includes(language) ? prev.filter((l) => l !== language) : [...prev, language]
     );
   };
 
-  const handleApplyFilters = () => {
-    setAppliedGenres(tempGenres);
-    setAppliedRatingRange(tempRatingRange);
-    setAppliedYearRange(tempYearRange);
-    setAppliedLanguages(tempLanguages);
-  };
-
   const handleResetFilters = () => {
-    setTempGenres([]);
-    setTempRatingRange([0, 10]);
-    setTempYearRange([1900, 2030]);
-    setTempLanguages([]);
     setAppliedGenres([]);
     setAppliedRatingRange([0, 10]);
     setAppliedYearRange([1900, 2030]);
@@ -71,15 +54,14 @@ const TvShows = () => {
         {/* Filters */}
         <div className="mb-8">
           <FilterPanel
-            selectedGenres={tempGenres}
+            selectedGenres={appliedGenres}
             onGenreToggle={handleGenreToggle}
-            ratingRange={tempRatingRange}
-            onRatingRangeChange={setTempRatingRange}
-            yearRange={tempYearRange}
-            onYearRangeChange={setTempYearRange}
-            selectedLanguages={tempLanguages}
+            ratingRange={appliedRatingRange}
+            onRatingRangeChange={setAppliedRatingRange}
+            yearRange={appliedYearRange}
+            onYearRangeChange={setAppliedYearRange}
+            selectedLanguages={appliedLanguages}
             onLanguageToggle={handleLanguageToggle}
-            onApply={handleApplyFilters}
             onReset={handleResetFilters}
           />
         </div>

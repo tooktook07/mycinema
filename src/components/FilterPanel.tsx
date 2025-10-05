@@ -14,7 +14,6 @@ interface FilterPanelProps {
   onYearRangeChange: (range: [number, number]) => void;
   selectedLanguages: string[];
   onLanguageToggle: (language: string) => void;
-  onApply: () => void;
   onReset: () => void;
 }
 
@@ -55,7 +54,6 @@ export const FilterPanel = ({
   onYearRangeChange,
   selectedLanguages,
   onLanguageToggle,
-  onApply,
   onReset,
 }: FilterPanelProps) => {
   const selectedCount = selectedGenres.length + 
@@ -74,6 +72,15 @@ export const FilterPanel = ({
             </Badge>
           )}
         </h3>
+        {selectedCount > 0 && (
+          <Button 
+            variant="destructive" 
+            onClick={onReset}
+            className="font-bold"
+          >
+            Reset All Filters
+          </Button>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-4">
@@ -197,22 +204,6 @@ export const FilterPanel = ({
         </div>
       </div>
 
-      <div className="flex gap-3 justify-end pt-4 border-t border-border">
-        <Button 
-          variant="outline" 
-          onClick={onReset}
-          disabled={selectedCount === 0}
-          className="min-w-24"
-        >
-          Reset
-        </Button>
-        <Button 
-          onClick={onApply}
-          className="min-w-24"
-        >
-          Apply Filters
-        </Button>
-      </div>
     </div>
   );
 };

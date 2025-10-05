@@ -18,14 +18,7 @@ const Movies = () => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [itemsPerPage, setItemsPerPage] = useState(50);
 
-  // Temporary filter states
-  const [tempGenres, setTempGenres] = useState<string[]>([]);
-  const [tempRatingRange, setTempRatingRange] = useState<[number, number]>([0, 10]);
-  const [tempYearRange, setTempYearRange] = useState<[number, number]>([1900, 2030]);
-  const [tempLanguages, setTempLanguages] = useState<string[]>([]);
-  const [tempSearchText, setTempSearchText] = useState<string>("");
-
-  // Applied filter states
+  // Filter states
   const [appliedGenres, setAppliedGenres] = useState<string[]>([]);
   const [appliedRatingRange, setAppliedRatingRange] = useState<[number, number]>([0, 10]);
   const [appliedYearRange, setAppliedYearRange] = useState<[number, number]>([1900, 2030]);
@@ -33,32 +26,20 @@ const Movies = () => {
   const [appliedSearchText, setAppliedSearchText] = useState<string>("");
 
   const handleGenreToggle = (genre: string) => {
-    setTempGenres((prev) =>
+    setAppliedGenres((prev) =>
       prev.includes(genre) ? prev.filter((g) => g !== genre) : [...prev, genre]
     );
+    setCurrentPage(1);
   };
 
   const handleLanguageToggle = (language: string) => {
-    setTempLanguages((prev) =>
+    setAppliedLanguages((prev) =>
       prev.includes(language) ? prev.filter((l) => l !== language) : [...prev, language]
     );
-  };
-
-  const handleApplyFilters = () => {
-    setAppliedGenres(tempGenres);
-    setAppliedRatingRange(tempRatingRange);
-    setAppliedYearRange(tempYearRange);
-    setAppliedLanguages(tempLanguages);
-    setAppliedSearchText(tempSearchText);
-    setCurrentPage(1); // Reset to first page when filters change
+    setCurrentPage(1);
   };
 
   const handleResetFilters = () => {
-    setTempGenres([]);
-    setTempRatingRange([0, 10]);
-    setTempYearRange([1900, 2030]);
-    setTempLanguages([]);
-    setTempSearchText("");
     setAppliedGenres([]);
     setAppliedRatingRange([0, 10]);
     setAppliedYearRange([1900, 2030]);
@@ -68,45 +49,36 @@ const Movies = () => {
   };
 
   const handleYearClick = (year: number) => {
-    setTempYearRange([year, year]);
     setAppliedYearRange([year, year]);
     setCurrentPage(1);
   };
 
   const handleGenreClick = (genre: string) => {
-    const newGenres = [genre];
-    setTempGenres(newGenres);
-    setAppliedGenres(newGenres);
+    setAppliedGenres([genre]);
     setCurrentPage(1);
   };
 
   const handleLanguageClick = (language: string) => {
-    const newLanguages = [language];
-    setTempLanguages(newLanguages);
-    setAppliedLanguages(newLanguages);
+    setAppliedLanguages([language]);
     setCurrentPage(1);
   };
 
   const handleActorClick = (actor: string) => {
-    setTempSearchText(actor);
     setAppliedSearchText(actor);
     setCurrentPage(1);
   };
 
   const handleDirectorClick = (director: string) => {
-    setTempSearchText(director);
     setAppliedSearchText(director);
     setCurrentPage(1);
   };
 
   const handleWriterClick = (writer: string) => {
-    setTempSearchText(writer);
     setAppliedSearchText(writer);
     setCurrentPage(1);
   };
 
   const handleKeywordClick = (keyword: string) => {
-    setTempSearchText(keyword);
     setAppliedSearchText(keyword);
     setCurrentPage(1);
   };
@@ -269,15 +241,20 @@ const Movies = () => {
         {/* Filters */}
         <div className="mb-8">
           <FilterPanel
-            selectedGenres={tempGenres}
+            selectedGenres={appliedGenres}
             onGenreToggle={handleGenreToggle}
-            ratingRange={tempRatingRange}
-            onRatingRangeChange={setTempRatingRange}
-            yearRange={tempYearRange}
-            onYearRangeChange={setTempYearRange}
-            selectedLanguages={tempLanguages}
+            ratingRange={appliedRatingRange}
+            onRatingRangeChange={(range) => {
+              setAppliedRatingRange(range);
+              setCurrentPage(1);
+            }}
+            yearRange={appliedYearRange}
+            onYearRangeChange={(range) => {
+              setAppliedYearRange(range);
+              setCurrentPage(1);
+            }}
+            selectedLanguages={appliedLanguages}
             onLanguageToggle={handleLanguageToggle}
-            onApply={handleApplyFilters}
             onReset={handleResetFilters}
           />
         </div>
