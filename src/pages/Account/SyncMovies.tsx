@@ -154,7 +154,7 @@ export const SyncMovies = () => {
               setSelectedLanguages([]);
               setRatingRange([6.9, 9.5]);
               setYearRange([2025, 2025]);
-              setMinVoteCount(100);
+              setMinVoteCount(1000);
               setMinPopularity(0);
             }}
             size="lg"
