@@ -1,10 +1,15 @@
 import { useState, useMemo } from "react";
-import { Film } from "lucide-react";
+import { Film, Grid, Table as TableIcon } from "lucide-react";
 import { MovieCard } from "@/components/MovieCard";
 import { FilterPanel } from "@/components/FilterPanel";
+import { MoviesTable } from "@/components/MoviesTable";
 import { mockMovies } from "@/data/mockMovies";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Index = () => {
+  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
+  
   // Temporary filter states (updated as user changes controls)
   const [tempGenres, setTempGenres] = useState<string[]>([]);
   const [tempMinRating, setTempMinRating] = useState(0);
@@ -47,6 +52,14 @@ const Index = () => {
     });
   }, [appliedGenres, appliedMinRating, appliedYearRange]);
 
+  const movies = useMemo(() => {
+    return filteredMovies.filter((item) => item.type === "movie");
+  }, [filteredMovies]);
+
+  const series = useMemo(() => {
+    return filteredMovies.filter((item) => item.type === "series");
+  }, [filteredMovies]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/10">
       {/* Hero Section */}
@@ -80,7 +93,8 @@ const Index = () => {
 
         {/* Results */}
         <main>
-            <div className="mb-6">
+          <div className="mb-6 flex items-center justify-between">
+            <div>
               <h2 className="text-2xl font-semibold text-foreground">
                 Recommended for You
               </h2>
@@ -88,22 +102,54 @@ const Index = () => {
                 {filteredMovies.length} {filteredMovies.length === 1 ? "result" : "results"} found
               </p>
             </div>
+            <div className="flex gap-2">
+              <Button
+                variant={viewMode === "grid" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("grid")}
+              >
+                <Grid className="h-4 w-4 mr-2" />
+                Grid
+              </Button>
+              <Button
+                variant={viewMode === "table" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("table")}
+              >
+                <TableIcon className="h-4 w-4 mr-2" />
+                Table
+              </Button>
+            </div>
+          </div>
 
-            {filteredMovies.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center">
-                <Film className="h-16 w-16 text-muted-foreground/50 mb-4" />
-                <h3 className="text-xl font-semibold text-foreground mb-2">No results found</h3>
-                <p className="text-muted-foreground">
-                  Try adjusting your filters to discover more content
-                </p>
-              </div>
-            ) : (
-              <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                {filteredMovies.map((movie) => (
-                  <MovieCard key={movie.id} {...movie} />
-                ))}
-              </div>
-            )}
+          {filteredMovies.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <Film className="h-16 w-16 text-muted-foreground/50 mb-4" />
+              <h3 className="text-xl font-semibold text-foreground mb-2">No results found</h3>
+              <p className="text-muted-foreground">
+                Try adjusting your filters to discover more content
+              </p>
+            </div>
+          ) : viewMode === "grid" ? (
+            <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              {filteredMovies.map((movie) => (
+                <MovieCard key={movie.id} {...movie} />
+              ))}
+            </div>
+          ) : (
+            <Tabs defaultValue="movies" className="w-full">
+              <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
+                <TabsTrigger value="movies">Movies ({movies.length})</TabsTrigger>
+                <TabsTrigger value="series">TV Series ({series.length})</TabsTrigger>
+              </TabsList>
+              <TabsContent value="movies">
+                <MoviesTable movies={movies} title="Movies" />
+              </TabsContent>
+              <TabsContent value="series">
+                <MoviesTable movies={series} title="TV Series" />
+              </TabsContent>
+            </Tabs>
+          )}
         </main>
       </div>
     </div>
