@@ -3,6 +3,7 @@ import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface FilterPanelProps {
   selectedGenres: string[];
@@ -38,44 +39,84 @@ export const FilterPanel = ({
   onApply,
   onReset,
 }: FilterPanelProps) => {
+  const selectedCount = selectedGenres.length + (minRating > 0 ? 1 : 0) + 
+    (yearRange[0] !== 1900 || yearRange[1] !== 2024 ? 1 : 0);
+
   return (
-    <div className="space-y-6 rounded-lg border border-border bg-card/50 p-6 backdrop-blur-sm">
-      <div className="grid gap-6 md:grid-cols-3">
-        <div>
-          <Label className="mb-3 text-lg font-semibold text-foreground">Genres</Label>
-          <div className="flex flex-wrap gap-2">
-            {GENRES.map((genre) => (
-              <Badge
-                key={genre}
-                variant={selectedGenres.includes(genre) ? "default" : "outline"}
-                className="cursor-pointer transition-all hover:scale-105"
-                onClick={() => onGenreToggle(genre)}
-              >
-                {genre}
-              </Badge>
-            ))}
+    <div className="space-y-6 rounded-lg border border-border bg-card p-6 shadow-lg">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+          Filters
+          {selectedCount > 0 && (
+            <Badge variant="default" className="ml-2">
+              {selectedCount} active
+            </Badge>
+          )}
+        </h3>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="space-y-3">
+          <div>
+            <Label className="text-base font-semibold text-foreground">Genres</Label>
+            <p className="text-xs text-muted-foreground mt-1">Select one or more genres</p>
+          </div>
+          <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-2 rounded border border-border/50 bg-background/50">
+            {GENRES.map((genre) => {
+              const isSelected = selectedGenres.includes(genre);
+              return (
+                <Badge
+                  key={genre}
+                  variant={isSelected ? "default" : "outline"}
+                  className={cn(
+                    "cursor-pointer transition-all hover:scale-105",
+                    isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                  )}
+                  onClick={() => onGenreToggle(genre)}
+                >
+                  {isSelected && <span className="mr-1">✓</span>}
+                  {genre}
+                </Badge>
+              );
+            })}
           </div>
         </div>
 
-        <div>
-          <Label className="mb-3 text-lg font-semibold text-foreground">
-            Minimum IMDB Score: {minRating.toFixed(1)}
-          </Label>
-          <Slider
-            value={[minRating]}
-            onValueChange={([value]) => onMinRatingChange(value)}
-            min={0}
-            max={10}
-            step={0.1}
-            className="w-full"
-          />
+        <div className="space-y-3">
+          <div>
+            <Label className="text-base font-semibold text-foreground flex items-center justify-between">
+              <span>Minimum IMDB Score</span>
+              <Badge variant="secondary" className="text-sm font-bold">
+                {minRating.toFixed(1)}+
+              </Badge>
+            </Label>
+            <p className="text-xs text-muted-foreground mt-1">Filter by minimum rating</p>
+          </div>
+          <div className="pt-2">
+            <Slider
+              value={[minRating]}
+              onValueChange={([value]) => onMinRatingChange(value)}
+              min={0}
+              max={10}
+              step={0.1}
+              className="w-full"
+            />
+            <div className="flex justify-between text-xs text-muted-foreground mt-2">
+              <span>0.0</span>
+              <span>5.0</span>
+              <span>10.0</span>
+            </div>
+          </div>
         </div>
 
-        <div>
-          <Label className="mb-3 text-lg font-semibold text-foreground">Release Year Range</Label>
-          <div className="flex gap-4">
+        <div className="space-y-3">
+          <div>
+            <Label className="text-base font-semibold text-foreground">Release Year Range</Label>
+            <p className="text-xs text-muted-foreground mt-1">Set min and max year</p>
+          </div>
+          <div className="flex gap-3">
             <div className="flex-1">
-              <Label htmlFor="year-from" className="mb-2 text-sm text-muted-foreground">
+              <Label htmlFor="year-from" className="text-xs text-muted-foreground mb-1.5 block">
                 From
               </Label>
               <Input
@@ -85,11 +126,14 @@ export const FilterPanel = ({
                 onChange={(e) => onYearRangeChange([parseInt(e.target.value) || 1900, yearRange[1]])}
                 min={1900}
                 max={yearRange[1]}
-                className="bg-background"
+                className="bg-background text-center font-semibold"
               />
             </div>
+            <div className="flex items-end pb-2">
+              <span className="text-muted-foreground">to</span>
+            </div>
             <div className="flex-1">
-              <Label htmlFor="year-to" className="mb-2 text-sm text-muted-foreground">
+              <Label htmlFor="year-to" className="text-xs text-muted-foreground mb-1.5 block">
                 To
               </Label>
               <Input
@@ -99,18 +143,26 @@ export const FilterPanel = ({
                 onChange={(e) => onYearRangeChange([yearRange[0], parseInt(e.target.value) || 2024])}
                 min={yearRange[0]}
                 max={2024}
-                className="bg-background"
+                className="bg-background text-center font-semibold"
               />
             </div>
           </div>
         </div>
       </div>
 
-      <div className="flex gap-3 justify-end">
-        <Button variant="outline" onClick={onReset}>
-          Reset Filters
+      <div className="flex gap-3 justify-end pt-4 border-t border-border">
+        <Button 
+          variant="outline" 
+          onClick={onReset}
+          disabled={selectedCount === 0}
+          className="min-w-24"
+        >
+          Reset
         </Button>
-        <Button onClick={onApply}>
+        <Button 
+          onClick={onApply}
+          className="min-w-24"
+        >
           Apply Filters
         </Button>
       </div>
