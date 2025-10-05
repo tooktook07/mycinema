@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { MovieCard } from "@/components/MovieCard";
+import { LastSyncCard } from "@/components/LastSyncCard";
 
 interface Stats {
   totalMovies: number;
@@ -16,20 +17,27 @@ interface Stats {
   userRatingsCount: number;
   userAvgRating: number;
   topGenres: { genre: string; count: number }[];
-  recentMovies: any[];
-  lastSync: any;
+  recentMovies: {
+    title: string;
+    rating: number;
+    year: number;
+    poster: string;
+  }[];
+  lastSync: {
+    created_at: string;
+    imported: number;
+    updated: number;
+  } | null;
 }
 
 interface Recommendation {
   id: string;
   title: string;
   year: number;
-  genres: string[];
   genre: string[];
   poster: string;
   rating: number;
   plot: string;
-  recommendationReason: string;
   imdbId: string;
   voteCount?: number;
   originalLanguage?: string;
@@ -40,6 +48,10 @@ interface Recommendation {
   sound?: string;
   keywords?: string[];
 }
+
+const RATING_THRESHOLD = 7.0;
+const TOP_MOVIES_LIMIT = 100;
+const RECOMMENDATIONS_COUNT = 12;
 
 const Index = () => {
   const navigate = useNavigate();
@@ -112,19 +124,15 @@ const Index = () => {
       let userAvgRating = 0;
       
       if (user && user.id !== 'dev-user-id') {
-        try {
-          const { data: userRatings } = await supabase
-            .from("user_ratings")
-            .select("user_rating")
-            .eq("user_id", user.id)
-            .not("user_rating", "is", null);
-          
-          if (userRatings && userRatings.length > 0) {
-            userRatingsCount = userRatings.length;
-            userAvgRating = userRatings.reduce((acc: number, r: any) => acc + (r.user_rating || 0), 0) / userRatings.length;
-          }
-        } catch (error) {
-          console.error("Error fetching user ratings:", error);
+        const { data: userRatings } = await supabase
+          .from("user_ratings")
+          .select("user_rating")
+          .eq("user_id", user.id)
+          .not("user_rating", "is", null);
+        
+        if (userRatings?.length) {
+          userRatingsCount = userRatings.length;
+          userAvgRating = userRatings.reduce((acc, r) => acc + (r.user_rating || 0), 0) / userRatings.length;
         }
       }
 
@@ -148,57 +156,38 @@ const Index = () => {
   const fetchRecommendations = async () => {
     setLoadingRecommendations(true);
     try {
+      // Try AI recommendations for logged-in users
       if (user && user.id !== 'dev-user-id') {
-        // Fetch AI recommendations for logged-in real users only
-        try {
-          const { data, error } = await supabase.functions.invoke('recommend-movies', {
-            headers: {
-              Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-            },
-          });
+        const session = await supabase.auth.getSession();
+        const { data, error } = await supabase.functions.invoke('recommend-movies', {
+          headers: {
+            Authorization: `Bearer ${session.data.session?.access_token}`,
+          },
+        });
 
-          if (error) {
-            console.error("Edge function error:", error);
-            // Don't throw, just fall back to random movies
-            throw error;
-          }
-          
-          console.log("Recommendations response:", data);
-          
-          if (data?.recommendations) {
-            setRecommendations(data.recommendations);
-            console.log("Set recommendations:", data.recommendations.length);
-            return; // Success, exit early
-          } else if (data?.message) {
-            console.log("Message from function:", data.message);
-          }
-        } catch (edgeFunctionError) {
-          console.error("Failed to get AI recommendations, falling back to top movies:", edgeFunctionError);
-          // Fall through to random movies
+        if (!error && data?.recommendations) {
+          setRecommendations(data.recommendations);
+          return;
         }
       }
       
-      // Fetch random top-rated movies for visitors, dev mode users, or as fallback
-      const { data: randomMovies, error } = await supabase
+      // Fallback: fetch top-rated movies
+      const { data: topMovies, error } = await supabase
         .from('movies')
         .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords')
-        .gte('rating', 7.0)
+        .gte('rating', RATING_THRESHOLD)
         .not('rating', 'is', null)
         .order('vote_count', { ascending: false })
-        .limit(100);
+        .limit(TOP_MOVIES_LIMIT);
 
-      if (error) {
-        console.error("Error fetching random movies:", error);
-        throw error;
-      }
+      if (error) throw error;
 
-      // Randomly select 12 movies from the top 100
-      const shuffled = (randomMovies || []).sort(() => Math.random() - 0.5);
-      const selected = shuffled.slice(0, 12).map(movie => ({
+      // Randomly select movies from top-rated
+      const shuffled = (topMovies || []).sort(() => Math.random() - 0.5);
+      const selected = shuffled.slice(0, RECOMMENDATIONS_COUNT).map(movie => ({
         id: movie.id,
         title: movie.title,
         year: movie.year,
-        genres: movie.genres || [],
         poster: movie.poster || '',
         rating: movie.rating || 0,
         plot: movie.plot || '',
@@ -211,8 +200,7 @@ const Index = () => {
         runtime: movie.runtime || '',
         writing: movie.writing || '',
         sound: movie.sound || '',
-        keywords: movie.keywords || [],
-        recommendationReason: user ? 'Top rated movie' : 'Highly rated'
+        keywords: movie.keywords || []
       }));
       
       setRecommendations(selected);
@@ -331,39 +319,7 @@ const Index = () => {
             </CardContent>
           </Card>
 
-          {isAdmin ? (
-            <Link to="/account">
-              <Card className="cursor-pointer transition-all hover:shadow-lg hover:scale-105">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Last Sync</CardTitle>
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {stats?.lastSync ? format(new Date(stats.lastSync.created_at), "MMM d") : "Never"}
-                  </div>
-                  <p className="text-xs text-muted-foreground flex items-center gap-1">
-                    Manage syncs <ArrowRight className="h-3 w-3" />
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
-          ) : (
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Last Sync</CardTitle>
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {stats?.lastSync ? format(new Date(stats.lastSync.created_at), "MMM d") : "Never"}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {stats?.lastSync ? `${stats.lastSync.imported + stats.lastSync.updated} changes` : "No syncs yet"}
-                </p>
-              </CardContent>
-            </Card>
-          )}
+          <LastSyncCard lastSync={stats?.lastSync || null} isAdmin={isAdmin} />
         </div>
 
         {/* Quick Actions */}
