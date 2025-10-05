@@ -55,19 +55,6 @@ const TvShows = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/10">
-      {/* Hero Section */}
-      <div className="border-b border-border/50 bg-gradient-to-r from-primary/20 via-background to-primary/20 px-4 py-12">
-        <div className="container mx-auto max-w-7xl">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Tv className="h-10 w-10 text-accent" />
-            <h1 className="text-4xl font-bold text-foreground md:text-5xl">TV Shows</h1>
-          </div>
-          <p className="text-center text-lg text-muted-foreground max-w-2xl mx-auto">
-            Explore TV series with season info, episode counts, and detailed timelines
-          </p>
-        </div>
-      </div>
-
       {/* Main Content */}
       <div className="container mx-auto max-w-7xl px-4 py-8">
         {/* Filters */}
