@@ -11,6 +11,7 @@ export interface Movie {
   actors?: string;
   runtime?: string;
   voteCount?: number;
+  originalLanguage?: string;
 }
 
 export interface TvShow {

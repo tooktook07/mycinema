@@ -1,12 +1,26 @@
-import { Star, ExternalLink, Search, Film, Users } from "lucide-react";
+import { Star, ExternalLink, Search, Users, Globe } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Movie } from "@/data/types";
 
-interface MovieCardProps extends Movie {}
+interface MovieCardProps extends Movie {
+  onYearClick?: (year: number) => void;
+  onGenreClick?: (genre: string) => void;
+}
 
-export const MovieCard = ({ title, rating, year, genre, poster, imdbId, voteCount }: MovieCardProps) => {
+export const MovieCard = ({ 
+  title, 
+  rating, 
+  year, 
+  genre, 
+  poster, 
+  imdbId, 
+  voteCount, 
+  originalLanguage,
+  onYearClick,
+  onGenreClick
+}: MovieCardProps) => {
   const sanitizedTitle = title.trim().slice(0, 200);
   const sanitizedYear = Math.max(1800, Math.min(2100, year));
 
@@ -38,15 +52,32 @@ export const MovieCard = ({ title, rating, year, genre, poster, imdbId, voteCoun
           </div>
         </div>
         <div className="mt-2 flex flex-wrap gap-1.5">
-          <Badge variant="secondary" className="text-xs">
+          <Badge 
+            variant="secondary" 
+            className="text-xs cursor-pointer hover:bg-secondary/80 transition-colors"
+            onClick={() => onYearClick?.(year)}
+          >
             {year}
           </Badge>
-          <Badge variant="outline" className="text-xs flex items-center gap-1">
-            <Film className="h-3 w-3" />
-            Movie
-          </Badge>
+          {originalLanguage && (
+            <Badge 
+              variant="outline" 
+              className="text-xs flex items-center gap-1 cursor-pointer hover:bg-accent/10 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+            >
+              <Globe className="h-3 w-3" />
+              {originalLanguage.toUpperCase()}
+            </Badge>
+          )}
           {genre.slice(0, 2).map((g) => (
-            <Badge key={g} variant="secondary" className="text-xs">
+            <Badge 
+              key={g} 
+              variant="secondary" 
+              className="text-xs cursor-pointer hover:bg-secondary/80 transition-colors"
+              onClick={() => onGenreClick?.(g)}
+            >
               {g}
             </Badge>
           ))}

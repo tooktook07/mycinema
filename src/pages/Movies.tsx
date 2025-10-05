@@ -51,6 +51,19 @@ const Movies = () => {
     setCurrentPage(1);
   };
 
+  const handleYearClick = (year: number) => {
+    setTempYearRange([year, year]);
+    setAppliedYearRange([year, year]);
+    setCurrentPage(1);
+  };
+
+  const handleGenreClick = (genre: string) => {
+    const newGenres = [genre];
+    setTempGenres(newGenres);
+    setAppliedGenres(newGenres);
+    setCurrentPage(1);
+  };
+
   // Fetch movies with filters, pagination, and sorting
   const { data: moviesData, isLoading, error } = useQuery({
     queryKey: ["movies", appliedGenres, appliedRatingRange, appliedYearRange, currentPage, sortBy, sortOrder, itemsPerPage],
@@ -94,6 +107,7 @@ const Movies = () => {
           runtime: movie.runtime || "",
           imdbId: movie.imdb_id,
           voteCount: movie.vote_count || 0,
+          originalLanguage: movie.original_language || "",
         })),
         totalCount: count || 0,
       };
@@ -292,7 +306,12 @@ const Movies = () => {
             <>
               <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 {movies.map((movie) => (
-                  <MovieCard key={movie.id} {...movie} />
+                  <MovieCard 
+                    key={movie.id} 
+                    {...movie} 
+                    onYearClick={handleYearClick}
+                    onGenreClick={handleGenreClick}
+                  />
                 ))}
               </div>
               {renderPagination()}
