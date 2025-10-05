@@ -1,11 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useTheme } from "@/components/ThemeProvider";
+import { Moon, Sun, Monitor } from "lucide-react";
 
 export const GeneralSettings = () => {
-  const [notifications, setNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
+  const { theme, setTheme } = useTheme();
 
   return (
     <Card>
@@ -14,33 +14,36 @@ export const GeneralSettings = () => {
         <CardDescription>Manage your account preferences and settings</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
-            <Label htmlFor="notifications">Email Notifications</Label>
-            <p className="text-sm text-muted-foreground">
-              Receive email notifications about sync updates
-            </p>
-          </div>
-          <Switch
-            id="notifications"
-            checked={notifications}
-            onCheckedChange={setNotifications}
-          />
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
-            <Label htmlFor="dark-mode">Dark Mode</Label>
-            <p className="text-sm text-muted-foreground">
-              Toggle dark mode theme (coming soon)
-            </p>
-          </div>
-          <Switch
-            id="dark-mode"
-            checked={darkMode}
-            onCheckedChange={setDarkMode}
-            disabled
-          />
+        <div className="space-y-2">
+          <Label htmlFor="theme">Default Theme</Label>
+          <Select value={theme} onValueChange={setTheme}>
+            <SelectTrigger id="theme" className="w-full">
+              <SelectValue placeholder="Select theme" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="light">
+                <div className="flex items-center gap-2">
+                  <Sun className="h-4 w-4" />
+                  <span>Light</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="dark">
+                <div className="flex items-center gap-2">
+                  <Moon className="h-4 w-4" />
+                  <span>Dark</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="system">
+                <div className="flex items-center gap-2">
+                  <Monitor className="h-4 w-4" />
+                  <span>System</span>
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-sm text-muted-foreground">
+            Choose your preferred color scheme for the interface
+          </p>
         </div>
 
         <div className="pt-4 border-t">
