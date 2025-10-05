@@ -13,13 +13,13 @@ const TvShows = () => {
   const [tempGenres, setTempGenres] = useState<string[]>([]);
   const [tempRatingRange, setTempRatingRange] = useState<[number, number]>([0, 10]);
   const [tempYearRange, setTempYearRange] = useState<[number, number]>([1900, 2030]);
-  const [tempLanguage, setTempLanguage] = useState<string>("");
+  const [tempLanguages, setTempLanguages] = useState<string[]>([]);
 
   // Applied filter states
   const [appliedGenres, setAppliedGenres] = useState<string[]>([]);
   const [appliedRatingRange, setAppliedRatingRange] = useState<[number, number]>([0, 10]);
   const [appliedYearRange, setAppliedYearRange] = useState<[number, number]>([1900, 2030]);
-  const [appliedLanguage, setAppliedLanguage] = useState<string>("");
+  const [appliedLanguages, setAppliedLanguages] = useState<string[]>([]);
 
   const handleGenreToggle = (genre: string) => {
     setTempGenres((prev) =>
@@ -27,22 +27,28 @@ const TvShows = () => {
     );
   };
 
+  const handleLanguageToggle = (language: string) => {
+    setTempLanguages((prev) =>
+      prev.includes(language) ? prev.filter((l) => l !== language) : [...prev, language]
+    );
+  };
+
   const handleApplyFilters = () => {
     setAppliedGenres(tempGenres);
     setAppliedRatingRange(tempRatingRange);
     setAppliedYearRange(tempYearRange);
-    setAppliedLanguage(tempLanguage);
+    setAppliedLanguages(tempLanguages);
   };
 
   const handleResetFilters = () => {
     setTempGenres([]);
     setTempRatingRange([0, 10]);
     setTempYearRange([1900, 2030]);
-    setTempLanguage("");
+    setTempLanguages([]);
     setAppliedGenres([]);
     setAppliedRatingRange([0, 10]);
     setAppliedYearRange([1900, 2030]);
-    setAppliedLanguage("");
+    setAppliedLanguages([]);
   };
 
   const filteredShows = useMemo(() => {
@@ -71,8 +77,8 @@ const TvShows = () => {
             onRatingRangeChange={setTempRatingRange}
             yearRange={tempYearRange}
             onYearRangeChange={setTempYearRange}
-            selectedLanguage={tempLanguage}
-            onLanguageChange={setTempLanguage}
+            selectedLanguages={tempLanguages}
+            onLanguageToggle={handleLanguageToggle}
             onApply={handleApplyFilters}
             onReset={handleResetFilters}
           />

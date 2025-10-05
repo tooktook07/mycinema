@@ -12,8 +12,8 @@ interface FilterPanelProps {
   onRatingRangeChange: (range: [number, number]) => void;
   yearRange: [number, number];
   onYearRangeChange: (range: [number, number]) => void;
-  selectedLanguage: string;
-  onLanguageChange: (language: string) => void;
+  selectedLanguages: string[];
+  onLanguageToggle: (language: string) => void;
   onApply: () => void;
   onReset: () => void;
 }
@@ -31,6 +31,21 @@ const GENRES = [
   "Fantasy",
 ];
 
+const LANGUAGES = [
+  { code: "en", name: "English" },
+  { code: "es", name: "Spanish" },
+  { code: "fr", name: "French" },
+  { code: "de", name: "German" },
+  { code: "it", name: "Italian" },
+  { code: "ja", name: "Japanese" },
+  { code: "ko", name: "Korean" },
+  { code: "zh", name: "Chinese" },
+  { code: "pt", name: "Portuguese" },
+  { code: "ru", name: "Russian" },
+  { code: "ar", name: "Arabic" },
+  { code: "hi", name: "Hindi" },
+];
+
 export const FilterPanel = ({
   selectedGenres,
   onGenreToggle,
@@ -38,15 +53,15 @@ export const FilterPanel = ({
   onRatingRangeChange,
   yearRange,
   onYearRangeChange,
-  selectedLanguage,
-  onLanguageChange,
+  selectedLanguages,
+  onLanguageToggle,
   onApply,
   onReset,
 }: FilterPanelProps) => {
   const selectedCount = selectedGenres.length + 
     (ratingRange[0] > 0 || ratingRange[1] < 10 ? 1 : 0) + 
     (yearRange[0] !== 1900 || yearRange[1] !== 2030 ? 1 : 0) +
-    (selectedLanguage ? 1 : 0);
+    selectedLanguages.length;
 
   return (
     <div className="space-y-6 rounded-lg border border-border bg-card p-6 shadow-lg">
@@ -90,18 +105,28 @@ export const FilterPanel = ({
 
         <div className="space-y-3">
           <div>
-            <Label className="text-base font-semibold text-foreground">Language</Label>
-            <p className="text-xs text-muted-foreground mt-1">Filter by original language</p>
+            <Label className="text-base font-semibold text-foreground">Languages</Label>
+            <p className="text-xs text-muted-foreground mt-1">Select one or more languages</p>
           </div>
-          <Input
-            type="text"
-            placeholder="e.g. en, es, fr"
-            value={selectedLanguage}
-            onChange={(e) => onLanguageChange(e.target.value)}
-            className="bg-background"
-            maxLength={2}
-          />
-          <p className="text-xs text-muted-foreground">Enter 2-letter ISO language code</p>
+          <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-2 rounded border border-border/50 bg-background/50">
+            {LANGUAGES.map((lang) => {
+              const isSelected = selectedLanguages.includes(lang.code);
+              return (
+                <Badge
+                  key={lang.code}
+                  variant={isSelected ? "default" : "outline"}
+                  className={cn(
+                    "cursor-pointer transition-all hover:scale-105",
+                    isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                  )}
+                  onClick={() => onLanguageToggle(lang.code)}
+                >
+                  {isSelected && <span className="mr-1">✓</span>}
+                  {lang.code.toUpperCase()} - {lang.name}
+                </Badge>
+              );
+            })}
+          </div>
         </div>
 
         <div className="space-y-3">

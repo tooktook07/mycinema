@@ -22,13 +22,13 @@ const Movies = () => {
   const [tempGenres, setTempGenres] = useState<string[]>([]);
   const [tempRatingRange, setTempRatingRange] = useState<[number, number]>([0, 10]);
   const [tempYearRange, setTempYearRange] = useState<[number, number]>([1900, 2030]);
-  const [tempLanguage, setTempLanguage] = useState<string>("");
+  const [tempLanguages, setTempLanguages] = useState<string[]>([]);
 
   // Applied filter states
   const [appliedGenres, setAppliedGenres] = useState<string[]>([]);
   const [appliedRatingRange, setAppliedRatingRange] = useState<[number, number]>([0, 10]);
   const [appliedYearRange, setAppliedYearRange] = useState<[number, number]>([1900, 2030]);
-  const [appliedLanguage, setAppliedLanguage] = useState<string>("");
+  const [appliedLanguages, setAppliedLanguages] = useState<string[]>([]);
 
   const handleGenreToggle = (genre: string) => {
     setTempGenres((prev) =>
@@ -36,11 +36,17 @@ const Movies = () => {
     );
   };
 
+  const handleLanguageToggle = (language: string) => {
+    setTempLanguages((prev) =>
+      prev.includes(language) ? prev.filter((l) => l !== language) : [...prev, language]
+    );
+  };
+
   const handleApplyFilters = () => {
     setAppliedGenres(tempGenres);
     setAppliedRatingRange(tempRatingRange);
     setAppliedYearRange(tempYearRange);
-    setAppliedLanguage(tempLanguage);
+    setAppliedLanguages(tempLanguages);
     setCurrentPage(1); // Reset to first page when filters change
   };
 
@@ -48,11 +54,11 @@ const Movies = () => {
     setTempGenres([]);
     setTempRatingRange([0, 10]);
     setTempYearRange([1900, 2030]);
-    setTempLanguage("");
+    setTempLanguages([]);
     setAppliedGenres([]);
     setAppliedRatingRange([0, 10]);
     setAppliedYearRange([1900, 2030]);
-    setAppliedLanguage("");
+    setAppliedLanguages([]);
     setCurrentPage(1);
   };
 
@@ -70,14 +76,15 @@ const Movies = () => {
   };
 
   const handleLanguageClick = (language: string) => {
-    setTempLanguage(language);
-    setAppliedLanguage(language);
+    const newLanguages = [language];
+    setTempLanguages(newLanguages);
+    setAppliedLanguages(newLanguages);
     setCurrentPage(1);
   };
 
   // Fetch movies with filters, pagination, and sorting
   const { data: moviesData, isLoading, error } = useQuery({
-    queryKey: ["movies", appliedGenres, appliedRatingRange, appliedYearRange, appliedLanguage, currentPage, sortBy, sortOrder, itemsPerPage],
+    queryKey: ["movies", appliedGenres, appliedRatingRange, appliedYearRange, appliedLanguages, currentPage, sortBy, sortOrder, itemsPerPage],
     queryFn: async () => {
       let query = supabase
         .from("movies")
@@ -91,8 +98,8 @@ const Movies = () => {
         query = query.gte("rating", appliedRatingRange[0]).lte("rating", appliedRatingRange[1]);
       }
       query = query.gte("year", appliedYearRange[0]).lte("year", appliedYearRange[1]);
-      if (appliedLanguage) {
-        query = query.eq("original_language", appliedLanguage.toLowerCase());
+      if (appliedLanguages.length > 0) {
+        query = query.in("original_language", appliedLanguages);
       }
 
       // Apply sorting
@@ -231,8 +238,8 @@ const Movies = () => {
             onRatingRangeChange={setTempRatingRange}
             yearRange={tempYearRange}
             onYearRangeChange={setTempYearRange}
-            selectedLanguage={tempLanguage}
-            onLanguageChange={setTempLanguage}
+            selectedLanguages={tempLanguages}
+            onLanguageToggle={handleLanguageToggle}
             onApply={handleApplyFilters}
             onReset={handleResetFilters}
           />
