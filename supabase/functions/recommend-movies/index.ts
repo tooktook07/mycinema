@@ -42,12 +42,12 @@ serve(async (req) => {
     // Fetch user's rated movies
     const { data: userRatings, error: ratingsError } = await supabase
       .from('user_ratings')
-      .select('user_rating, media_id')
+      .select('sentiment_rating, media_id')
       .eq('user_id', user.id)
       .eq('media_type', 'movie')
-      .not('user_rating', 'is', null)
+      .not('sentiment_rating', 'is', null)
       .not('media_id', 'is', null)
-      .order('user_rating', { ascending: false })
+      .order('sentiment_rating', { ascending: false })
       .limit(50);
 
     if (ratingsError) {
@@ -122,7 +122,7 @@ serve(async (req) => {
           title: movie.title,
           year: movie.year,
           genres: movie.genres,
-          rating: rating.user_rating,
+          rating: rating.sentiment_rating,
           plot: movie.plot?.substring(0, 150)
         };
       })
