@@ -55,6 +55,7 @@ export const MoviesTable = ({ movies, title }: MoviesTableProps) => {
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent border-border">
+              <TableHead className="text-foreground font-semibold w-24">Poster</TableHead>
               <TableHead className="text-foreground font-semibold">Title</TableHead>
               <TableHead className="text-foreground font-semibold">Rating</TableHead>
               <TableHead className="text-foreground font-semibold">Year</TableHead>
@@ -65,13 +66,20 @@ export const MoviesTable = ({ movies, title }: MoviesTableProps) => {
           <TableBody>
             {filteredMovies.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                   No results found
                 </TableCell>
               </TableRow>
             ) : (
               filteredMovies.map((movie) => (
                 <TableRow key={movie.id} className="border-border hover:bg-muted/30">
+                  <TableCell className="py-2">
+                    <img
+                      src={movie.poster}
+                      alt={movie.title}
+                      className="w-16 h-24 object-cover rounded border border-border"
+                    />
+                  </TableCell>
                   <TableCell className="font-medium text-foreground">{movie.title}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1 text-accent">
