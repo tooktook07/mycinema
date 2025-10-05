@@ -8,10 +8,10 @@ export const Navigation = () => {
     <nav className="border-b bg-background sticky top-0 z-50">
       <div className="container mx-auto max-w-7xl px-4">
         <div className="flex items-center justify-between h-12">
-          <div className="flex items-center gap-2">
+          <NavLink to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <Film className="h-4 w-4" />
             <span className="text-sm font-semibold">CineMatch</span>
-          </div>
+          </NavLink>
           
           <div className="flex items-center gap-1">
             <NavLink
