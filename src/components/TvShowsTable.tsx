@@ -11,21 +11,21 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Movie } from "@/data/types";
+import { TvShow } from "@/data/types";
 
-interface MoviesTableProps {
-  movies: Movie[];
+interface TvShowsTableProps {
+  shows: TvShow[];
   title: string;
 }
 
-export const MoviesTable = ({ movies, title }: MoviesTableProps) => {
+export const TvShowsTable = ({ shows, title }: TvShowsTableProps) => {
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredMovies = useMemo(() => {
-    return movies.filter((movie) =>
-      movie.title.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredShows = useMemo(() => {
+    return shows.filter((show) =>
+      show.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [movies, searchQuery]);
+  }, [shows, searchQuery]);
 
   const getImdbUrl = (imdbId: string) => {
     return `https://www.imdb.com/title/${encodeURIComponent(imdbId)}/`;
@@ -58,39 +58,45 @@ export const MoviesTable = ({ movies, title }: MoviesTableProps) => {
               <TableHead className="text-foreground font-semibold w-24">Poster</TableHead>
               <TableHead className="text-foreground font-semibold">Title</TableHead>
               <TableHead className="text-foreground font-semibold">Rating</TableHead>
-              <TableHead className="text-foreground font-semibold">Year</TableHead>
+              <TableHead className="text-foreground font-semibold">Years</TableHead>
+              <TableHead className="text-foreground font-semibold">Seasons</TableHead>
+              <TableHead className="text-foreground font-semibold">Episodes</TableHead>
               <TableHead className="text-foreground font-semibold">Genres</TableHead>
               <TableHead className="text-foreground font-semibold">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredMovies.length === 0 ? (
+            {filteredShows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                   No results found
                 </TableCell>
               </TableRow>
             ) : (
-              filteredMovies.map((movie) => (
-                <TableRow key={movie.id} className="border-border hover:bg-muted/30">
+              filteredShows.map((show) => (
+                <TableRow key={show.id} className="border-border hover:bg-muted/30">
                   <TableCell className="py-2">
                     <img
-                      src={movie.poster}
-                      alt={movie.title}
+                      src={show.poster}
+                      alt={show.title}
                       className="w-16 h-24 object-cover rounded border border-border"
                     />
                   </TableCell>
-                  <TableCell className="font-medium text-foreground">{movie.title}</TableCell>
+                  <TableCell className="font-medium text-foreground">{show.title}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1 text-accent">
                       <Star className="h-4 w-4 fill-accent" />
-                      <span className="font-semibold">{movie.rating}</span>
+                      <span className="font-semibold">{show.rating}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{movie.year}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {show.endYear ? `${show.startYear}-${show.endYear}` : `${show.startYear}-Present`}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{show.seasons}</TableCell>
+                  <TableCell className="text-muted-foreground">{show.episodes}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      {movie.genre.map((g) => (
+                      {show.genre.map((g) => (
                         <Badge key={g} variant="secondary" className="text-xs">
                           {g}
                         </Badge>
@@ -99,13 +105,9 @@ export const MoviesTable = ({ movies, title }: MoviesTableProps) => {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        asChild
-                      >
+                      <Button size="sm" variant="outline" asChild>
                         <a
-                          href={getImdbUrl(movie.imdbId)}
+                          href={getImdbUrl(show.imdbId)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-1.5"
@@ -114,13 +116,9 @@ export const MoviesTable = ({ movies, title }: MoviesTableProps) => {
                           IMDB
                         </a>
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        asChild
-                      >
+                      <Button size="sm" variant="outline" asChild>
                         <a
-                          href={getGoogleSearchUrl(movie.title, movie.year)}
+                          href={getGoogleSearchUrl(show.title, show.startYear)}
                           target="_blank"
                           rel="noopener noreferrer nofollow"
                           className="flex items-center gap-1.5"
@@ -138,7 +136,7 @@ export const MoviesTable = ({ movies, title }: MoviesTableProps) => {
         </Table>
       </div>
       <p className="text-sm text-muted-foreground">
-        Showing {filteredMovies.length} of {movies.length} {movies.length === 1 ? "result" : "results"}
+        Showing {filteredShows.length} of {shows.length} {shows.length === 1 ? "result" : "results"}
       </p>
     </div>
   );
