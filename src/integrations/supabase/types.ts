@@ -14,7 +14,159 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      movies: {
+        Row: {
+          actors: string | null
+          created_at: string | null
+          director: string | null
+          genres: string[] | null
+          id: string
+          imdb_id: string
+          plot: string | null
+          poster: string | null
+          rating: number | null
+          runtime: string | null
+          title: string
+          updated_at: string | null
+          year: number
+        }
+        Insert: {
+          actors?: string | null
+          created_at?: string | null
+          director?: string | null
+          genres?: string[] | null
+          id?: string
+          imdb_id: string
+          plot?: string | null
+          poster?: string | null
+          rating?: number | null
+          runtime?: string | null
+          title: string
+          updated_at?: string | null
+          year: number
+        }
+        Update: {
+          actors?: string | null
+          created_at?: string | null
+          director?: string | null
+          genres?: string[] | null
+          id?: string
+          imdb_id?: string
+          plot?: string | null
+          poster?: string | null
+          rating?: number | null
+          runtime?: string | null
+          title?: string
+          updated_at?: string | null
+          year?: number
+        }
+        Relationships: []
+      }
+      tv_shows: {
+        Row: {
+          created_at: string | null
+          end_year: number | null
+          episodes: number | null
+          genres: string[] | null
+          id: string
+          imdb_id: string
+          plot: string | null
+          poster: string | null
+          rating: number | null
+          season_dates: Json | null
+          seasons: number | null
+          start_year: number
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          end_year?: number | null
+          episodes?: number | null
+          genres?: string[] | null
+          id?: string
+          imdb_id: string
+          plot?: string | null
+          poster?: string | null
+          rating?: number | null
+          season_dates?: Json | null
+          seasons?: number | null
+          start_year: number
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          end_year?: number | null
+          episodes?: number | null
+          genres?: string[] | null
+          id?: string
+          imdb_id?: string
+          plot?: string | null
+          poster?: string | null
+          rating?: number | null
+          season_dates?: Json | null
+          seasons?: number | null
+          start_year?: number
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_movie_data: {
+        Row: {
+          created_at: string | null
+          id: string
+          in_watchlist: boolean | null
+          movie_id: string | null
+          tv_show_id: string | null
+          updated_at: string | null
+          user_id: string
+          user_rating: number | null
+          watched: boolean | null
+          watched_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          in_watchlist?: boolean | null
+          movie_id?: string | null
+          tv_show_id?: string | null
+          updated_at?: string | null
+          user_id: string
+          user_rating?: number | null
+          watched?: boolean | null
+          watched_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          in_watchlist?: boolean | null
+          movie_id?: string | null
+          tv_show_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+          user_rating?: number | null
+          watched?: boolean | null
+          watched_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_movie_data_movie_id_fkey"
+            columns: ["movie_id"]
+            isOneToOne: false
+            referencedRelation: "movies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_movie_data_tv_show_id_fkey"
+            columns: ["tv_show_id"]
+            isOneToOne: false
+            referencedRelation: "tv_shows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
