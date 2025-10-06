@@ -86,6 +86,21 @@ export const Navigation = () => {
               <Sparkles className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Wizard</span>
             </Button>
+
+            <NavLink
+              to="/profile"
+              className={({ isActive }) =>
+                cn(
+                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded text-sm transition-colors",
+                  isActive
+                    ? "bg-foreground text-background"
+                    : "text-muted-foreground hover:text-foreground"
+                )
+              }
+            >
+              <User className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Profile</span>
+            </NavLink>
             
             {isAdmin && (
               <NavLink
