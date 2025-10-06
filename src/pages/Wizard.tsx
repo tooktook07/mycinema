@@ -9,10 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { WizardSignUpBanner } from "@/components/WizardSignUpBanner";
 import { saveGuestRating, getGuestRatings, getGuestRatedCount, saveGuestSkipped, getGuestSkipped } from "@/lib/guestRatings";
 
-const Wizard = () => {
+interface WizardProps {
+  isModal?: boolean;
+  onClose?: () => void;
+}
+
+const Wizard = ({ isModal = false, onClose }: WizardProps = {}) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [currentMovie, setCurrentMovie] = useState<RecommendationMovie | null>(null);
@@ -167,42 +171,39 @@ const Wizard = () => {
 
   if (loading && !currentMovie) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className={isModal ? "h-full flex items-center justify-center" : "min-h-screen flex items-center justify-center"}>
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen py-8 px-4">
+    <div className={isModal ? "h-full py-6 px-4" : "min-h-screen py-8 px-4"}>
       <div className="container mx-auto max-w-7xl">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Sparkles className="h-6 w-6 text-primary" />
-            <h1 className="text-3xl font-bold">Movie Wizard</h1>
+        <div className="text-center mb-6">
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <h1 className="text-2xl font-bold">Movie Wizard</h1>
             {isGuest && (
-              <Badge variant="secondary" className="ml-2">
+              <Badge variant="secondary" className="ml-2 text-xs">
                 🎭 Guest Mode
               </Badge>
             )}
           </div>
-          <p className="text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Rate movies to get personalized recommendations
           </p>
         </div>
 
-        {/* Sign-up banner for guests */}
-        {isGuest && <WizardSignUpBanner />}
-
         {/* Stats */}
-        <div className="flex justify-center gap-4 mb-8">
+        <div className="flex justify-center gap-4 mb-6">
           {!isGuest && (
             <Card className="w-auto">
-              <CardContent className="pt-6 px-6 pb-4">
+              <CardContent className="pt-4 px-4 pb-3">
                 <div className="text-center">
-                  <div className="text-3xl font-bold">{totalRated}</div>
-                  <p className="text-sm text-muted-foreground">Total Ratings</p>
+                  <div className="text-2xl font-bold">{totalRated}</div>
+                  <p className="text-xs text-muted-foreground">Total Ratings</p>
                 </div>
               </CardContent>
             </Card>
@@ -210,13 +211,13 @@ const Wizard = () => {
           
           {sessionRatings > 0 && (
             <Card className="w-auto border-primary">
-              <CardContent className="pt-6 px-6 pb-4">
+              <CardContent className="pt-4 px-4 pb-3">
                 <div className="text-center">
-                  <div className="text-3xl font-bold flex items-center justify-center gap-2">
-                    <CheckCircle2 className="h-6 w-6 text-primary" />
+                  <div className="text-2xl font-bold flex items-center justify-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-primary" />
                     {sessionRatings}
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {isGuest ? "Ratings This Session" : "This Session"}
                   </p>
                 </div>
@@ -227,7 +228,7 @@ const Wizard = () => {
 
         {/* Movie Card */}
         {currentMovie ? (
-          <div className="flex justify-center mb-8">
+          <div className="flex justify-center flex-1 mb-6">
             <MovieWizardCard
               movie={currentMovie}
               onRate={handleRate}
@@ -242,39 +243,22 @@ const Wizard = () => {
             <CardHeader>
               <CardTitle>No More Movies</CardTitle>
               <CardDescription>
-                {isGuest 
-                  ? "Sign up to save your progress and get more personalized recommendations!"
-                  : "You've rated all available movies! Check back later for more recommendations."
-                }
+                You've rated all available movies! Check back later for more recommendations.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {isGuest && (
-                <Button onClick={() => navigate("/auth")} className="w-full" size="lg">
-                  Sign Up to Continue
-                </Button>
-              )}
+            <CardContent>
               <Button 
-                onClick={() => navigate("/movies")} 
-                className="w-full" 
-                variant={isGuest ? "outline" : "default"}
+                onClick={() => {
+                  if (isModal && onClose) onClose();
+                  navigate("/movies");
+                }}
+                className="w-full"
               >
                 Browse All Movies
               </Button>
             </CardContent>
           </Card>
         )}
-
-
-        {/* Action Buttons */}
-        <div className="flex justify-center gap-4 mt-8">
-          <Button variant="outline" onClick={() => navigate("/")}>
-            Back to Home
-          </Button>
-          <Button variant="outline" onClick={() => navigate("/movies")}>
-            Browse Movies
-          </Button>
-        </div>
       </div>
     </div>
   );
