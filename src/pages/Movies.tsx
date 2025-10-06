@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Film, Grid, Table as TableIcon } from "lucide-react";
 import { MovieCard } from "@/components/MovieCard";
 import { FilterPanel } from "@/components/FilterPanel";
@@ -10,7 +10,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Movie } from "@/data/types";
+
 const Movies = () => {
+  // Debug logging
+  useEffect(() => {
+    console.log("[Movies] Component mounted on route:", window.location.pathname);
+    return () => {
+      console.log("[Movies] Component unmounting");
+    };
+  }, []);
+
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<"rating" | "year" | "title" | "user_rating">("rating");
@@ -72,10 +81,21 @@ const Movies = () => {
   const {
     data: moviesData,
     isLoading,
-    error
+    error,
+    isError
   } = useQuery({
     queryKey: ["movies", appliedGenres, appliedRatingRange, appliedYearRange, appliedLanguages, appliedSearchText, currentPage, sortBy, sortOrder, itemsPerPage],
     queryFn: async () => {
+      console.log("[Movies Query] Starting fetch with filters:", {
+        genres: appliedGenres,
+        rating: appliedRatingRange,
+        year: appliedYearRange,
+        languages: appliedLanguages,
+        search: appliedSearchText,
+        page: currentPage,
+        sortBy,
+        sortOrder
+      });
       // Get current user for user_rating sorting
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -121,8 +141,12 @@ const Movies = () => {
         query = query.range(from, to);
 
         const { data, error, count } = await query;
-        if (error) throw error;
-
+        if (error) {
+          console.error("[Movies Query] Error fetching with user_rating:", error);
+          throw error;
+        }
+        
+        console.log("[Movies Query] Success with user_rating - found", count, "movies");
         return {
           movies: (data || []).map((movie: any): Movie => ({
             id: movie.id,
@@ -182,7 +206,12 @@ const Movies = () => {
         error,
         count
       } = await query;
-      if (error) throw error;
+      if (error) {
+        console.error("[Movies Query] Error fetching movies:", error);
+        throw error;
+      }
+      
+      console.log("[Movies Query] Success - found", count, "movies");
       return {
         movies: (data || []).map((movie): Movie => ({
           id: movie.id,
@@ -209,6 +238,11 @@ const Movies = () => {
   const movies = moviesData?.movies || [];
   const totalCount = moviesData?.totalCount || 0;
   const totalPages = Math.ceil(totalCount / itemsPerPage);
+
+  // Debug query states
+  useEffect(() => {
+    console.log("[Movies] Query state:", { isLoading, isError, error, totalCount, moviesCount: movies.length });
+  }, [isLoading, isError, error, totalCount, movies.length]);
   const handleSortChange = (value: string) => {
     const [field, order] = value.split("-") as [typeof sortBy, typeof sortOrder];
     setSortBy(field);
@@ -335,9 +369,21 @@ const Movies = () => {
             </div> : error ? <div className="flex flex-col items-center justify-center py-20 text-center">
               <Film className="h-16 w-16 text-muted-foreground/50 mb-4" />
               <h3 className="text-xl font-semibold text-foreground mb-2">Error loading movies</h3>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground mb-4">
                 {error instanceof Error ? error.message : "Please try again later"}
               </p>
+              <p className="text-sm text-muted-foreground">
+                Check the browser console for more details
+              </p>
+            </div> : movies.length === 0 && totalCount === 0 && appliedGenres.length === 0 && appliedSearchText === "" ? <div className="flex flex-col items-center justify-center py-20 text-center">
+              <Film className="h-16 w-16 text-muted-foreground/50 mb-4" />
+              <h3 className="text-xl font-semibold text-foreground mb-2">No movies in database</h3>
+              <p className="text-muted-foreground mb-4">
+                The movie database is empty. Please sync movies from TMDB first.
+              </p>
+              <Button onClick={() => window.location.href = "/account"}>
+                Go to Sync Settings
+              </Button>
             </div> : movies.length === 0 ? <div className="flex flex-col items-center justify-center py-20 text-center">
               <Film className="h-16 w-16 text-muted-foreground/50 mb-4" />
               <h3 className="text-xl font-semibold text-foreground mb-2">No results found</h3>
