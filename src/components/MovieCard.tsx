@@ -9,7 +9,6 @@ import { Movie } from "@/data/types";
 import { MovieRating } from "@/components/MovieRating";
 import { useState } from "react";
 import { getOptimizedImageProps } from "@/lib/imageUtils";
-import imdbLogo from "@/assets/imdb-logo.png";
 interface MovieCardProps extends Movie {
   onYearClick?: (year: number) => void;
   onGenreClick?: (genre: string) => void;
@@ -298,7 +297,7 @@ export const MovieCard = ({
                 <MovieRating movieId={id} movieTitle={title} iconOnly />
               </div>
             </TooltipTrigger>
-            <TooltipContent className="text-[10px]">
+            <TooltipContent className="text-xs">
               <p>Rate this movie</p>
             </TooltipContent>
           </Tooltip>
@@ -306,13 +305,13 @@ export const MovieCard = ({
           {hasValidImdbId && (
             <Tooltip delayDuration={300}>
               <TooltipTrigger asChild>
-                <Button size="icon" variant="ghost" className="h-8 w-8 p-1.5" asChild>
+                <Button size="icon" variant="ghost" className="h-8 w-8" asChild>
                   <a href={imdbUrl} target="_blank" rel="noopener noreferrer">
-                    <img src={imdbLogo} alt="IMDB" className="w-full h-full object-contain" />
+                    <ExternalLink className="h-4 w-4" />
                   </a>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent className="text-[10px]">
+              <TooltipContent className="text-xs">
                 <p>View on IMDB</p>
               </TooltipContent>
             </Tooltip>
@@ -326,7 +325,7 @@ export const MovieCard = ({
                 </a>
               </Button>
             </TooltipTrigger>
-            <TooltipContent className="text-[10px]">
+            <TooltipContent className="text-xs">
               <p>Google Search</p>
             </TooltipContent>
           </Tooltip>
