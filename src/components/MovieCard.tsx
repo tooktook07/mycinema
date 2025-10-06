@@ -257,7 +257,7 @@ export const MovieCard = ({
           </DialogContent>
         </Dialog>
       </div>
-      <CardContent className="p-4 flex flex-col h-full">
+      <CardContent className="p-4">
         {/* Title - Full Width */}
         <h3 className="line-clamp-2 text-base font-semibold leading-tight">{title}</h3>
         
@@ -289,11 +289,8 @@ export const MovieCard = ({
           ))}
         </div>
 
-        {/* Spacer to push buttons to bottom */}
-        <div className="flex-1" />
-
-        {/* Action Icons - Stuck to Bottom */}
-        <div className="flex items-center justify-center gap-1 mt-3 pt-3 border-t">
+        {/* Action Icons - At Bottom */}
+        <div className="flex items-center justify-center gap-1 mt-4 pt-3 border-t">
           <Tooltip delayDuration={300}>
             <TooltipTrigger asChild>
               <div>
