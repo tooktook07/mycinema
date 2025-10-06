@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Loader2, ChevronDown } from "lucide-react";
+import { Loader2, ChevronDown, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
+import { useDevMode } from "@/contexts/DevModeContext";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface SyncHistoryRecord {
   id: string;
@@ -25,6 +27,8 @@ interface SyncHistoryRecord {
 export const SyncHistoryTab = () => {
   const [syncHistory, setSyncHistory] = useState<SyncHistoryRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { devMode } = useDevMode();
 
   useEffect(() => {
     fetchSyncHistory();
@@ -37,10 +41,16 @@ export const SyncHistoryTab = () => {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching sync history:", error);
+        setError(error.message);
+        throw error;
+      }
       setSyncHistory(data || []);
-    } catch (error) {
+      setError(null);
+    } catch (error: any) {
       console.error("Error fetching sync history:", error);
+      setError(error.message || "Failed to fetch sync history");
     } finally {
       setLoading(false);
     }
@@ -64,8 +74,30 @@ export const SyncHistoryTab = () => {
   }
 
   return (
-    <div className="space-y-8">
-      {syncHistory.length === 0 ? (
+    <div className="space-y-6">
+      {devMode === 'admin' && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Dev mode is active. You're viewing the admin interface with mock permissions. 
+            To see actual sync history data, please sign in as a real admin user.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {error.includes('permission') || error.includes('policy') 
+              ? 'You need admin permissions to view sync history. Please sign in with an admin account.'
+              : `Error loading sync history: ${error}`
+            }
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {syncHistory.length === 0 && !loading && !error ? (
         <div className="py-12 text-center">
           <p className="text-muted-foreground text-sm">No sync history found</p>
         </div>
