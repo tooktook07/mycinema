@@ -59,128 +59,192 @@ export const MovieCard = ({
               More Info
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh]">
+          <DialogContent className="max-w-4xl max-h-[90vh]">
             <DialogHeader>
-              <DialogTitle className="text-2xl">{title}</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-3xl font-bold">{title}</DialogTitle>
+              <DialogDescription className="text-base">
                 {year} • {runtime || "Runtime N/A"}
               </DialogDescription>
             </DialogHeader>
             <ScrollArea className="max-h-[70vh] pr-4">
-              <div className="space-y-4">
-                {/* Rating */}
-                <div className="flex items-center gap-1">
-                  <Star className="h-5 w-5 fill-foreground" />
-                  <span className="text-lg font-bold">{rating}/10</span>
-                </div>
-
-                {/* Plot */}
-                {plot && <div>
-                    <h4 className="font-semibold mb-2">Plot</h4>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{plot}</p>
-                  </div>}
-
-                {/* Director */}
-                {director && <div>
-                    <h4 className="font-semibold mb-2">Director</h4>
-                    <div className="flex flex-wrap gap-1.5">
-                      {director.split(',').map(d => {
-                    const name = d.trim();
-                    return <Badge key={name} variant="secondary" className="cursor-pointer hover:bg-secondary/80 transition-colors" onClick={() => {
-                      onDirectorClick?.(name);
-                      setOpen(false);
-                    }}>
-                            {name}
-                          </Badge>;
-                  })}
+              <div className="space-y-6">
+                {/* Rating & Stats Card */}
+                <div className="rounded-lg border bg-muted/50 p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <Star className="h-6 w-6 fill-primary text-primary" />
+                        <span className="text-2xl font-bold">{rating}/10</span>
+                      </div>
+                      {voteCount !== undefined && (
+                        <div className="flex items-center gap-2 text-muted-foreground border-l pl-3">
+                          <Users className="h-5 w-5" />
+                          <span className="text-lg">{voteCount.toLocaleString()} votes</span>
+                        </div>
+                      )}
                     </div>
-                  </div>}
-
-                {/* Cast */}
-                {actors && <div>
-                    <h4 className="font-semibold mb-2">Cast</h4>
-                    <div className="flex flex-wrap gap-1.5">
-                      {actors.split(',').map(actor => {
-                    const name = actor.trim();
-                    return <Badge key={name} variant="secondary" className="cursor-pointer hover:bg-secondary/80 transition-colors" onClick={() => {
-                      onActorClick?.(name);
-                      setOpen(false);
-                    }}>
-                            {name}
-                          </Badge>;
-                  })}
-                    </div>
-                  </div>}
-
-                {/* Writing */}
-                {writing && <div>
-                    <h4 className="font-semibold mb-2">Writers</h4>
-                    <div className="flex flex-wrap gap-1.5">
-                      {writing.split(',').map(writer => {
-                    const name = writer.trim();
-                    return <Badge key={name} variant="secondary" className="cursor-pointer hover:bg-secondary/80 transition-colors" onClick={() => {
-                      onWriterClick?.(name);
-                      setOpen(false);
-                    }}>
-                            {name}
-                          </Badge>;
-                  })}
-                    </div>
-                  </div>}
-
-                {/* Sound */}
-                {sound && <div>
-                    <h4 className="font-semibold mb-2">Sound Department</h4>
-                    <p className="text-sm text-muted-foreground">{sound}</p>
-                  </div>}
-
-                {/* Genres */}
-                <div>
-                  <h4 className="font-semibold mb-2">Genres</h4>
-                  <div className="flex flex-wrap gap-1.5">
-                    {genre.map(g => <Badge key={g} variant="secondary" className="cursor-pointer hover:bg-secondary/80 transition-colors" onClick={() => {
-                    onGenreClick?.(g);
-                    setOpen(false);
-                  }}>
-                        {g}
-                      </Badge>)}
+                    {originalLanguage && (
+                      <Badge variant="outline" className="text-sm flex items-center gap-1.5">
+                        <Globe className="h-4 w-4" />
+                        {originalLanguage.toUpperCase()}
+                      </Badge>
+                    )}
                   </div>
                 </div>
 
-                {/* Keywords */}
-                {keywords && keywords.length > 0 && <div>
-                    <h4 className="font-semibold mb-2">Keywords</h4>
-                    <div className="flex flex-wrap gap-1.5">
-                      {keywords.map(keyword => <Badge key={keyword} variant="outline" className="text-xs cursor-pointer hover:bg-secondary transition-colors" onClick={() => {
-                    onKeywordClick?.(keyword);
-                    setOpen(false);
-                  }}>
-                          {keyword}
-                        </Badge>)}
+                {/* Plot */}
+                {plot && (
+                  <div className="rounded-lg border p-4">
+                    <h4 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                      <Info className="h-5 w-5" />
+                      Plot Summary
+                    </h4>
+                    <p className="text-sm leading-relaxed">{plot}</p>
+                  </div>
+                )}
+
+                {/* Crew Section */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Director */}
+                  {director && (
+                    <div className="rounded-lg border p-4">
+                      <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Director</h4>
+                      <div className="flex flex-wrap gap-1.5">
+                        {director.split(',').map(d => {
+                          const name = d.trim();
+                          return (
+                            <Badge 
+                              key={name} 
+                              variant="secondary" 
+                              className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                              onClick={() => {
+                                onDirectorClick?.(name);
+                                setOpen(false);
+                              }}
+                            >
+                              {name}
+                            </Badge>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>}
+                  )}
 
-                {/* Language */}
-                {originalLanguage && <div>
-                    <h4 className="font-semibold mb-2">Original Language</h4>
-                    <Badge variant="outline" className="flex items-center gap-1 w-fit cursor-pointer hover:bg-secondary transition-colors" onClick={() => {
-                  onLanguageClick?.(originalLanguage);
-                  setOpen(false);
-                }}>
-                      <Globe className="h-3 w-3" />
-                      {originalLanguage.toUpperCase()}
-                    </Badge>
-                  </div>}
+                  {/* Writers */}
+                  {writing && (
+                    <div className="rounded-lg border p-4">
+                      <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Writers</h4>
+                      <div className="flex flex-wrap gap-1.5">
+                        {writing.split(',').map(writer => {
+                          const name = writer.trim();
+                          return (
+                            <Badge 
+                              key={name} 
+                              variant="secondary" 
+                              className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                              onClick={() => {
+                                onWriterClick?.(name);
+                                setOpen(false);
+                              }}
+                            >
+                              {name}
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
 
-                {/* Links */}
-                <div className="flex gap-2 pt-4 border-t">
-                  {hasValidImdbId && <Button variant="outline" asChild>
+                {/* Cast */}
+                {actors && (
+                  <div className="rounded-lg border p-4">
+                    <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Cast</h4>
+                    <div className="flex flex-wrap gap-1.5">
+                      {actors.split(',').map(actor => {
+                        const name = actor.trim();
+                        return (
+                          <Badge 
+                            key={name} 
+                            variant="secondary" 
+                            className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                            onClick={() => {
+                              onActorClick?.(name);
+                              setOpen(false);
+                            }}
+                          >
+                            {name}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Sound Department */}
+                {sound && (
+                  <div className="rounded-lg border p-4">
+                    <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Sound Department</h4>
+                    <p className="text-sm leading-relaxed">{sound}</p>
+                  </div>
+                )}
+
+                {/* Genres & Keywords Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Genres */}
+                  <div className="rounded-lg border p-4">
+                    <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Genres</h4>
+                    <div className="flex flex-wrap gap-1.5">
+                      {genre.map(g => (
+                        <Badge 
+                          key={g} 
+                          variant="secondary" 
+                          className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                          onClick={() => {
+                            onGenreClick?.(g);
+                            setOpen(false);
+                          }}
+                        >
+                          {g}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Keywords */}
+                  {keywords && keywords.length > 0 && (
+                    <div className="rounded-lg border p-4">
+                      <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Keywords</h4>
+                      <div className="flex flex-wrap gap-1.5">
+                        {keywords.map(keyword => (
+                          <Badge 
+                            key={keyword} 
+                            variant="outline" 
+                            className="text-xs cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                            onClick={() => {
+                              onKeywordClick?.(keyword);
+                              setOpen(false);
+                            }}
+                          >
+                            {keyword}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-2">
+                  {hasValidImdbId && (
+                    <Button variant="default" size="lg" className="flex-1" asChild>
                       <a href={imdbUrl} target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="h-4 w-4 mr-2" />
                         View on IMDB
                       </a>
-                    </Button>}
-                  <Button variant="outline" asChild>
+                    </Button>
+                  )}
+                  <Button variant="outline" size="lg" className="flex-1" asChild>
                     <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer nofollow">
                       <Search className="h-4 w-4 mr-2" />
                       Google Search
