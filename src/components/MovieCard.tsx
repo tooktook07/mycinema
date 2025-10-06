@@ -281,7 +281,7 @@ export const MovieCard = ({
         </div>
 
         {/* Genres */}
-        <div className="flex flex-wrap gap-1.5 mt-3">
+        <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t">
           {genre.slice(0, 3).map(g => (
             <Badge key={g} variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80 transition-colors" onClick={() => onGenreClick?.(g)}>
               {g}
