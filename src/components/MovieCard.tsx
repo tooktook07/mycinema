@@ -275,7 +275,7 @@ export const MovieCard = ({
             )}
           </div>
           <div className="flex items-center gap-1 text-primary">
-            <Star className="h-4 w-4 fill-primary" />
+            <Star className="h-4 w-4" />
             <span className="font-bold text-sm">{rating}</span>
           </div>
         </div>
