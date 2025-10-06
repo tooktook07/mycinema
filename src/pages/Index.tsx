@@ -179,7 +179,7 @@ const Index = () => {
   const fetchRecommendations = async () => {
     setLoadingRecommendations(true);
     try {
-      // Fetch user's rated movies if logged in
+      // Fetch user's rated movies if logged in OR guest ratings from localStorage
       let userLikedMovies: any[] = [];
       let ratedMovieIds: string[] = [];
       
@@ -203,6 +203,26 @@ const Index = () => {
             .in('id', likedRatings.map(r => r.media_id));
           
           userLikedMovies = likedMoviesData || [];
+        }
+      } else {
+        // For guests, check localStorage ratings
+        const { getGuestRatings } = await import("@/lib/guestRatings");
+        const guestRatings = getGuestRatings();
+        
+        if (guestRatings.length > 0) {
+          ratedMovieIds = guestRatings.map(r => r.movieId);
+          
+          // Get movies the guest liked (rating >= 7.0) with full details
+          const likedRatings = guestRatings.filter(r => r.rating >= RATING_THRESHOLD);
+          
+          if (likedRatings.length >= MIN_RATINGS_FOR_PERSONALIZATION) {
+            const { data: likedMoviesData } = await supabase
+              .from('movies')
+              .select('genres, director, actors, keywords, original_language')
+              .in('id', likedRatings.map(r => r.movieId));
+            
+            userLikedMovies = likedMoviesData || [];
+          }
         }
       }
 
@@ -321,7 +341,7 @@ const Index = () => {
 
         setRecommendations(topRecommendations);
       } else {
-        // Fallback: Show top-rated movies for users with few/no ratings
+        // Fallback: Show top-rated movies for users/guests with few/no ratings
         const { data: topMovies, error } = await supabase
           .from('movies')
           .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords')
@@ -332,8 +352,8 @@ const Index = () => {
 
         if (error) throw error;
 
-        // Filter out already rated movies for logged-in users
-        const filteredMovies = user && ratedMovieIds.length > 0
+        // Filter out already rated movies for logged-in users and guests
+        const filteredMovies = ratedMovieIds.length > 0
           ? (topMovies || []).filter(movie => !ratedMovieIds.includes(movie.id))
           : topMovies || [];
 

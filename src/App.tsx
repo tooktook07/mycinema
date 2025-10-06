@@ -7,6 +7,7 @@ import { Navigation } from "@/components/Navigation";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DevModeProvider } from "@/contexts/DevModeContext";
+import { DevModeSwitcher } from "@/components/DevModeSwitcher";
 import Index from "./pages/Index";
 import Movies from "./pages/Movies";
 import TvShows from "./pages/TvShows";
@@ -39,6 +40,12 @@ const App = () => (
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              {/* DevMode Floating Button */}
+              {import.meta.env.DEV && (
+                <div className="fixed bottom-4 right-4 z-50">
+                  <DevModeSwitcher />
+                </div>
+              )}
             </BrowserRouter>
           </DevModeProvider>
         </AuthProvider>

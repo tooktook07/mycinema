@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { saveGuestRating, getGuestRatings } from "@/lib/guestRatings";
 
 interface MovieRatingProps {
   movieId: string;
@@ -37,6 +38,7 @@ export const MovieRating = ({ movieId, movieTitle, iconOnly = false }: MovieRati
   const [rating, setRating] = useState<SentimentRating>(null);
   const [savedRating, setSavedRating] = useState<SentimentRating>(null);
   const [loading, setLoading] = useState(false);
+  const [hasShownGuestPrompt, setHasShownGuestPrompt] = useState(false);
 
   // Check if user is a real user (not dev mode mock)
   const isRealUser = user && user.id !== 'dev-user-id';
@@ -44,8 +46,21 @@ export const MovieRating = ({ movieId, movieTitle, iconOnly = false }: MovieRati
   useEffect(() => {
     if (isRealUser) {
       fetchUserRating();
+    } else {
+      // Check guest ratings from localStorage
+      fetchGuestRating();
     }
   }, [user, movieId, isRealUser]);
+
+  const fetchGuestRating = () => {
+    const guestRatings = getGuestRatings();
+    const existingRating = guestRatings.find(r => r.movieId === movieId);
+    if (existingRating) {
+      const sentimentValue = existingRating.rating as SentimentRating;
+      setSavedRating(sentimentValue);
+      setRating(sentimentValue);
+    }
+  };
 
   const fetchUserRating = async () => {
     if (!isRealUser) return;
@@ -72,39 +87,57 @@ export const MovieRating = ({ movieId, movieTitle, iconOnly = false }: MovieRati
   };
 
   const handleSaveRating = async (sentiment: SentimentRating) => {
-    if (!isRealUser || !sentiment) {
-      toast({
-        title: "Please sign in",
-        description: "You need to be signed in to rate movies",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!sentiment) return;
 
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from("user_ratings")
-        .upsert({
-          user_id: user.id,
-          media_id: movieId,
-          media_type: "movie",
-          user_rating: sentiment,
-        }, {
-          onConflict: "user_id,media_id,media_type"
+      if (isRealUser) {
+        // Save to database for logged-in users
+        const { error } = await supabase
+          .from("user_ratings")
+          .upsert({
+            user_id: user.id,
+            media_id: movieId,
+            media_type: "movie",
+            user_rating: sentiment,
+          }, {
+            onConflict: "user_id,media_id,media_type"
+          });
+
+        if (error) throw error;
+
+        setSavedRating(sentiment);
+        setRating(sentiment);
+        setOpen(false);
+        toast({
+          title: "Rating saved!",
+          description: `You rated ${movieTitle}: ${sentimentLabels[sentiment]}`,
         });
-
-      if (error) throw error;
-
-      setSavedRating(sentiment);
-      setRating(sentiment);
-      setOpen(false);
-      toast({
-        title: "Rating saved!",
-        description: `You rated ${movieTitle}: ${sentimentLabels[sentiment]}`,
-      });
-      
-      queryClient.invalidateQueries({ queryKey: ["user-ratings"] });
+        
+        queryClient.invalidateQueries({ queryKey: ["user-ratings"] });
+      } else {
+        // Save to localStorage for guests
+        saveGuestRating(movieId, sentiment);
+        setSavedRating(sentiment);
+        setRating(sentiment);
+        setOpen(false);
+        
+        // Show sign-in prompt only once
+        const guestRatings = getGuestRatings();
+        if (guestRatings.length === 1 && !hasShownGuestPrompt) {
+          setHasShownGuestPrompt(true);
+          toast({
+            title: "Rating saved locally!",
+            description: "Sign in to sync your ratings across devices and get personalized recommendations.",
+            duration: 5000,
+          });
+        } else {
+          toast({
+            title: "Rating saved!",
+            description: `You rated ${movieTitle}: ${sentimentLabels[sentiment]}`,
+          });
+        }
+      }
     } catch (error: any) {
       toast({
         title: "Error saving rating",
@@ -115,32 +148,6 @@ export const MovieRating = ({ movieId, movieTitle, iconOnly = false }: MovieRati
       setLoading(false);
     }
   };
-
-  if (!user) {
-    if (iconOnly) {
-      return (
-        <Button
-          size="icon"
-          variant="ghost"
-          disabled
-          className="h-8 w-8"
-        >
-          <Heart className="h-4 w-4" />
-        </Button>
-      );
-    }
-    return (
-      <Button
-        size="sm"
-        variant="outline"
-        disabled
-        className="gap-1"
-      >
-        <Heart className="h-3.5 w-3.5" />
-        Sign in to rate
-      </Button>
-    );
-  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

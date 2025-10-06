@@ -13,7 +13,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DevModeSwitcher } from "@/components/DevModeSwitcher";
 import { WizardModal } from "@/components/WizardModal";
 
 export const Navigation = () => {
@@ -90,7 +89,6 @@ export const Navigation = () => {
             )}
 
             <div className="ml-1 pl-1 border-l flex items-center gap-1">
-              {import.meta.env.DEV && <DevModeSwitcher />}
               <ThemeToggle />
               {user ? (
                 <DropdownMenu>
@@ -119,16 +117,28 @@ export const Navigation = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <NavLink to="/auth">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="flex items-center gap-1.5 px-2.5 py-1.5"
-                  >
-                    <LogIn className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">Sign In</span>
-                  </Button>
-                </NavLink>
+                <>
+                  <NavLink to="/profile">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="flex items-center gap-1.5 px-2.5 py-1.5"
+                    >
+                      <User className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">Profile</span>
+                    </Button>
+                  </NavLink>
+                  <NavLink to="/auth">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="flex items-center gap-1.5 px-2.5 py-1.5"
+                    >
+                      <LogIn className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">Sign In</span>
+                    </Button>
+                  </NavLink>
+                </>
               )}
             </div>
           </div>
