@@ -63,13 +63,8 @@ export const MovieDetailModal = () => {
       params.set('search', value);
     }
     
-    // Navigate to movies page with filter params
+    // Navigate to movies page with filter params - modal will close automatically
     navigate(`/movies?${params.toString()}`);
-    
-    // Close modal after a short delay
-    setTimeout(() => {
-      handleClose();
-    }, 50);
   };
 
   // Parse watch providers
