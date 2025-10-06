@@ -249,8 +249,8 @@ export const SyncFilterPanel = ({
                 id="year-from"
                 type="number"
                 value={yearRange[0]}
-                onChange={(e) => onYearRangeChange([parseInt(e.target.value) || 2020, yearRange[1]])}
-                min={2020}
+                onChange={(e) => onYearRangeChange([parseInt(e.target.value) || 1900, yearRange[1]])}
+                min={1900}
                 max={yearRange[1]}
                 className="bg-background text-center font-semibold"
               />
