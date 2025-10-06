@@ -62,13 +62,13 @@ const App = () => (
       <TooltipProvider>
         <AuthProvider>
           <DevModeProvider>
-            <FilterProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <FilterProvider>
                 <AppRoutes />
-              </BrowserRouter>
-            </FilterProvider>
+              </FilterProvider>
+            </BrowserRouter>
           </DevModeProvider>
         </AuthProvider>
       </TooltipProvider>
