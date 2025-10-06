@@ -13,7 +13,7 @@ import { Movie } from "@/data/types";
 const Movies = () => {
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortBy, setSortBy] = useState<"rating" | "year" | "title">("rating");
+  const [sortBy, setSortBy] = useState<"rating" | "year" | "title" | "user_rating">("rating");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [itemsPerPage, setItemsPerPage] = useState(50);
 
@@ -76,6 +76,77 @@ const Movies = () => {
   } = useQuery({
     queryKey: ["movies", appliedGenres, appliedRatingRange, appliedYearRange, appliedLanguages, appliedSearchText, currentPage, sortBy, sortOrder, itemsPerPage],
     queryFn: async () => {
+      // Get current user for user_rating sorting
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // For user rating sort, we need a different query structure
+      if (sortBy === "user_rating" && user) {
+        let query = supabase
+          .from("movies")
+          .select(`
+            *,
+            user_ratings!inner(user_rating)
+          `, {
+            count: "exact"
+          })
+          .eq('user_ratings.user_id', user.id)
+          .eq('user_ratings.media_type', 'movie');
+
+        // Apply filters
+        if (appliedGenres.length > 0) {
+          query = query.overlaps("genres", appliedGenres);
+        }
+        if (appliedRatingRange[0] > 0 || appliedRatingRange[1] < 10) {
+          query = query.gte("rating", appliedRatingRange[0]).lte("rating", appliedRatingRange[1]);
+        }
+        query = query.gte("year", appliedYearRange[0]).lte("year", appliedYearRange[1]);
+        if (appliedLanguages.length > 0) {
+          query = query.in("original_language", appliedLanguages);
+        }
+
+        // Apply text search across multiple fields
+        if (appliedSearchText) {
+          query = query.or(`title.ilike.%${appliedSearchText}%,actors.ilike.%${appliedSearchText}%,director.ilike.%${appliedSearchText}%,writing.ilike.%${appliedSearchText}%,keywords.cs.{${appliedSearchText}}`);
+        }
+
+        // Sort by user_rating
+        query = query.order('user_rating', {
+          ascending: sortOrder === "asc",
+          foreignTable: 'user_ratings'
+        });
+
+        // Apply pagination
+        const from = (currentPage - 1) * itemsPerPage;
+        const to = from + itemsPerPage - 1;
+        query = query.range(from, to);
+
+        const { data, error, count } = await query;
+        if (error) throw error;
+
+        return {
+          movies: (data || []).map((movie: any): Movie => ({
+            id: movie.id,
+            title: movie.title,
+            year: movie.year,
+            rating: movie.rating || 0,
+            genre: movie.genres || [],
+            poster: movie.poster || "",
+            plot: movie.plot || "",
+            director: movie.director || "",
+            actors: movie.actors || "",
+            runtime: movie.runtime || "",
+            imdbId: movie.imdb_id,
+            voteCount: movie.vote_count || 0,
+            originalLanguage: movie.original_language || "",
+            writing: movie.writing || "",
+            sound: movie.sound || "",
+            keywords: movie.keywords || []
+          })),
+          totalCount: count || 0
+        };
+      }
+
+      // Standard query for other sorting options
       let query = supabase.from("movies").select("*", {
         count: "exact"
       });
@@ -227,6 +298,8 @@ const Movies = () => {
                 <SelectContent>
                   <SelectItem value="rating-desc">Rating (High to Low)</SelectItem>
                   <SelectItem value="rating-asc">Rating (Low to High)</SelectItem>
+                  <SelectItem value="user_rating-desc">My Rating (High to Low)</SelectItem>
+                  <SelectItem value="user_rating-asc">My Rating (Low to High)</SelectItem>
                   <SelectItem value="year-desc">Year (Newest First)</SelectItem>
                   <SelectItem value="year-asc">Year (Oldest First)</SelectItem>
                   <SelectItem value="title-asc">Title (A to Z)</SelectItem>
