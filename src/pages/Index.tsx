@@ -15,6 +15,10 @@ interface Stats {
   avgMovieRating: number;
   userRatingsCount: number;
   userAvgRating: number;
+  yearRange: {
+    earliest: number;
+    latest: number;
+  } | null;
   topGenres: {
     genre: string;
     count: number;
@@ -119,6 +123,20 @@ const Index = () => {
         ascending: false
       }).limit(1).maybeSingle();
 
+      // Fetch year range
+      const { data: yearData } = await supabase
+        .from("movies")
+        .select("year")
+        .order("year", { ascending: true });
+      
+      let yearRange = null;
+      if (yearData && yearData.length > 0) {
+        yearRange = {
+          earliest: yearData[0].year,
+          latest: yearData[yearData.length - 1].year
+        };
+      }
+
       // Fetch user-specific ratings if logged in (only for real users)
       let userRatingsCount = 0;
       let userAvgRating = 0;
@@ -137,6 +155,7 @@ const Index = () => {
         avgMovieRating: avgRating,
         userRatingsCount,
         userAvgRating,
+        yearRange,
         topGenres,
         recentMovies: recentMovies || [],
         lastSync
@@ -203,7 +222,10 @@ const Index = () => {
             </h1>
           </div>
           <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-6 text-base font-thin">
-            {user ? "Your personal movie and TV show statistics" : "Discover and rate thousands of movies. Sign in to start rating!"}
+            {user 
+              ? "Your personal movie and TV show statistics" 
+              : `Discover and rate ${stats?.totalMovies.toLocaleString() || 0} movies${stats?.yearRange ? ` (${stats.yearRange.earliest} - ${stats.yearRange.latest})` : ''}. Sign in to start rating!`
+            }
           </p>
           {stats?.lastSync && <div className="flex justify-center">
               <Badge variant="outline" className="text-sm">
