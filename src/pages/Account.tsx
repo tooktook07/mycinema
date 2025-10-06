@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Settings, Shield } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,20 +12,6 @@ const Account = () => {
   const { isAdmin } = useEffectiveAuth();
   const loading = false;
   const navigate = useNavigate();
-  
-  // Lift filter state to enable re-run
-  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
-  const [excludedGenres, setExcludedGenres] = useState<string[]>([]);
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(["Released"]);
-  const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
-  const [ratingRange, setRatingRange] = useState<[number, number]>([6.9, 9.5]);
-  const [yearRange, setYearRange] = useState<[number, number]>([2025, 2025]);
-  const [minVoteCount, setMinVoteCount] = useState(1000);
-  const [minPopularity, setMinPopularity] = useState(0);
-  
-  const [activeTab, setActiveTab] = useState("sync-movies");
-  const [rerunFilters, setRerunFilters] = useState<any>(null);
-  const [autoStart, setAutoStart] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAdmin) {
@@ -60,15 +46,6 @@ const Account = () => {
     );
   }
 
-  const handleRerunSync = (filters: any) => {
-    setRerunFilters(filters);
-    setActiveTab("sync-movies");
-    setAutoStart(true);
-    
-    // Reset auto-start after a moment
-    setTimeout(() => setAutoStart(false), 100);
-  };
-
   return (
     <div className="min-h-screen">
       <div className="container mx-auto max-w-7xl px-4 py-8">
@@ -77,7 +54,7 @@ const Account = () => {
           <h1 className="text-4xl font-bold">Account</h1>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs defaultValue="sync-movies" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="sync-movies">Sync Movies</TabsTrigger>
             <TabsTrigger value="sync-history">Sync History</TabsTrigger>
@@ -85,30 +62,11 @@ const Account = () => {
           </TabsList>
 
           <TabsContent value="sync-movies">
-            <SyncMovies 
-              initialFilters={rerunFilters}
-              autoStart={autoStart}
-              selectedGenres={selectedGenres}
-              setSelectedGenres={setSelectedGenres}
-              excludedGenres={excludedGenres}
-              setExcludedGenres={setExcludedGenres}
-              selectedStatuses={selectedStatuses}
-              setSelectedStatuses={setSelectedStatuses}
-              selectedLanguages={selectedLanguages}
-              setSelectedLanguages={setSelectedLanguages}
-              ratingRange={ratingRange}
-              setRatingRange={setRatingRange}
-              yearRange={yearRange}
-              setYearRange={setYearRange}
-              minVoteCount={minVoteCount}
-              setMinVoteCount={setMinVoteCount}
-              minPopularity={minPopularity}
-              setMinPopularity={setMinPopularity}
-            />
+            <SyncMovies />
           </TabsContent>
 
           <TabsContent value="sync-history">
-            <SyncHistoryTab onRerunSync={handleRerunSync} />
+            <SyncHistoryTab />
           </TabsContent>
 
           <TabsContent value="general">
