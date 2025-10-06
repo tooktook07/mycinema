@@ -1,19 +1,15 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useEffectiveAuth } from '@/contexts/DevModeContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Heart, ThumbsDown, Star, Trash2 } from 'lucide-react';
+import { Heart, ThumbsDown, Star } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTheme } from '@/components/ThemeProvider';
-import { toast } from '@/hooks/use-toast';
-import { getGuestRatings, clearGuestRatings } from '@/lib/guestRatings';
 
 interface RatedItem {
   id: string;
@@ -29,16 +25,16 @@ export default function Profile() {
   const navigate = useNavigate();
   const [ratedMovies, setRatedMovies] = useState<RatedItem[]>([]);
   const [ratedTvShows, setRatedTvShows] = useState<RatedItem[]>([]);
-  const [guestRatings, setGuestRatings] = useState<RatedItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isGuest, setIsGuest] = useState(false);
   const { theme, setTheme } = useTheme();
 
   useEffect(() => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+
     const fetchRatedItems = async () => {
-      if (user) {
-        // AUTHENTICATED USER: Fetch from database
-        setIsGuest(false);
       try {
         // Fetch rated movies
         const { data: movieRatings } = await supabase
@@ -101,52 +97,10 @@ export default function Profile() {
       } finally {
         setLoading(false);
       }
-    } else {
-      // GUEST USER: Load from localStorage
-      setIsGuest(true);
-      try {
-        const ratings = getGuestRatings();
-        
-        // Fetch movie details for guest ratings
-        const moviesWithDetails = await Promise.all(
-          ratings.map(async (rating) => {
-            const { data: movie } = await supabase
-              .from('movies')
-              .select('title, poster')
-              .eq('id', rating.movieId)
-              .single();
-            
-            return {
-              id: rating.movieId,
-              title: movie?.title || 'Unknown',
-              poster: movie?.poster || null,
-              user_rating: rating.rating,
-              media_type: 'movie',
-              updated_at: rating.timestamp
-            };
-          })
-        );
-        
-        setGuestRatings(moviesWithDetails);
-      } catch (error) {
-        console.error('Error loading guest ratings:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
+    };
 
     fetchRatedItems();
   }, [user, navigate]);
-
-  const handleClearStorage = () => {
-    clearGuestRatings();
-    setGuestRatings([]);
-    toast({
-      title: "Storage Cleared",
-      description: "All your guest ratings have been removed.",
-    });
-  };
 
   const getRatingBadge = (rating: number) => {
     if (rating === 1) {
@@ -207,14 +161,7 @@ export default function Profile() {
 
   return (
     <div className="container mx-auto max-w-7xl py-8 px-4">
-      <div className="flex items-center gap-3 mb-6">
-        <h1 className="text-3xl font-bold">My Profile</h1>
-        {isGuest && (
-          <Badge variant="secondary" className="gap-1">
-            🎭 Guest Mode
-          </Badge>
-        )}
-      </div>
+      <h1 className="text-3xl font-bold mb-6">My Profile</h1>
 
       <div className="grid gap-6">
         <Card>
@@ -239,98 +186,36 @@ export default function Profile() {
           </CardContent>
         </Card>
 
-        {isGuest && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Guest Data</CardTitle>
-              <CardDescription>
-                Manage your local ratings data
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  You have <strong>{guestRatings.length}</strong> rating{guestRatings.length !== 1 ? 's' : ''} stored locally in your browser.
-                </p>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm">
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Clear All Ratings
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This will permanently delete all your guest ratings from this browser.
-                        This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleClearStorage}>
-                        Clear All Data
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         <Card>
           <CardHeader>
-            <CardTitle>
-              {isGuest ? "My Rated Movies" : "My Rated Items"}
-            </CardTitle>
-            <CardDescription>
-              {isGuest 
-                ? "View all your rated movies (stored locally)"
-                : "View all your rated movies and TV shows"
-              }
-            </CardDescription>
+            <CardTitle>My Rated Items</CardTitle>
+            <CardDescription>View all your rated movies and TV shows</CardDescription>
           </CardHeader>
           <CardContent>
-            {isGuest ? (
-              guestRatings.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">
-                  You haven't rated any movies yet. Visit the{" "}
-                  <Link to="/wizard" className="text-primary underline">
-                    Wizard
-                  </Link>{" "}
-                  to start rating!
-                </p>
-              ) : (
-                <RatedItemsList items={guestRatings} />
-              )
-            ) : (
-              <Tabs defaultValue="movies">
-                <TabsList>
-                  <TabsTrigger value="movies">Movies ({ratedMovies.length})</TabsTrigger>
-                  <TabsTrigger value="tv">TV Shows ({ratedTvShows.length})</TabsTrigger>
-                </TabsList>
-                <TabsContent value="movies" className="mt-4">
-                  {ratedMovies.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-8">
-                      You haven't rated any movies yet
-                    </p>
-                  ) : (
-                    <RatedItemsList items={ratedMovies} />
-                  )}
-                </TabsContent>
-                <TabsContent value="tv" className="mt-4">
-                  {ratedTvShows.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-8">
-                      You haven't rated any TV shows yet
-                    </p>
-                  ) : (
-                    <RatedItemsList items={ratedTvShows} />
-                  )}
-                </TabsContent>
-              </Tabs>
-            )}
+            <Tabs defaultValue="movies">
+              <TabsList>
+                <TabsTrigger value="movies">Movies ({ratedMovies.length})</TabsTrigger>
+                <TabsTrigger value="tv">TV Shows ({ratedTvShows.length})</TabsTrigger>
+              </TabsList>
+              <TabsContent value="movies" className="mt-4">
+                {ratedMovies.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">
+                    You haven't rated any movies yet
+                  </p>
+                ) : (
+                  <RatedItemsList items={ratedMovies} />
+                )}
+              </TabsContent>
+              <TabsContent value="tv" className="mt-4">
+                {ratedTvShows.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">
+                    You haven't rated any TV shows yet
+                  </p>
+                ) : (
+                  <RatedItemsList items={ratedTvShows} />
+                )}
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       </div>
