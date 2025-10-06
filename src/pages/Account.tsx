@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Settings, Shield } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,6 +12,85 @@ const Account = () => {
   const { isAdmin } = useEffectiveAuth();
   const loading = false;
   const navigate = useNavigate();
+
+  // Lifted filter states
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [excludedGenres, setExcludedGenres] = useState<string[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(["Released"]);
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
+  const [ratingRange, setRatingRange] = useState<[number, number]>([6.9, 9.5]);
+  const [yearRange, setYearRange] = useState<[number, number]>([2025, 2025]);
+  const [minVoteCount, setMinVoteCount] = useState(1000);
+  const [minPopularity, setMinPopularity] = useState(0);
+  
+  // Tab and re-run state
+  const [activeTab, setActiveTab] = useState("sync-movies");
+  const [autoStart, setAutoStart] = useState(false);
+
+  const handleGenreToggle = (genre: string) => {
+    if (!genre) {
+      setSelectedGenres([]);
+      return;
+    }
+    setSelectedGenres(prev =>
+      prev.includes(genre)
+        ? prev.filter(g => g !== genre)
+        : [...prev, genre]
+    );
+  };
+
+  const handleExcludedGenreToggle = (genre: string) => {
+    if (!genre) {
+      setExcludedGenres([]);
+      return;
+    }
+    setExcludedGenres(prev =>
+      prev.includes(genre)
+        ? prev.filter(g => g !== genre)
+        : [...prev, genre]
+    );
+  };
+
+  const handleStatusToggle = (status: string) => {
+    setSelectedStatuses(prev =>
+      prev.includes(status)
+        ? prev.filter(s => s !== status)
+        : [...prev, status]
+    );
+  };
+
+  const handleLanguageToggle = (language: string) => {
+    if (!language) {
+      setSelectedLanguages([]);
+      return;
+    }
+    setSelectedLanguages(prev =>
+      prev.includes(language)
+        ? prev.filter(l => l !== language)
+        : [...prev, language]
+    );
+  };
+
+  const handleRerunSync = (filters: any) => {
+    // Populate filters from history
+    if (filters.genres) setSelectedGenres(filters.genres);
+    if (filters.excludedGenres) setExcludedGenres(filters.excludedGenres);
+    if (filters.statuses) setSelectedStatuses(filters.statuses);
+    if (filters.languages) setSelectedLanguages(filters.languages);
+    if (filters.minRating !== undefined && filters.maxRating !== undefined) {
+      setRatingRange([filters.minRating, filters.maxRating]);
+    }
+    if (filters.yearRange) setYearRange(filters.yearRange);
+    if (filters.minVoteCount !== undefined) setMinVoteCount(filters.minVoteCount);
+    if (filters.minPopularity !== undefined) setMinPopularity(filters.minPopularity);
+    
+    // Switch to sync tab and trigger sync
+    setActiveTab("sync-movies");
+    setAutoStart(true);
+    
+    // Reset auto-start after a brief delay
+    setTimeout(() => setAutoStart(false), 100);
+  };
 
   useEffect(() => {
     if (!loading && !isAdmin) {
@@ -54,7 +133,7 @@ const Account = () => {
           <h1 className="text-4xl font-bold">Account</h1>
         </div>
 
-        <Tabs defaultValue="sync-movies" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="sync-movies">Sync Movies</TabsTrigger>
             <TabsTrigger value="sync-history">Sync History</TabsTrigger>
@@ -62,11 +141,29 @@ const Account = () => {
           </TabsList>
 
           <TabsContent value="sync-movies">
-            <SyncMovies />
+            <SyncMovies
+              autoStart={autoStart}
+              selectedGenres={selectedGenres}
+              onGenreToggle={handleGenreToggle}
+              excludedGenres={excludedGenres}
+              onExcludedGenreToggle={handleExcludedGenreToggle}
+              selectedStatuses={selectedStatuses}
+              onStatusToggle={handleStatusToggle}
+              selectedLanguages={selectedLanguages}
+              onLanguageToggle={handleLanguageToggle}
+              ratingRange={ratingRange}
+              onRatingRangeChange={setRatingRange}
+              yearRange={yearRange}
+              onYearRangeChange={setYearRange}
+              minVoteCount={minVoteCount}
+              onMinVoteCountChange={setMinVoteCount}
+              minPopularity={minPopularity}
+              onMinPopularityChange={setMinPopularity}
+            />
           </TabsContent>
 
           <TabsContent value="sync-history">
-            <SyncHistoryTab />
+            <SyncHistoryTab onRerunSync={handleRerunSync} />
           </TabsContent>
 
           <TabsContent value="general">

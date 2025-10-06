@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Loader2, ChevronDown, AlertCircle, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
+import { Loader2, ChevronDown, AlertCircle, CheckCircle2, XCircle, AlertTriangle, RotateCw, Trash2, StopCircle } from "lucide-react";
 import { format } from "date-fns";
 import { useDevMode } from "@/contexts/DevModeContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 interface SyncHistoryRecord {
   id: string;
@@ -24,14 +26,39 @@ interface SyncHistoryRecord {
   error_message: string | null;
 }
 
-export const SyncHistoryTab = () => {
+interface SyncHistoryTabProps {
+  onRerunSync: (filters: any) => void;
+}
+
+export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
   const [syncHistory, setSyncHistory] = useState<SyncHistoryRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { devMode } = useDevMode();
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchSyncHistory();
+    
+    // Setup realtime subscription
+    const channel = supabase
+      .channel('sync-history-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'sync_history'
+        },
+        () => {
+          fetchSyncHistory();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchSyncHistory = async () => {
@@ -56,11 +83,37 @@ export const SyncHistoryTab = () => {
     }
   };
 
+  const handleDeleteSync = async (syncId: string) => {
+    try {
+      const { error } = await supabase
+        .from("sync_history")
+        .delete()
+        .eq("id", syncId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sync deleted",
+        description: "Sync history record has been deleted.",
+      });
+      
+      fetchSyncHistory();
+    } catch (error: any) {
+      console.error("Error deleting sync:", error);
+      toast({
+        title: "Delete failed",
+        description: error.message || "Failed to delete sync history",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       completed: "default",
       failed: "destructive",
       running: "secondary",
+      cancelled: "outline",
     };
     return variants[status] || "outline";
   };
@@ -73,6 +126,8 @@ export const SyncHistoryTab = () => {
         return <XCircle className="h-4 w-4" />;
       case 'running':
         return <Loader2 className="h-4 w-4 animate-spin" />;
+      case 'cancelled':
+        return <StopCircle className="h-4 w-4" />;
       default:
         return null;
     }
@@ -156,13 +211,37 @@ export const SyncHistoryTab = () => {
                   )}
                 </div>
               </div>
-              <Badge 
-                variant={getStatusVariant(sync.status)} 
-                className="flex items-center gap-1.5"
+              <div className="flex items-center gap-2">
+                <Badge 
+                  variant={getStatusVariant(sync.status)} 
+                  className="flex items-center gap-1.5"
+                >
+                  {getStatusIcon(sync.status)}
+                  {sync.status.toUpperCase()}
+                </Badge>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-2 mb-4">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onRerunSync(sync.filters)}
+                disabled={sync.status === 'running'}
               >
-                {getStatusIcon(sync.status)}
-                {sync.status.toUpperCase()}
-              </Badge>
+                <RotateCw className="h-3 w-3 mr-1" />
+                Re-run
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleDeleteSync(sync.id)}
+                disabled={sync.status === 'running'}
+              >
+                <Trash2 className="h-3 w-3 mr-1" />
+                Delete
+              </Button>
             </div>
 
             {/* Stats Grid */}
@@ -212,9 +291,29 @@ export const SyncHistoryTab = () => {
 
             {/* Error Message */}
             {sync.error_message && (
-              <div className="text-sm text-destructive mb-4">
-                {sync.error_message}
-              </div>
+              <Alert variant="destructive" className="mb-4">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  <div className="font-semibold mb-1">❌ SYNC FAILED</div>
+                  <div className="text-sm">{sync.error_message}</div>
+                  {sync.logs && sync.logs.some(log => log.includes('✗')) && (
+                    <Collapsible className="mt-2">
+                      <CollapsibleTrigger className="text-xs font-medium hover:underline cursor-pointer">
+                        View Error Logs ▼
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="mt-2">
+                        <div className="bg-destructive/5 rounded p-2 max-h-32 overflow-auto space-y-1">
+                          {sync.logs.filter(log => log.includes('✗')).map((log, index) => (
+                            <div key={index} className="text-xs font-mono">
+                              {log}
+                            </div>
+                          ))}
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  )}
+                </AlertDescription>
+              </Alert>
             )}
 
             {/* Details */}
