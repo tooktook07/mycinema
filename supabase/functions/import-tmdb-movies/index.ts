@@ -82,12 +82,17 @@ serve(async (req) => {
 
     const syncId = syncRecord?.id;
 
+    const MAX_CONSECUTIVE_FAILURES = 5;
+    const REQUEST_TIMEOUT = 30000; // 30 seconds
+    const MAX_RETRIES = 3;
+    
     let totalMovies = 0;
     let importedMovies = 0;
     let updatedMovies = 0;
     let removedMovies = 0;
     let skippedMovies = 0;
     let failedMovies = 0;
+    let consecutiveFailures = 0;
     let page = 1;
     let totalPages = 1;
     const logs: string[] = [];
@@ -96,6 +101,54 @@ serve(async (req) => {
     const logMsg = (msg: string) => {
       console.log(msg);
       logs.push(`[${new Date().toISOString()}] ${msg}`);
+    };
+
+    const fetchWithTimeout = async (url: string, timeout: number) => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+      
+      try {
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        return response;
+      } catch (error: any) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          throw new Error('Request timeout');
+        }
+        throw error;
+      }
+    };
+
+    const fetchWithRetry = async (url: string, maxRetries: number) => {
+      for (let i = 0; i < maxRetries; i++) {
+        try {
+          const response = await fetchWithTimeout(url, REQUEST_TIMEOUT);
+          
+          // Check for rate limiting
+          if (response.status === 429) {
+            const retryAfter = response.headers.get('Retry-After');
+            const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : 2000 * (i + 1);
+            logMsg(`⏳ Rate limited, waiting ${waitTime}ms before retry...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            continue;
+          }
+          
+          if (!response.ok && response.status >= 500) {
+            throw new Error(`Server error: ${response.status}`);
+          }
+          
+          return response;
+        } catch (error: any) {
+          if (i === maxRetries - 1) throw error;
+          
+          const backoffTime = 1000 * Math.pow(2, i);
+          logMsg(`⚠️ Request failed, retrying in ${backoffTime}ms... (attempt ${i + 1}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, backoffTime));
+        }
+      }
+      
+      throw new Error('Max retries exceeded');
     };
 
     logMsg(`Starting ${syncMode ? 'sync' : 'import'} with filters: ratingRange=${minRating}-${maxRating}, yearRange=${yearRange.join('-')}, genres=${genres?.join(',') || 'all'}, excludedGenres=${excludedGenres?.join(',') || 'none'}, languages=${languages?.join(',') || 'all'}, statuses=${statuses?.join(',') || 'all'}, minVoteCount=${minVoteCount}+, minPopularity=${minPopularity}`);
@@ -166,18 +219,56 @@ serve(async (req) => {
           // Use TMDB ID as temporary identifier for checking existence
           const tempId = `tmdb_${movie.id}`;
           
-          // Fetch detailed movie info to get additional data including IMDB ID, credits, keywords, providers, and translations
-          const detailsResponse = await fetch(
-            `https://api.themoviedb.org/3/movie/${movie.id}?api_key=${TMDB_API_KEY}&append_to_response=credits,external_ids,keywords,watch/providers,translations`
-          );
+          // Fetch detailed movie info with retry logic
+          let detailsResponse;
+          let details;
+          
+          try {
+            detailsResponse = await fetchWithRetry(
+              `https://api.themoviedb.org/3/movie/${movie.id}?api_key=${TMDB_API_KEY}&append_to_response=credits,external_ids,keywords,watch/providers,translations`,
+              MAX_RETRIES
+            );
 
-          if (!detailsResponse.ok) {
-            logMsg(`✗ Failed to fetch details for: "${movie.title}"`);
+            if (!detailsResponse.ok) {
+              throw new Error(`HTTP ${detailsResponse.status}`);
+            }
+
+            details = await detailsResponse.json();
+            consecutiveFailures = 0; // Reset on success
+          } catch (error: any) {
+            consecutiveFailures++;
+            logMsg(`✗ Failed to fetch details for: "${movie.title}" - ${error.message}`);
             failedMovies++;
+            
+            // Check if we should abort
+            if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+              const abortMsg = `🛑 Aborting sync: ${MAX_CONSECUTIVE_FAILURES} consecutive failures detected. Last error: ${error.message}`;
+              logMsg(abortMsg);
+              
+              // Update sync history and throw
+              if (syncId) {
+                await supabaseAdmin
+                  .from("sync_history")
+                  .update({
+                    completed_at: new Date().toISOString(),
+                    status: 'failed',
+                    error_message: abortMsg,
+                    total_found: totalMovies,
+                    imported: importedMovies,
+                    updated: updatedMovies,
+                    removed: removedMovies,
+                    skipped: skippedMovies,
+                    failed: failedMovies,
+                    logs
+                  })
+                  .eq("id", syncId);
+              }
+              
+              throw new Error(abortMsg);
+            }
+            
             continue;
           }
-
-          const details = await detailsResponse.json();
           
           // Get actual IMDB ID from external_ids, fallback to tmdb_ prefix if not available
           const actualImdbId = details.external_ids?.imdb_id || tempId;

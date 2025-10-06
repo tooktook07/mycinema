@@ -5,3 +5,6 @@ verify_jwt = true
 
 [functions.import-tmdb-movies]
 verify_jwt = true
+
+[functions.cancel-sync]
+verify_jwt = true
