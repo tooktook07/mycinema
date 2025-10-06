@@ -50,27 +50,27 @@ export const MovieDetailModal = () => {
   };
 
   // Navigation handlers for internal linking
-  const handleFieldClick = (filterType: 'year' | 'genre' | 'language' | 'search', value: string | number | [number, number]) => {
-    handleClose();
-    setTimeout(() => {
-      if (filterType === 'year' && typeof value === 'number') {
-        navigate('/movies', { state: { yearFilter: [value, value] } });
-      } else if (filterType === 'genre' && typeof value === 'string') {
-        navigate('/movies', { state: { genreFilter: [value] } });
-      } else if (filterType === 'language' && typeof value === 'string') {
-        navigate('/movies', { state: { languageFilter: [value] } });
-      } else if (filterType === 'search' && typeof value === 'string') {
-        navigate('/movies', { state: { searchFilter: value } });
-      }
-    }, 100);
+  const handleFieldClick = (filterType: 'year' | 'genre' | 'language' | 'search', value: string | number) => {
+    if (filterType === 'year' && typeof value === 'number') {
+      navigate('/movies', { state: { yearFilter: [value, value] } });
+    } else if (filterType === 'genre' && typeof value === 'string') {
+      navigate('/movies', { state: { genreFilter: [value] } });
+    } else if (filterType === 'language' && typeof value === 'string') {
+      navigate('/movies', { state: { languageFilter: [value] } });
+    } else if (filterType === 'search' && typeof value === 'string') {
+      navigate('/movies', { state: { searchFilter: value } });
+    }
   };
 
   // Parse watch providers
   const parseWatchProviders = (providers: any) => {
     if (!providers) return null;
     
+    // Check if providers has a 'results' key (TMDB structure)
+    const regions = providers.results || providers;
+    
     // Try to get US region first, or first available region
-    const region = providers['US'] || Object.values(providers)[0];
+    const region = regions['US'] || regions['GB'] || Object.values(regions)[0];
     if (!region || typeof region !== 'object') return null;
     
     return {
@@ -110,25 +110,6 @@ export const MovieDetailModal = () => {
               <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/20" />
               
               <div className="relative p-8">
-                {/* Action Buttons at Top Right */}
-                <div className="flex justify-end gap-2 mb-4">
-                  {hasValidImdbId && (
-                    <Button variant="outline" size="sm" asChild>
-                      <a href={imdbUrl} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-3 w-3 mr-1" />
-                        IMDB
-                      </a>
-                    </Button>
-                  )}
-                  <Button variant="outline" size="sm" asChild>
-                    <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer nofollow">
-                      <Search className="h-3 w-3 mr-1" />
-                      Google
-                    </a>
-                  </Button>
-                  <MovieRating movieId={movie.id} movieTitle={movie.title} iconOnly={true} />
-                </div>
-
                 <div className="flex gap-6 items-start">
                   {/* Poster */}
                   {imageProps && (
@@ -190,22 +171,44 @@ export const MovieDetailModal = () => {
                       )}
                     </div>
 
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <Star className="h-6 w-6 fill-primary text-primary" />
-                        <span className="text-2xl font-bold">{movie.rating}/10</span>
-                      </div>
-                      {movie.vote_count && (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Users className="h-5 w-5" />
-                          <span>{movie.vote_count.toLocaleString()} votes</span>
+                    {/* Stats and Action Buttons */}
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <Star className="h-6 w-6 fill-primary text-primary" />
+                          <span className="text-2xl font-bold">{movie.rating}/10</span>
                         </div>
-                      )}
-                      {movie.popularity && (
-                        <Badge variant="outline">
-                          Popularity: {Math.round(movie.popularity)}
-                        </Badge>
-                      )}
+                        {movie.vote_count && (
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Users className="h-5 w-5" />
+                            <span>{movie.vote_count.toLocaleString()} votes</span>
+                          </div>
+                        )}
+                        {movie.popularity && (
+                          <Badge variant="outline">
+                            Popularity: {Math.round(movie.popularity)}
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-2">
+                        {hasValidImdbId && (
+                          <Button variant="outline" size="sm" asChild>
+                            <a href={imdbUrl} target="_blank" rel="noopener noreferrer">
+                              <ExternalLink className="h-3 w-3 mr-1" />
+                              IMDB
+                            </a>
+                          </Button>
+                        )}
+                        <Button variant="outline" size="sm" asChild>
+                          <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer nofollow">
+                            <Search className="h-3 w-3 mr-1" />
+                            Google
+                          </a>
+                        </Button>
+                        <MovieRating movieId={movie.id} movieTitle={movie.title} iconOnly={true} />
+                      </div>
                     </div>
                   </div>
                 </div>
