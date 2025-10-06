@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -13,6 +13,7 @@ import { MovieRating } from "@/components/MovieRating";
 export const MovieDetailModal = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const { data: movie, isLoading, error } = useQuery({
     queryKey: ['movie', id],
@@ -31,10 +32,10 @@ export const MovieDetailModal = () => {
   });
 
   const handleClose = () => {
-    if (window.history.length > 1) {
+    if (location.state?.backgroundLocation) {
       navigate(-1);
     } else {
-      navigate('/movies');
+      navigate('/');
     }
   };
 
