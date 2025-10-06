@@ -309,7 +309,7 @@ export const MovieWizardCard = ({ movie, onRate, onSkip, totalRated, isProcessin
             ) : (
               <>
                 <SkipForward className="h-4 w-4 mr-2" />
-                Skip (Don't Know)
+                Pass
               </>
             )}
           </Button>
