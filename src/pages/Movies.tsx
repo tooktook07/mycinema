@@ -15,7 +15,7 @@ const Movies = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<"rating" | "year" | "title">("rating");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [itemsPerPage, setItemsPerPage] = useState(100);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
 
   // Filter states
   const [appliedGenres, setAppliedGenres] = useState<string[]>([]);
@@ -23,7 +23,6 @@ const Movies = () => {
   const [appliedYearRange, setAppliedYearRange] = useState<[number, number]>([1900, 2030]);
   const [appliedLanguages, setAppliedLanguages] = useState<string[]>([]);
   const [appliedSearchText, setAppliedSearchText] = useState<string>("");
-  const [appliedUserRatingRange, setAppliedUserRatingRange] = useState<[number, number] | null>(null);
   const handleGenreToggle = (genre: string) => {
     setAppliedGenres(prev => prev.includes(genre) ? prev.filter(g => g !== genre) : [...prev, genre]);
     setCurrentPage(1);
@@ -38,7 +37,6 @@ const Movies = () => {
     setAppliedYearRange([1900, 2030]);
     setAppliedLanguages([]);
     setAppliedSearchText("");
-    setAppliedUserRatingRange(null);
     setCurrentPage(1);
   };
   const handleYearClick = (year: number) => {
@@ -76,7 +74,7 @@ const Movies = () => {
     isLoading,
     error
   } = useQuery({
-    queryKey: ["movies", appliedGenres, appliedRatingRange, appliedYearRange, appliedLanguages, appliedSearchText, appliedUserRatingRange, currentPage, sortBy, sortOrder, itemsPerPage],
+    queryKey: ["movies", appliedGenres, appliedRatingRange, appliedYearRange, appliedLanguages, appliedSearchText, currentPage, sortBy, sortOrder, itemsPerPage],
     queryFn: async () => {
       let query = supabase.from("movies").select("*", {
         count: "exact"
@@ -97,30 +95,6 @@ const Movies = () => {
       // Apply text search across multiple fields
       if (appliedSearchText) {
         query = query.or(`title.ilike.%${appliedSearchText}%,actors.ilike.%${appliedSearchText}%,director.ilike.%${appliedSearchText}%,writing.ilike.%${appliedSearchText}%,keywords.cs.{${appliedSearchText}}`);
-      }
-
-      // If user rating filter is active, we need to filter by user ratings
-      if (appliedUserRatingRange) {
-        // This requires a different approach - we'll need to fetch user ratings first
-        const { data: session } = await supabase.auth.getSession();
-        if (session?.session?.user) {
-          const { data: userRatings } = await supabase
-            .from("user_ratings")
-            .select("media_id, user_rating")
-            .eq("user_id", session.session.user.id)
-            .eq("media_type", "movie")
-            .gte("user_rating", appliedUserRatingRange[0])
-            .lte("user_rating", appliedUserRatingRange[1])
-            .not("user_rating", "is", null);
-          
-          if (userRatings && userRatings.length > 0) {
-            const ratedMovieIds = userRatings.map(r => r.media_id).filter(Boolean);
-            query = query.in("id", ratedMovieIds);
-          } else {
-            // No movies match the user rating criteria
-            return { movies: [], totalCount: 0 };
-          }
-        }
       }
 
       // Apply sorting
@@ -227,28 +201,13 @@ const Movies = () => {
       <div className="container mx-auto max-w-7xl px-4 py-8">
         {/* Filters */}
         <div className="mb-8">
-          <FilterPanel 
-            selectedGenres={appliedGenres} 
-            onGenreToggle={handleGenreToggle} 
-            ratingRange={appliedRatingRange} 
-            onRatingRangeChange={range => {
-              setAppliedRatingRange(range);
-              setCurrentPage(1);
-            }} 
-            yearRange={appliedYearRange} 
-            onYearRangeChange={range => {
-              setAppliedYearRange(range);
-              setCurrentPage(1);
-            }} 
-            selectedLanguages={appliedLanguages} 
-            onLanguageToggle={handleLanguageToggle}
-            userRatingRange={appliedUserRatingRange}
-            onUserRatingRangeChange={range => {
-              setAppliedUserRatingRange(range);
-              setCurrentPage(1);
-            }}
-            onReset={handleResetFilters} 
-          />
+          <FilterPanel selectedGenres={appliedGenres} onGenreToggle={handleGenreToggle} ratingRange={appliedRatingRange} onRatingRangeChange={range => {
+          setAppliedRatingRange(range);
+          setCurrentPage(1);
+        }} yearRange={appliedYearRange} onYearRangeChange={range => {
+          setAppliedYearRange(range);
+          setCurrentPage(1);
+        }} selectedLanguages={appliedLanguages} onLanguageToggle={handleLanguageToggle} onReset={handleResetFilters} />
         </div>
 
         {/* Results */}
