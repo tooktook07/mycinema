@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import { migrateGuestRatingsToUser, getGuestRatedCount } from "@/lib/guestRatings";
 
 const emailSchema = z.string().email("Invalid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
@@ -58,11 +59,31 @@ const Auth = () => {
         variant: "destructive",
       });
     } else {
-      toast({
-        title: "Welcome back!",
-        description: "You have successfully signed in.",
-      });
-      navigate("/");
+      // Check for guest ratings to migrate
+      const guestCount = getGuestRatedCount();
+      if (guestCount > 0) {
+        toast({
+          title: "Welcome back!",
+          description: "Migrating your guest ratings...",
+        });
+        // Wait a moment for auth to settle, then migrate
+        setTimeout(async () => {
+          const result = await migrateGuestRatingsToUser(user?.id || "");
+          if (result.success && result.count > 0) {
+            toast({
+              title: "✨ Ratings Saved!",
+              description: `Your ${result.count} guest ratings have been saved to your account.`,
+            });
+          }
+          navigate("/wizard");
+        }, 500);
+      } else {
+        toast({
+          title: "Welcome back!",
+          description: "You have successfully signed in.",
+        });
+        navigate("/");
+      }
     }
   };
 
@@ -100,6 +121,32 @@ const Auth = () => {
           description: error.message,
           variant: "destructive",
         });
+      }
+    } else {
+      // Check for guest ratings to migrate
+      const guestCount = getGuestRatedCount();
+      if (guestCount > 0) {
+        toast({
+          title: "Account created!",
+          description: "Migrating your guest ratings...",
+        });
+        // Wait for auth to settle, then migrate
+        setTimeout(async () => {
+          const result = await migrateGuestRatingsToUser(user?.id || "");
+          if (result.success && result.count > 0) {
+            toast({
+              title: "✨ Welcome to My Cinema!",
+              description: `Your ${result.count} guest ratings have been saved to your account.`,
+            });
+          }
+          navigate("/wizard");
+        }, 500);
+      } else {
+        toast({
+          title: "Account created!",
+          description: "Welcome to My Cinema!",
+        });
+        navigate("/");
       }
     }
   };

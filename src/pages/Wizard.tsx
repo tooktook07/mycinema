@@ -7,7 +7,10 @@ import { MovieWizardCard } from "@/components/MovieWizardCard";
 import { getNextRecommendation, RecommendationMovie } from "@/lib/recommendationEngine";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { WizardSignUpBanner } from "@/components/WizardSignUpBanner";
+import { saveGuestRating, getGuestRatings, getGuestRatedCount, saveGuestSkipped, getGuestSkipped } from "@/lib/guestRatings";
 
 const Wizard = () => {
   const navigate = useNavigate();
@@ -19,19 +22,20 @@ const Wizard = () => {
   const [sessionRatings, setSessionRatings] = useState(0);
   const [skippedIds, setSkippedIds] = useState<string[]>([]);
   const [processingAction, setProcessingAction] = useState<'skip' | 'not-interested' | 'like' | 'love' | null>(null);
+  const [isGuest, setIsGuest] = useState(false);
 
   useEffect(() => {
-    if (!user) {
-      navigate("/auth");
-      return;
-    }
-    
+    setIsGuest(!user);
     loadTotalRatings();
     loadNextMovie();
-  }, [user, navigate]);
+  }, [user]);
 
   const loadTotalRatings = async () => {
-    if (!user) return;
+    if (!user) {
+      // Guest user: load from localStorage
+      setTotalRated(getGuestRatedCount());
+      return;
+    }
     
     try {
       const { count } = await supabase
@@ -48,11 +52,25 @@ const Wizard = () => {
   };
 
   const loadNextMovie = async () => {
-    if (!user) return;
-    
     setLoading(true);
     try {
-      const movie = await getNextRecommendation(user.id, skippedIds);
+      let movie: RecommendationMovie | null = null;
+      
+      if (user) {
+        // Authenticated user
+        movie = await getNextRecommendation(user.id, skippedIds);
+      } else {
+        // Guest user
+        const guestRatings = getGuestRatings();
+        const guestSkipped = getGuestSkipped();
+        const allSkipped = [...skippedIds, ...guestSkipped];
+        
+        movie = await getNextRecommendation(
+          null, 
+          allSkipped,
+          guestRatings.map(r => ({ movieId: r.movieId, rating: r.rating }))
+        );
+      }
       
       if (!movie) {
         toast.info("No more recommendations available at the moment.");
@@ -70,7 +88,7 @@ const Wizard = () => {
   };
 
   const handleRate = async (rating: number) => {
-    if (!user || !currentMovie || saving) return;
+    if (!currentMovie || saving) return;
     
     // Set processing action based on rating
     if (rating === 1) {
@@ -83,18 +101,24 @@ const Wizard = () => {
     
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('user_ratings')
-        .upsert({
-          user_id: user.id,
-          media_id: currentMovie.id,
-          media_type: 'movie',
-          user_rating: rating,
-        }, {
-          onConflict: 'user_id,media_id,media_type'
-        });
+      if (user) {
+        // Authenticated user: save to database
+        const { error } = await supabase
+          .from('user_ratings')
+          .upsert({
+            user_id: user.id,
+            media_id: currentMovie.id,
+            media_type: 'movie',
+            user_rating: rating,
+          }, {
+            onConflict: 'user_id,media_id,media_type'
+          });
 
-      if (error) throw error;
+        if (error) throw error;
+      } else {
+        // Guest user: save to localStorage
+        saveGuestRating(currentMovie.id, rating);
+      }
 
       setTotalRated(prev => prev + 1);
       setSessionRatings(prev => prev + 1);
@@ -126,18 +150,20 @@ const Wizard = () => {
     setSaving(true);
     
     try {
-      // Add to skipped list and load next movie
-      setSkippedIds(prev => [...prev, currentMovie.id]);
+      const newSkipped = [...skippedIds, currentMovie.id];
+      setSkippedIds(newSkipped);
+      
+      // Save skipped to localStorage for guests
+      if (!user) {
+        saveGuestSkipped(newSkipped);
+      }
+      
       await loadNextMovie();
     } finally {
       setSaving(false);
       setProcessingAction(null);
     }
   };
-
-  if (!user) {
-    return null;
-  }
 
   if (loading && !currentMovie) {
     return (
@@ -155,22 +181,32 @@ const Wizard = () => {
           <div className="flex items-center justify-center gap-2 mb-2">
             <Sparkles className="h-6 w-6 text-primary" />
             <h1 className="text-3xl font-bold">Movie Wizard</h1>
+            {isGuest && (
+              <Badge variant="secondary" className="ml-2">
+                🎭 Guest Mode
+              </Badge>
+            )}
           </div>
           <p className="text-muted-foreground">
             Rate movies to get personalized recommendations
           </p>
         </div>
 
+        {/* Sign-up banner for guests */}
+        {isGuest && <WizardSignUpBanner />}
+
         {/* Stats */}
         <div className="flex justify-center gap-4 mb-8">
-          <Card className="w-auto">
-            <CardContent className="pt-6 px-6 pb-4">
-              <div className="text-center">
-                <div className="text-3xl font-bold">{totalRated}</div>
-                <p className="text-sm text-muted-foreground">Total Ratings</p>
-              </div>
-            </CardContent>
-          </Card>
+          {!isGuest && (
+            <Card className="w-auto">
+              <CardContent className="pt-6 px-6 pb-4">
+                <div className="text-center">
+                  <div className="text-3xl font-bold">{totalRated}</div>
+                  <p className="text-sm text-muted-foreground">Total Ratings</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
           
           {sessionRatings > 0 && (
             <Card className="w-auto border-primary">
@@ -180,7 +216,9 @@ const Wizard = () => {
                     <CheckCircle2 className="h-6 w-6 text-primary" />
                     {sessionRatings}
                   </div>
-                  <p className="text-sm text-muted-foreground">This Session</p>
+                  <p className="text-sm text-muted-foreground">
+                    {isGuest ? "Ratings This Session" : "This Session"}
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -204,11 +242,23 @@ const Wizard = () => {
             <CardHeader>
               <CardTitle>No More Movies</CardTitle>
               <CardDescription>
-                You've rated all available movies! Check back later for more recommendations.
+                {isGuest 
+                  ? "Sign up to save your progress and get more personalized recommendations!"
+                  : "You've rated all available movies! Check back later for more recommendations."
+                }
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Button onClick={() => navigate("/movies")} className="w-full">
+            <CardContent className="space-y-3">
+              {isGuest && (
+                <Button onClick={() => navigate("/auth")} className="w-full" size="lg">
+                  Sign Up to Continue
+                </Button>
+              )}
+              <Button 
+                onClick={() => navigate("/movies")} 
+                className="w-full" 
+                variant={isGuest ? "outline" : "default"}
+              >
                 Browse All Movies
               </Button>
             </CardContent>
