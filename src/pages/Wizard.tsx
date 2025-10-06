@@ -17,6 +17,7 @@ const Wizard = () => {
   const [saving, setSaving] = useState(false);
   const [totalRated, setTotalRated] = useState(0);
   const [sessionRatings, setSessionRatings] = useState(0);
+  const [skippedIds, setSkippedIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (!user) {
@@ -50,7 +51,7 @@ const Wizard = () => {
     
     setLoading(true);
     try {
-      const movie = await getNextRecommendation(user.id);
+      const movie = await getNextRecommendation(user.id, skippedIds);
       
       if (!movie) {
         toast.info("No more recommendations available at the moment.");
@@ -105,6 +106,14 @@ const Wizard = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleSkip = () => {
+    if (!currentMovie || saving) return;
+    
+    // Add to skipped list and load next movie
+    setSkippedIds(prev => [...prev, currentMovie.id]);
+    loadNextMovie();
   };
 
   if (!user) {
@@ -165,6 +174,7 @@ const Wizard = () => {
             <MovieWizardCard
               movie={currentMovie}
               onRate={handleRate}
+              onSkip={handleSkip}
               totalRated={totalRated}
             />
           </div>

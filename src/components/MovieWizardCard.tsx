@@ -1,4 +1,4 @@
-import { Star, Heart, ThumbsUp, X, Info, ExternalLink, Search, Users, Globe } from "lucide-react";
+import { Star, Heart, ThumbsUp, X, Info, ExternalLink, Search, Users, Globe, SkipForward } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,10 +11,11 @@ import { RecommendationMovie } from "@/lib/recommendationEngine";
 interface MovieWizardCardProps {
   movie: RecommendationMovie;
   onRate: (rating: number) => void;
+  onSkip: () => void;
   totalRated: number;
 }
 
-export const MovieWizardCard = ({ movie, onRate, totalRated }: MovieWizardCardProps) => {
+export const MovieWizardCard = ({ movie, onRate, onSkip, totalRated }: MovieWizardCardProps) => {
   const [open, setOpen] = useState(false);
   const imageProps = getOptimizedImageProps(movie.poster);
   const hasValidImdbId = movie.imdbId && movie.imdbId.startsWith('tt');
@@ -233,35 +234,47 @@ export const MovieWizardCard = ({ movie, onRate, totalRated }: MovieWizardCardPr
         )}
 
         {/* Rating Buttons */}
-        <div className="grid grid-cols-3 gap-3 pt-2">
-          <Button
-            variant="outline"
-            size="lg"
-            className="flex flex-col gap-2 h-auto py-4 hover:bg-destructive hover:text-destructive-foreground hover:border-destructive"
-            onClick={() => onRate(1)}
-          >
-            <X className="h-6 w-6" />
-            <span className="text-xs">Not Interested</span>
-          </Button>
+        <div className="space-y-3 pt-2">
+          <div className="grid grid-cols-3 gap-3">
+            <Button
+              variant="outline"
+              size="lg"
+              className="flex flex-col gap-2 h-auto py-4 hover:bg-destructive hover:text-destructive-foreground hover:border-destructive"
+              onClick={() => onRate(1)}
+            >
+              <X className="h-6 w-6" />
+              <span className="text-xs">Not Interested</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              size="lg"
+              className="flex flex-col gap-2 h-auto py-4 hover:bg-primary hover:text-primary-foreground"
+              onClick={() => onRate(5)}
+            >
+              <ThumbsUp className="h-6 w-6" />
+              <span className="text-xs">Like</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              size="lg"
+              className="flex flex-col gap-2 h-auto py-4 hover:bg-accent hover:text-accent-foreground"
+              onClick={() => onRate(10)}
+            >
+              <Heart className="h-6 w-6" />
+              <span className="text-xs">Love</span>
+            </Button>
+          </div>
 
           <Button
-            variant="outline"
+            variant="ghost"
             size="lg"
-            className="flex flex-col gap-2 h-auto py-4 hover:bg-primary hover:text-primary-foreground"
-            onClick={() => onRate(5)}
+            className="w-full"
+            onClick={onSkip}
           >
-            <ThumbsUp className="h-6 w-6" />
-            <span className="text-xs">Like</span>
-          </Button>
-
-          <Button
-            variant="outline"
-            size="lg"
-            className="flex flex-col gap-2 h-auto py-4 hover:bg-accent hover:text-accent-foreground"
-            onClick={() => onRate(10)}
-          >
-            <Heart className="h-6 w-6" />
-            <span className="text-xs">Love</span>
+            <SkipForward className="h-4 w-4 mr-2" />
+            Skip (Don't Know)
           </Button>
         </div>
       </div>
