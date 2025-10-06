@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Loader2, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Loader2, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 
 interface SyncHistoryRecord {
@@ -47,30 +46,13 @@ export const SyncHistoryTab = () => {
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "completed":
-        return <CheckCircle2 className="h-5 w-5 text-green-500" />;
-      case "failed":
-        return <XCircle className="h-5 w-5 text-red-500" />;
-      case "running":
-        return <Loader2 className="h-5 w-5 animate-spin text-blue-500" />;
-      default:
-        return <Clock className="h-5 w-5 text-gray-500" />;
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive"> = {
-      completed: "default",
+  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+      completed: "outline",
       failed: "destructive",
       running: "secondary",
     };
-    return (
-      <Badge variant={variants[status] || "secondary"}>
-        {status}
-      </Badge>
-    );
+    return variants[status] || "outline";
   };
 
   if (loading) {
@@ -82,100 +64,98 @@ export const SyncHistoryTab = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
       {syncHistory.length === 0 ? (
-        <Card>
-          <CardContent className="py-8 text-center">
-            <p className="text-muted-foreground">No sync history found</p>
-          </CardContent>
-        </Card>
+        <div className="py-12 text-center">
+          <p className="text-muted-foreground text-sm">No sync history found</p>
+        </div>
       ) : (
         syncHistory.map((sync) => (
-          <Card key={sync.id}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  {getStatusIcon(sync.status)}
-                  <div>
-                    <CardTitle className="text-xl">
-                      {sync.sync_mode ? "Sync" : "Import"} Operation
-                    </CardTitle>
-                    <CardDescription>
-                      {format(new Date(sync.created_at), "PPpp")}
-                      {sync.completed_at && (
-                        <> - Completed {format(new Date(sync.completed_at), "PPpp")}</>
-                      )}
-                    </CardDescription>
-                  </div>
-                </div>
-                {getStatusBadge(sync.status)}
+          <div key={sync.id} className="border-b pb-8 last:border-0">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-base font-medium">
+                  {sync.sync_mode ? "Sync" : "Import"}
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {format(new Date(sync.created_at), "PPp")}
+                </p>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Results Summary */}
-              <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-                <div className="text-center p-3 rounded-lg bg-muted">
-                  <div className="text-2xl font-bold">{sync.total_found}</div>
-                  <div className="text-xs text-muted-foreground">Found</div>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-muted">
-                  <div className="text-2xl font-bold text-green-600">{sync.imported}</div>
-                  <div className="text-xs text-muted-foreground">Imported</div>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-muted">
-                  <div className="text-2xl font-bold text-blue-600">{sync.updated}</div>
-                  <div className="text-xs text-muted-foreground">Updated</div>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-muted">
-                  <div className="text-2xl font-bold text-orange-600">{sync.removed}</div>
-                  <div className="text-xs text-muted-foreground">Removed</div>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-muted">
-                  <div className="text-2xl font-bold text-gray-600">{sync.skipped}</div>
-                  <div className="text-xs text-muted-foreground">Skipped</div>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-muted">
-                  <div className="text-2xl font-bold text-red-600">{sync.failed}</div>
-                  <div className="text-xs text-muted-foreground">Failed</div>
-                </div>
+              <Badge variant={getStatusVariant(sync.status)} className="text-xs">
+                {sync.status}
+              </Badge>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-4 mb-4">
+              <div>
+                <div className="text-lg font-semibold">{sync.total_found}</div>
+                <div className="text-xs text-muted-foreground">Found</div>
               </div>
+              <div>
+                <div className="text-lg font-semibold">{sync.imported}</div>
+                <div className="text-xs text-muted-foreground">Imported</div>
+              </div>
+              <div>
+                <div className="text-lg font-semibold">{sync.updated}</div>
+                <div className="text-xs text-muted-foreground">Updated</div>
+              </div>
+              <div>
+                <div className="text-lg font-semibold">{sync.removed}</div>
+                <div className="text-xs text-muted-foreground">Removed</div>
+              </div>
+              <div>
+                <div className="text-lg font-semibold">{sync.skipped}</div>
+                <div className="text-xs text-muted-foreground">Skipped</div>
+              </div>
+              <div>
+                <div className="text-lg font-semibold">{sync.failed}</div>
+                <div className="text-xs text-muted-foreground">Failed</div>
+              </div>
+            </div>
 
-              {/* Error Message */}
-              {sync.error_message && (
-                <div className="p-4 rounded-lg bg-destructive/10 text-destructive">
-                  <strong>Error:</strong> {sync.error_message}
-                </div>
-              )}
+            {/* Error Message */}
+            {sync.error_message && (
+              <div className="text-sm text-destructive mb-4">
+                {sync.error_message}
+              </div>
+            )}
 
-              {/* Filters & Logs */}
-              <Accordion type="single" collapsible className="w-full">
-                <AccordionItem value="filters">
-                  <AccordionTrigger>Filters Applied</AccordionTrigger>
-                  <AccordionContent>
-                    <pre className="bg-muted p-4 rounded-lg overflow-auto text-xs">
-                      {JSON.stringify(sync.filters, null, 2)}
-                    </pre>
-                  </AccordionContent>
-                </AccordionItem>
-                {sync.logs && sync.logs.length > 0 && (
-                  <AccordionItem value="logs">
-                    <AccordionTrigger>
-                      Logs ({sync.logs.length} entries)
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="bg-muted p-4 rounded-lg max-h-96 overflow-auto">
+            {/* Details */}
+            {((sync.filters && Object.keys(sync.filters).length > 0) || (sync.logs && sync.logs.length > 0)) && (
+              <Collapsible>
+                <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <ChevronDown className="h-4 w-4" />
+                  View Details
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-4 space-y-4">
+                  {sync.filters && Object.keys(sync.filters).length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-medium text-muted-foreground mb-2">Filters</h4>
+                      <pre className="text-xs bg-muted/30 p-3 rounded overflow-auto">
+                        {JSON.stringify(sync.filters, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                  {sync.logs && sync.logs.length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-medium text-muted-foreground mb-2">
+                        Logs ({sync.logs.length})
+                      </h4>
+                      <div className="bg-muted/30 p-3 rounded max-h-64 overflow-auto space-y-1">
                         {sync.logs.map((log, index) => (
-                          <div key={index} className="text-xs font-mono py-1 border-b last:border-0">
+                          <div key={index} className="text-xs font-mono">
                             {log}
                           </div>
                         ))}
                       </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                )}
-              </Accordion>
-            </CardContent>
-          </Card>
+                    </div>
+                  )}
+                </CollapsibleContent>
+              </Collapsible>
+            )}
+          </div>
         ))
       )}
     </div>
