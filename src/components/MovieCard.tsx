@@ -259,8 +259,8 @@ export const MovieCard = ({
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-2">
           <h3 className="line-clamp-2 text-base font-semibold">{title}</h3>
-          <div className="flex items-center gap-1 shrink-0">
-            <Star className="h-4 w-4 fill-foreground" />
+          <div className="flex items-center gap-1 shrink-0 text-primary">
+            <Star className="h-4 w-4 fill-primary" />
             <span className="font-bold">{rating}</span>
           </div>
         </div>
