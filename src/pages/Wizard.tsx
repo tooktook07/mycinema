@@ -180,50 +180,47 @@ const Wizard = ({ isModal = false, onClose }: WizardProps = {}) => {
   return (
     <div className={isModal ? "h-full py-6 px-4" : "min-h-screen py-8 px-4"}>
       <div className="container mx-auto max-w-7xl">
-        {/* Header */}
-        <div className="text-center mb-6">
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <h1 className="text-2xl font-bold">Movie Wizard</h1>
-            {isGuest && (
-              <Badge variant="secondary" className="ml-2 text-xs">
-                🎭 Guest Mode
-              </Badge>
+        {/* Compact Header with Stats */}
+        <div className="flex items-center justify-between mb-6 px-4">
+          {/* Left: Title & Description */}
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <h1 className="text-xl md:text-2xl font-bold">Movie Wizard</h1>
+              {isGuest && (
+                <Badge variant="secondary" className="text-xs">
+                  🎭 Guest
+                </Badge>
+              )}
+            </div>
+            <p className="text-xs md:text-sm text-muted-foreground">
+              Rate movies to get personalized recommendations
+            </p>
+          </div>
+
+          {/* Right: Session Stats */}
+          <div className="flex gap-3">
+            {!isGuest && (
+              <div className="text-right">
+                <div className="text-xl md:text-2xl font-bold">{totalRated}</div>
+                <p className="text-[10px] md:text-xs text-muted-foreground whitespace-nowrap">
+                  Total Ratings
+                </p>
+              </div>
+            )}
+            
+            {sessionRatings > 0 && (
+              <div className="text-right border-l pl-3">
+                <div className="text-xl md:text-2xl font-bold flex items-center justify-end gap-1.5 text-primary">
+                  <CheckCircle2 className="h-4 w-4" />
+                  {sessionRatings}
+                </div>
+                <p className="text-[10px] md:text-xs text-muted-foreground whitespace-nowrap">
+                  This Session
+                </p>
+              </div>
             )}
           </div>
-          <p className="text-sm text-muted-foreground">
-            Rate movies to get personalized recommendations
-          </p>
-        </div>
-
-        {/* Stats */}
-        <div className="flex justify-center gap-4 mb-6">
-          {!isGuest && (
-            <Card className="w-auto">
-              <CardContent className="pt-4 px-4 pb-3">
-                <div className="text-center">
-                  <div className="text-2xl font-bold">{totalRated}</div>
-                  <p className="text-xs text-muted-foreground">Total Ratings</p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-          
-          {sessionRatings > 0 && (
-            <Card className="w-auto border-primary">
-              <CardContent className="pt-4 px-4 pb-3">
-                <div className="text-center">
-                  <div className="text-2xl font-bold flex items-center justify-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-primary" />
-                    {sessionRatings}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {isGuest ? "Ratings This Session" : "This Session"}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
 
         {/* Movie Card */}
