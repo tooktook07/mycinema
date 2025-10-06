@@ -14,7 +14,7 @@ serve(async (req) => {
   let syncId: string | undefined;
 
   try {
-    const { minRating = 0, maxRating = 10, yearRange = [2025, 2025], genres, excludedGenres, statuses, languages, minVoteCount = 100, minPopularity = 0, syncMode = false } = await req.json();
+    const { minRating = 0, maxRating = 10, yearRange = [2025, 2025], genres, excludedGenres, statuses, languages, minVoteCount = 100, minPopularity = 0, syncMode = false, maxPages = 10 } = await req.json();
     const TMDB_API_KEY = Deno.env.get("TMDB_API_KEY");
 
     // Initialize Supabase client with auth
@@ -177,8 +177,11 @@ serve(async (req) => {
       }
     }
 
-    // Fetch all pages of results
-    while (page <= totalPages) {
+    // Fetch pages up to maxPages limit to prevent timeout
+    const pagesToProcess = Math.min(totalPages, maxPages);
+    logMsg(`Will process ${pagesToProcess} pages out of ${totalPages} total pages (maxPages limit: ${maxPages})`);
+    
+    while (page <= pagesToProcess) {
       // Build query parameters
       let queryParams = `api_key=${TMDB_API_KEY}&primary_release_date.gte=${yearRange[0]}-01-01&primary_release_date.lte=${yearRange[1]}-12-31&vote_average.gte=${minRating}&vote_average.lte=${maxRating}&vote_count.gte=${minVoteCount}&sort_by=vote_average.desc&page=${page}`;
       if (genreIds && genreIds.length > 0) {
@@ -206,7 +209,7 @@ serve(async (req) => {
       totalPages = data.total_pages;
       totalMovies = data.total_results;
 
-      logMsg(`Processing page ${page} of ${totalPages}, found ${data.results.length} movies`);
+      logMsg(`Processing page ${page} of ${pagesToProcess} (${totalPages} total), found ${data.results.length} movies`);
 
       // Process each movie
       for (const movie of data.results) {
@@ -460,7 +463,12 @@ serve(async (req) => {
       }
     }
 
-    logMsg(`${syncMode ? 'Sync' : 'Import'} complete: ${importedMovies} imported, ${updatedMovies} updated, ${removedMovies} removed, ${skippedMovies} skipped, ${failedMovies} failed out of ${totalMovies} found`);
+    const completionMsg = `${syncMode ? 'Sync' : 'Import'} complete: ${importedMovies} imported, ${updatedMovies} updated, ${removedMovies} removed, ${skippedMovies} skipped, ${failedMovies} failed. Processed ${page - 1} pages out of ${totalPages} total (found ${totalMovies} total movies).`;
+    logMsg(completionMsg);
+    
+    if (page - 1 < totalPages) {
+      logMsg(`⚠️ Only processed ${page - 1}/${totalPages} pages due to maxPages limit (${maxPages}). Run sync again to process more pages.`);
+    }
 
     // Update sync history with results
     if (syncId) {
@@ -490,9 +498,12 @@ serve(async (req) => {
         skipped: skippedMovies,
         failed: failedMovies,
         logs,
+        pagesProcessed: page - 1,
+        totalPages,
+        hasMorePages: page - 1 < totalPages,
         message: syncMode 
-          ? `Sync complete: ${importedMovies} imported, ${updatedMovies} updated, ${removedMovies} removed, ${skippedMovies} skipped, ${failedMovies} failed.`
-          : `Found ${totalMovies} movies. Imported ${importedMovies}, skipped ${skippedMovies} existing, ${failedMovies} failed.`
+          ? `Sync complete: ${importedMovies} imported, ${updatedMovies} updated, ${removedMovies} removed, ${skippedMovies} skipped, ${failedMovies} failed. Processed ${page - 1}/${totalPages} pages.${page - 1 < totalPages ? ' Run sync again to process more.' : ''}`
+          : `Found ${totalMovies} movies. Imported ${importedMovies}, skipped ${skippedMovies} existing, ${failedMovies} failed. Processed ${page - 1}/${totalPages} pages.`
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

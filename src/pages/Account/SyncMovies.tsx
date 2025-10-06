@@ -18,6 +18,10 @@ interface SyncResult {
   failed: number;
   logs: string[];
   error?: string;
+  pagesProcessed?: number;
+  totalPages?: number;
+  hasMorePages?: boolean;
+  message?: string;
 }
 
 interface SyncMoviesProps {
@@ -142,9 +146,11 @@ export const SyncMovies = ({
           variant: "destructive",
         });
       } else {
+        const hasMore = data.hasMorePages;
         toast({
-          title: "Sync Complete!",
-          description: `Imported ${data.imported} new, updated ${data.updated}, removed ${data.removed} movies.`,
+          title: hasMore ? "Sync Complete (Partial)" : "Sync Complete!",
+          description: data.message || `Imported ${data.imported} new, updated ${data.updated}, removed ${data.removed} movies.`,
+          duration: hasMore ? 8000 : 5000,
         });
       }
     } catch (error) {
@@ -270,7 +276,20 @@ export const SyncMovies = ({
               <CardTitle className="text-lg flex items-center gap-2">
                 Sync Results
                 <Badge variant="secondary">{syncResult.totalFound} found</Badge>
+                {syncResult.pagesProcessed && syncResult.totalPages && (
+                  <Badge variant="outline" className="text-xs">
+                    Pages: {syncResult.pagesProcessed}/{syncResult.totalPages}
+                  </Badge>
+                )}
               </CardTitle>
+              {syncResult.hasMorePages && (
+                <Alert className="mt-2">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Only processed {syncResult.pagesProcessed} of {syncResult.totalPages} pages. Click "Sync Movies" again to continue processing more pages.
+                  </AlertDescription>
+                </Alert>
+              )}
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
