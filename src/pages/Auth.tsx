@@ -174,7 +174,7 @@ const Auth = () => {
                     <Save className="h-5 w-5 text-foreground" />
                   </div>
                   <div>
-                    <h3 className="font-semibold mb-1">Save Your Ratings</h3>
+                    <h3 className="text-base mb-1">Save Your Ratings</h3>
                     <p className="text-sm text-muted-foreground">Keep your movie preferences synced across all your devices</p>
                   </div>
                 </div>
@@ -198,7 +198,7 @@ const Auth = () => {
                     <Sparkles className="h-5 w-5 text-foreground" />
                   </div>
                   <div>
-                    <h3 className="font-semibold mb-1">Movie Wizard</h3>
+                    <h3 className="text-base mb-1">Movie Wizard</h3>
                     <p className="text-sm text-muted-foreground">Discover your perfect matches with our quick rating flow</p>
                   </div>
                 </div>
@@ -210,7 +210,7 @@ const Auth = () => {
                     <Star className="h-5 w-5 text-foreground" />
                   </div>
                   <div>
-                    <h3 className="font-semibold mb-1">Track Everything</h3>
+                    <h3 className="text-base mb-1">Track Everything</h3>
                     <p className="text-sm text-muted-foreground">See your ratings, stats, and movie journey in one place</p>
                   </div>
                 </div>
