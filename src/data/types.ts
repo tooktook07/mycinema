@@ -23,17 +23,3 @@ export interface Movie {
   watchProviders?: any;
   translations?: any;
 }
-
-export interface TvShow {
-  id: string;
-  title: string;
-  rating: number;
-  startYear: number;
-  endYear: number | null;
-  genre: string[];
-  poster: string;
-  imdbId: string;
-  seasons: number;
-  episodes: number;
-  seasonDates: { season: number; year: number }[];
-}

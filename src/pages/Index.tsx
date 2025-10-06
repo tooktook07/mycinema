@@ -1,4 +1,4 @@
-import { Film, Tv, Star, TrendingUp, Calendar, BarChart3, Loader2, LogIn, ArrowRight, Sparkles } from "lucide-react";
+import { Film, Star, TrendingUp, Calendar, BarChart3, Loader2, LogIn, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,6 @@ import { MovieCard } from "@/components/MovieCard";
 import { LastSyncCard } from "@/components/LastSyncCard";
 interface Stats {
   totalMovies: number;
-  totalTvShows: number;
   avgMovieRating: number;
   userRatingsCount: number;
   userAvgRating: number;
@@ -90,14 +89,6 @@ const Index = () => {
         head: true
       });
 
-      // Fetch total TV shows
-      const {
-        count: tvShowsCount
-      } = await supabase.from("tv_shows").select("*", {
-        count: "exact",
-        head: true
-      });
-
       // Fetch average rating
       const {
         data: moviesData
@@ -161,7 +152,6 @@ const Index = () => {
       }
       setStats({
         totalMovies: moviesCount || 0,
-        totalTvShows: tvShowsCount || 0,
         avgMovieRating: avgRating,
         userRatingsCount,
         userAvgRating,
@@ -442,21 +432,6 @@ const Index = () => {
             </Card>
           </Link>
 
-          <Link to="/tv-shows">
-            <Card className="cursor-pointer transition-all hover:shadow-lg hover:scale-105">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">TV Shows</CardTitle>
-                <Tv className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">Coming Soon</div>
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  Check status <ArrowRight className="h-3 w-3" />
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
-
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
@@ -488,10 +463,6 @@ const Index = () => {
           <Button onClick={() => navigate("/movies")} variant="outline">
             <Film className="h-4 w-4 mr-2" />
             Browse Movies
-          </Button>
-          <Button onClick={() => navigate("/tv-shows")} variant="outline">
-            <Tv className="h-4 w-4 mr-2" />
-            Browse TV Shows
           </Button>
           {isAdmin && <Button onClick={() => navigate("/account")} variant="outline">
               <TrendingUp className="h-4 w-4 mr-2" />

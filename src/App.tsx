@@ -10,7 +10,6 @@ import { DevModeProvider } from "@/contexts/DevModeContext";
 import { DevModeSwitcher } from "@/components/DevModeSwitcher";
 import Index from "./pages/Index";
 import Movies from "./pages/Movies";
-import TvShows from "./pages/TvShows";
 import Account from "./pages/Account";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
@@ -32,7 +31,6 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/movies" element={<Movies />} />
-                <Route path="/tv-shows" element={<TvShows />} />
                 <Route path="/wizard" element={<Wizard />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/account" element={<Account />} />
