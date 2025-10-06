@@ -25,7 +25,17 @@ export const MovieWizardCard = ({ movie, onRate, onSkip, totalRated, isProcessin
   const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(movie.title)}+${movie.year}`;
 
   return (
-    <Card className="w-full max-w-2xl mx-auto overflow-hidden">
+    <Card className="w-full max-w-2xl mx-auto overflow-hidden relative">
+      {/* Loading Overlay */}
+      {isProcessing && (
+        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Loading next movie...</p>
+          </div>
+        </div>
+      )}
+      
       <div className="relative">
         {/* Progress Indicator */}
         <div className="absolute top-4 left-4 z-10">
