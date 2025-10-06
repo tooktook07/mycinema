@@ -169,6 +169,19 @@ const Index = () => {
   const fetchRecommendations = async () => {
     setLoadingRecommendations(true);
     try {
+      // Fetch user's rated movie IDs if logged in
+      let ratedMovieIds: string[] = [];
+      if (user && user.id !== 'dev-user-id') {
+        const { data: userRatings } = await supabase
+          .from('user_ratings')
+          .select('media_id')
+          .eq('user_id', user.id)
+          .eq('media_type', 'movie')
+          .not('user_rating', 'is', null);
+        
+        ratedMovieIds = (userRatings || []).map(r => r.media_id).filter(Boolean) as string[];
+      }
+
       // Fetch top-rated movies
       const {
         data: topMovies,
@@ -178,8 +191,13 @@ const Index = () => {
       }).limit(TOP_MOVIES_LIMIT);
       if (error) throw error;
 
-      // Randomly select movies from top-rated
-      const shuffled = (topMovies || []).sort(() => Math.random() - 0.5);
+      // Filter out already rated movies for logged-in users
+      const filteredMovies = user && ratedMovieIds.length > 0
+        ? (topMovies || []).filter(movie => !ratedMovieIds.includes(movie.id))
+        : topMovies || [];
+
+      // Randomly select movies from filtered top-rated
+      const shuffled = filteredMovies.sort(() => Math.random() - 0.5);
       const selected = shuffled.slice(0, RECOMMENDATIONS_COUNT).map(movie => ({
         id: movie.id,
         title: movie.title,
