@@ -186,7 +186,7 @@ const Auth = () => {
                     <Target className="h-5 w-5 text-foreground" />
                   </div>
                   <div>
-                    <h3 className="font-semibold mb-1">Smart Recommendations</h3>
+                    <h3 className="text-base mb-1">Smart Recommendations</h3>
                     <p className="text-sm text-muted-foreground">AI-powered suggestions tailored to your unique taste</p>
                   </div>
                 </div>
