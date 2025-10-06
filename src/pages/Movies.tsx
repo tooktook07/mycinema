@@ -10,8 +10,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Movie } from "@/data/types";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const Movies = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
   // Debug logging
   useEffect(() => {
     console.log("[Movies] Component mounted on route:", window.location.pathname);
@@ -76,6 +80,29 @@ const Movies = () => {
     setAppliedSearchText(keyword);
     setCurrentPage(1);
   };
+
+  // Apply filters from navigation state (from MovieDetailModal clicks)
+  useEffect(() => {
+    if (location.state) {
+      const state = location.state as any;
+      
+      if (state.yearFilter) {
+        setAppliedYearRange(state.yearFilter);
+      }
+      if (state.genreFilter) {
+        setAppliedGenres(state.genreFilter);
+      }
+      if (state.searchFilter) {
+        setAppliedSearchText(state.searchFilter);
+      }
+      if (state.languageFilter) {
+        setAppliedLanguages(state.languageFilter);
+      }
+      
+      // Clear state after applying to prevent re-application
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state]);
 
   // Fetch movies with filters, pagination, and sorting
   const {

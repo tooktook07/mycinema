@@ -49,6 +49,39 @@ export const MovieDetailModal = () => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount);
   };
 
+  // Navigation handlers for internal linking
+  const handleFieldClick = (filterType: 'year' | 'genre' | 'language' | 'search', value: string | number | [number, number]) => {
+    handleClose();
+    setTimeout(() => {
+      if (filterType === 'year' && typeof value === 'number') {
+        navigate('/movies', { state: { yearFilter: [value, value] } });
+      } else if (filterType === 'genre' && typeof value === 'string') {
+        navigate('/movies', { state: { genreFilter: [value] } });
+      } else if (filterType === 'language' && typeof value === 'string') {
+        navigate('/movies', { state: { languageFilter: [value] } });
+      } else if (filterType === 'search' && typeof value === 'string') {
+        navigate('/movies', { state: { searchFilter: value } });
+      }
+    }, 100);
+  };
+
+  // Parse watch providers
+  const parseWatchProviders = (providers: any) => {
+    if (!providers) return null;
+    
+    // Try to get US region first, or first available region
+    const region = providers['US'] || Object.values(providers)[0];
+    if (!region || typeof region !== 'object') return null;
+    
+    return {
+      flatrate: (region as any).flatrate || [],
+      rent: (region as any).rent || [],
+      buy: (region as any).buy || []
+    };
+  };
+
+  const watchProviders = movie ? parseWatchProviders(movie.watch_providers) : null;
+
   return (
     <Dialog open={true} onOpenChange={handleClose}>
       <DialogContent className="max-w-6xl max-h-[95vh] p-0 gap-0 overflow-hidden">
@@ -66,7 +99,7 @@ export const MovieDetailModal = () => {
         ) : movie ? (
           <>
             {/* Hero Section with Poster */}
-            <div className="relative h-[40vh] overflow-hidden bg-gradient-to-b from-background/50 to-background">
+            <div className="relative overflow-hidden bg-gradient-to-b from-background/50 to-background">
               {imageProps && (
                 <img
                   {...imageProps}
@@ -76,8 +109,27 @@ export const MovieDetailModal = () => {
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/20" />
               
-              <div className="relative h-full flex items-end p-8">
-                <div className="flex gap-6 items-end">
+              <div className="relative p-8">
+                {/* Action Buttons at Top Right */}
+                <div className="flex justify-end gap-2 mb-4">
+                  {hasValidImdbId && (
+                    <Button variant="outline" size="sm" asChild>
+                      <a href={imdbUrl} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        IMDB
+                      </a>
+                    </Button>
+                  )}
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer nofollow">
+                      <Search className="h-3 w-3 mr-1" />
+                      Google
+                    </a>
+                  </Button>
+                  <MovieRating movieId={movie.id} movieTitle={movie.title} iconOnly={true} />
+                </div>
+
+                <div className="flex gap-6 items-start">
                   {/* Poster */}
                   {imageProps && (
                     <div className="hidden md:block w-48 rounded-lg overflow-hidden shadow-2xl flex-shrink-0">
@@ -97,9 +149,21 @@ export const MovieDetailModal = () => {
                         <p className="text-lg text-muted-foreground italic">"{movie.tagline}"</p>
                       )}
                     </DialogHeader>
+
+                    {/* Plot - Right after tagline */}
+                    {movie.plot && (
+                      <div className="p-4 bg-background/50 backdrop-blur-sm rounded-lg border border-border/50">
+                        <h4 className="text-sm font-semibold mb-2">Plot</h4>
+                        <p className="text-sm leading-relaxed text-muted-foreground">{movie.plot}</p>
+                      </div>
+                    )}
                     
                     <div className="flex flex-wrap items-center gap-3">
-                      <Badge variant="secondary" className="text-sm">
+                      <Badge 
+                        variant="secondary" 
+                        className="text-sm cursor-pointer hover:scale-105 transition-transform"
+                        onClick={() => handleFieldClick('year', movie.year)}
+                      >
                         <Calendar className="h-3 w-3 mr-1" />
                         {movie.year}
                       </Badge>
@@ -110,7 +174,11 @@ export const MovieDetailModal = () => {
                         </Badge>
                       )}
                       {movie.original_language && (
-                        <Badge variant="secondary" className="text-sm">
+                        <Badge 
+                          variant="secondary" 
+                          className="text-sm cursor-pointer hover:scale-105 transition-transform"
+                          onClick={() => handleFieldClick('language', movie.original_language)}
+                        >
                           <Globe className="h-3 w-3 mr-1" />
                           {movie.original_language.toUpperCase()}
                         </Badge>
@@ -145,38 +213,8 @@ export const MovieDetailModal = () => {
             </div>
 
             {/* Content Section */}
-            <ScrollArea className="max-h-[50vh] p-8 pt-6">
+            <ScrollArea className="max-h-[400px] p-8 pt-6">
               <div className="space-y-6">
-                {/* Action Buttons */}
-                <div className="flex flex-wrap gap-3">
-                  {hasValidImdbId && (
-                    <Button variant="default" asChild>
-                      <a href={imdbUrl} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        View on IMDB
-                      </a>
-                    </Button>
-                  )}
-                  <Button variant="outline" asChild>
-                    <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer nofollow">
-                      <Search className="h-4 w-4 mr-2" />
-                      Google Search
-                    </a>
-                  </Button>
-                  <MovieRating movieId={movie.id} movieTitle={movie.title} />
-                </div>
-
-                {/* Plot */}
-                {movie.plot && (
-                  <div className="rounded-lg border p-5">
-                    <h4 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                      <Info className="h-5 w-5" />
-                      Plot Summary
-                    </h4>
-                    <p className="text-sm leading-relaxed">{movie.plot}</p>
-                  </div>
-                )}
-
                 {/* Financial Info */}
                 {(movie.budget || movie.revenue) && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -208,7 +246,12 @@ export const MovieDetailModal = () => {
                       <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Director</h4>
                       <div className="flex flex-wrap gap-1.5">
                         {movie.director.split(',').map(d => (
-                          <Badge key={d.trim()} variant="secondary">
+                          <Badge 
+                            key={d.trim()} 
+                            variant="secondary"
+                            className="cursor-pointer hover:scale-105 transition-transform"
+                            onClick={() => handleFieldClick('search', d.trim())}
+                          >
                             {d.trim()}
                           </Badge>
                         ))}
@@ -221,7 +264,12 @@ export const MovieDetailModal = () => {
                       <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Writers</h4>
                       <div className="flex flex-wrap gap-1.5">
                         {movie.writing.split(',').map(writer => (
-                          <Badge key={writer.trim()} variant="secondary">
+                          <Badge 
+                            key={writer.trim()} 
+                            variant="secondary"
+                            className="cursor-pointer hover:scale-105 transition-transform"
+                            onClick={() => handleFieldClick('search', writer.trim())}
+                          >
                             {writer.trim()}
                           </Badge>
                         ))}
@@ -235,8 +283,13 @@ export const MovieDetailModal = () => {
                   <div className="rounded-lg border p-4">
                     <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Cast</h4>
                     <div className="flex flex-wrap gap-1.5">
-                      {movie.actors.split(',').map(actor => (
-                        <Badge key={actor.trim()} variant="secondary">
+                      {movie.actors.split(',').slice(0, 15).map(actor => (
+                        <Badge 
+                          key={actor.trim()} 
+                          variant="secondary"
+                          className="cursor-pointer hover:scale-105 transition-transform"
+                          onClick={() => handleFieldClick('search', actor.trim())}
+                        >
                           {actor.trim()}
                         </Badge>
                       ))}
@@ -248,7 +301,18 @@ export const MovieDetailModal = () => {
                 {movie.sound && (
                   <div className="rounded-lg border p-4">
                     <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Sound Department</h4>
-                    <p className="text-sm leading-relaxed">{movie.sound}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {movie.sound.split(',').slice(0, 10).map(person => (
+                        <Badge 
+                          key={person.trim()} 
+                          variant="outline"
+                          className="cursor-pointer hover:scale-105 transition-transform"
+                          onClick={() => handleFieldClick('search', person.trim())}
+                        >
+                          {person.trim()}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
                 )}
 
@@ -259,7 +323,12 @@ export const MovieDetailModal = () => {
                       <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Genres</h4>
                       <div className="flex flex-wrap gap-1.5">
                         {movie.genres.map(g => (
-                          <Badge key={g} variant="secondary">
+                          <Badge 
+                            key={g} 
+                            variant="secondary"
+                            className="cursor-pointer hover:scale-105 transition-transform"
+                            onClick={() => handleFieldClick('genre', g)}
+                          >
                             {g}
                           </Badge>
                         ))}
@@ -272,7 +341,12 @@ export const MovieDetailModal = () => {
                       <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Keywords</h4>
                       <div className="flex flex-wrap gap-1.5">
                         {movie.keywords.map(keyword => (
-                          <Badge key={keyword} variant="outline" className="text-xs">
+                          <Badge 
+                            key={keyword} 
+                            variant="outline" 
+                            className="text-xs cursor-pointer hover:scale-105 transition-transform"
+                            onClick={() => handleFieldClick('search', keyword)}
+                          >
                             {keyword}
                           </Badge>
                         ))}
@@ -287,7 +361,12 @@ export const MovieDetailModal = () => {
                     <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Production Companies</h4>
                     <div className="flex flex-wrap gap-1.5">
                       {movie.production_companies.map((company: any, idx: number) => (
-                        <Badge key={idx} variant="outline">
+                        <Badge 
+                          key={idx} 
+                          variant="outline"
+                          className="cursor-pointer hover:scale-105 transition-transform"
+                          onClick={() => handleFieldClick('search', company.name || company)}
+                        >
                           {company.name || company}
                         </Badge>
                       ))}
@@ -302,7 +381,12 @@ export const MovieDetailModal = () => {
                       <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Production Countries</h4>
                       <div className="flex flex-wrap gap-1.5">
                         {movie.production_countries.map((country: any, idx: number) => (
-                          <Badge key={idx} variant="outline">
+                          <Badge 
+                            key={idx} 
+                            variant="outline"
+                            className="cursor-pointer hover:scale-105 transition-transform"
+                            onClick={() => handleFieldClick('search', country.name || country)}
+                          >
                             {country.name || country}
                           </Badge>
                         ))}
@@ -318,7 +402,12 @@ export const MovieDetailModal = () => {
                       </h4>
                       <div className="flex flex-wrap gap-1.5">
                         {movie.spoken_languages.map((lang: any, idx: number) => (
-                          <Badge key={idx} variant="outline">
+                          <Badge 
+                            key={idx} 
+                            variant="outline"
+                            className="cursor-pointer hover:scale-105 transition-transform"
+                            onClick={() => lang.iso_639_1 && handleFieldClick('language', lang.iso_639_1)}
+                          >
                             {lang.english_name || lang.name || lang}
                           </Badge>
                         ))}
@@ -328,16 +417,82 @@ export const MovieDetailModal = () => {
                 </div>
 
                 {/* Watch Providers */}
-                {movie.watch_providers && typeof movie.watch_providers === 'object' && (
-                  <div className="rounded-lg border p-4">
-                    <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Where to Watch</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {JSON.stringify(movie.watch_providers).length > 50 
-                        ? 'Available on various streaming platforms'
-                        : 'Check IMDB for availability'}
-                    </p>
-                  </div>
-                )}
+                <div className="rounded-lg border p-4">
+                  <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Where to Watch</h4>
+                  {watchProviders ? (
+                    <div className="space-y-3">
+                      {watchProviders.flatrate && watchProviders.flatrate.length > 0 && (
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground mb-2">Streaming</p>
+                          <div className="flex flex-wrap gap-2">
+                            {watchProviders.flatrate.map((provider: any, index: number) => (
+                              <Badge key={index} variant="secondary" className="gap-2">
+                                {provider.logo_path && (
+                                  <img 
+                                    src={`https://image.tmdb.org/t/p/original${provider.logo_path}`}
+                                    alt={provider.provider_name}
+                                    className="w-4 h-4 rounded"
+                                  />
+                                )}
+                                {provider.provider_name}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {watchProviders.rent && watchProviders.rent.length > 0 && (
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground mb-2">Rent</p>
+                          <div className="flex flex-wrap gap-2">
+                            {watchProviders.rent.map((provider: any, index: number) => (
+                              <Badge key={index} variant="outline" className="gap-2">
+                                {provider.logo_path && (
+                                  <img 
+                                    src={`https://image.tmdb.org/t/p/original${provider.logo_path}`}
+                                    alt={provider.provider_name}
+                                    className="w-4 h-4 rounded"
+                                  />
+                                )}
+                                {provider.provider_name}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {watchProviders.buy && watchProviders.buy.length > 0 && (
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground mb-2">Buy</p>
+                          <div className="flex flex-wrap gap-2">
+                            {watchProviders.buy.map((provider: any, index: number) => (
+                              <Badge key={index} variant="outline" className="gap-2">
+                                {provider.logo_path && (
+                                  <img 
+                                    src={`https://image.tmdb.org/t/p/original${provider.logo_path}`}
+                                    alt={provider.provider_name}
+                                    className="w-4 h-4 rounded"
+                                  />
+                                )}
+                                {provider.provider_name}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-2">Availability varies by region</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">No streaming information available.</p>
+                      {hasValidImdbId && (
+                        <Button variant="outline" size="sm" asChild>
+                          <a href={imdbUrl} target="_blank" rel="noopener noreferrer">
+                            Check IMDB for Availability
+                          </a>
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </ScrollArea>
           </>
