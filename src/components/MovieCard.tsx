@@ -257,41 +257,58 @@ export const MovieCard = ({
         </Dialog>
       </div>
       <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="line-clamp-2 text-base font-semibold">{title}</h3>
-          <div className="flex items-center gap-1 shrink-0 text-primary">
-            <Star className="h-4 w-4 fill-primary" />
-            <span className="font-bold">{rating}</span>
+        {/* Title - Full Width */}
+        <h3 className="line-clamp-2 text-base font-semibold leading-tight mb-3">{title}</h3>
+        
+        {/* Rating & Year Row */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 text-primary">
+              <Star className="h-4 w-4 fill-primary" />
+              <span className="font-bold">{rating}</span>
+            </div>
+            <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80 transition-colors" onClick={() => onYearClick?.(year)}>
+              {year}
+            </Badge>
           </div>
-        </div>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80 transition-colors" onClick={() => onYearClick?.(year)}>
-            {year}
-          </Badge>
-          {originalLanguage && <Badge variant="outline" className="text-xs flex items-center gap-1 cursor-pointer hover:bg-secondary transition-colors" onClick={() => onLanguageClick?.(originalLanguage)}>
+          {originalLanguage && (
+            <Badge variant="outline" className="text-xs flex items-center gap-1 cursor-pointer hover:bg-secondary transition-colors" onClick={() => onLanguageClick?.(originalLanguage)}>
               <Globe className="h-3 w-3" />
               {originalLanguage.toUpperCase()}
-            </Badge>}
-          {genre.slice(0, 2).map(g => <Badge key={g} variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80 transition-colors" onClick={() => onGenreClick?.(g)}>
-              {g}
-            </Badge>)}
+            </Badge>
+          )}
         </div>
-        <div className="mt-3 flex flex-col gap-2">
+
+        {/* Genres */}
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {genre.slice(0, 3).map(g => (
+            <Badge key={g} variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80 transition-colors" onClick={() => onGenreClick?.(g)}>
+              {g}
+            </Badge>
+          ))}
+        </div>
+
+        {/* User Rating */}
+        <div className="mb-2">
           <MovieRating movieId={id} movieTitle={title} />
-          <div className="flex gap-2">
-            {hasValidImdbId && <Button size="sm" variant="outline" className="flex-1" asChild>
-                <a href={imdbUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5">
-                  <ExternalLink className="h-3.5 w-3.5" />
-                  IMDB
-                </a>
-              </Button>}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-2">
+          {hasValidImdbId && (
             <Button size="sm" variant="outline" className="flex-1" asChild>
-              <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer nofollow" className="flex items-center gap-1.5">
-                <Search className="h-3.5 w-3.5" />
-                Search
+              <a href={imdbUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5">
+                <ExternalLink className="h-3.5 w-3.5" />
+                IMDB
               </a>
             </Button>
-          </div>
+          )}
+          <Button size="sm" variant="outline" className="flex-1" asChild>
+            <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer nofollow" className="flex items-center justify-center gap-1.5">
+              <Search className="h-3.5 w-3.5" />
+              Search
+            </a>
+          </Button>
         </div>
       </CardContent>
     </Card>;
