@@ -1,4 +1,4 @@
-import { Star, Heart, ThumbsUp, X, Info, ExternalLink, Search, Users, Globe, SkipForward } from "lucide-react";
+import { Star, Heart, ThumbsUp, X, Info, ExternalLink, Search, Users, Globe, SkipForward, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,9 +13,11 @@ interface MovieWizardCardProps {
   onRate: (rating: number) => void;
   onSkip: () => void;
   totalRated: number;
+  isProcessing: boolean;
+  processingAction: 'skip' | 'not-interested' | 'like' | 'love' | null;
 }
 
-export const MovieWizardCard = ({ movie, onRate, onSkip, totalRated }: MovieWizardCardProps) => {
+export const MovieWizardCard = ({ movie, onRate, onSkip, totalRated, isProcessing, processingAction }: MovieWizardCardProps) => {
   const [open, setOpen] = useState(false);
   const imageProps = getOptimizedImageProps(movie.poster);
   const hasValidImdbId = movie.imdbId && movie.imdbId.startsWith('tt');
@@ -241,8 +243,13 @@ export const MovieWizardCard = ({ movie, onRate, onSkip, totalRated }: MovieWiza
               size="lg"
               className="flex flex-col gap-2 h-auto py-4 hover:bg-destructive hover:text-destructive-foreground hover:border-destructive"
               onClick={() => onRate(1)}
+              disabled={isProcessing}
             >
-              <X className="h-6 w-6" />
+              {isProcessing && processingAction === 'not-interested' ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : (
+                <X className="h-6 w-6" />
+              )}
               <span className="text-xs">Not Interested</span>
             </Button>
 
@@ -251,8 +258,13 @@ export const MovieWizardCard = ({ movie, onRate, onSkip, totalRated }: MovieWiza
               size="lg"
               className="flex flex-col gap-2 h-auto py-4 hover:bg-primary hover:text-primary-foreground"
               onClick={() => onRate(5)}
+              disabled={isProcessing}
             >
-              <ThumbsUp className="h-6 w-6" />
+              {isProcessing && processingAction === 'like' ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : (
+                <ThumbsUp className="h-6 w-6" />
+              )}
               <span className="text-xs">Like</span>
             </Button>
 
@@ -261,8 +273,13 @@ export const MovieWizardCard = ({ movie, onRate, onSkip, totalRated }: MovieWiza
               size="lg"
               className="flex flex-col gap-2 h-auto py-4 hover:bg-accent hover:text-accent-foreground"
               onClick={() => onRate(10)}
+              disabled={isProcessing}
             >
-              <Heart className="h-6 w-6" />
+              {isProcessing && processingAction === 'love' ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : (
+                <Heart className="h-6 w-6" />
+              )}
               <span className="text-xs">Love</span>
             </Button>
           </div>
@@ -272,9 +289,19 @@ export const MovieWizardCard = ({ movie, onRate, onSkip, totalRated }: MovieWiza
             size="lg"
             className="w-full"
             onClick={onSkip}
+            disabled={isProcessing}
           >
-            <SkipForward className="h-4 w-4 mr-2" />
-            Skip (Don't Know)
+            {isProcessing && processingAction === 'skip' ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Loading Next Movie...
+              </>
+            ) : (
+              <>
+                <SkipForward className="h-4 w-4 mr-2" />
+                Skip (Don't Know)
+              </>
+            )}
           </Button>
         </div>
       </div>

@@ -18,6 +18,7 @@ const Wizard = () => {
   const [totalRated, setTotalRated] = useState(0);
   const [sessionRatings, setSessionRatings] = useState(0);
   const [skippedIds, setSkippedIds] = useState<string[]>([]);
+  const [processingAction, setProcessingAction] = useState<'skip' | 'not-interested' | 'like' | 'love' | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -71,6 +72,15 @@ const Wizard = () => {
   const handleRate = async (rating: number) => {
     if (!user || !currentMovie || saving) return;
     
+    // Set processing action based on rating
+    if (rating === 1) {
+      setProcessingAction('not-interested');
+    } else if (rating === 5) {
+      setProcessingAction('like');
+    } else if (rating === 10) {
+      setProcessingAction('love');
+    }
+    
     setSaving(true);
     try {
       const { error } = await supabase
@@ -105,15 +115,24 @@ const Wizard = () => {
       toast.error("Failed to save rating");
     } finally {
       setSaving(false);
+      setProcessingAction(null);
     }
   };
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
     if (!currentMovie || saving) return;
     
-    // Add to skipped list and load next movie
-    setSkippedIds(prev => [...prev, currentMovie.id]);
-    loadNextMovie();
+    setProcessingAction('skip');
+    setSaving(true);
+    
+    try {
+      // Add to skipped list and load next movie
+      setSkippedIds(prev => [...prev, currentMovie.id]);
+      await loadNextMovie();
+    } finally {
+      setSaving(false);
+      setProcessingAction(null);
+    }
   };
 
   if (!user) {
@@ -176,6 +195,8 @@ const Wizard = () => {
               onRate={handleRate}
               onSkip={handleSkip}
               totalRated={totalRated}
+              isProcessing={saving}
+              processingAction={processingAction}
             />
           </div>
         ) : (
@@ -194,19 +215,6 @@ const Wizard = () => {
           </Card>
         )}
 
-        {/* Loading Overlay */}
-        {saving && (
-          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  <span>Saving your rating...</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
 
         {/* Action Buttons */}
         <div className="flex justify-center gap-4 mt-8">
