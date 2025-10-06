@@ -13,10 +13,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DevModeSwitcher } from "@/components/DevModeSwitcher";
+import { WizardModal } from "@/components/WizardModal";
+import { useState } from "react";
 
 export const Navigation = () => {
   const { user, isAdmin, signOut } = useEffectiveAuth();
   const navigate = useNavigate();
+  const [wizardOpen, setWizardOpen] = useState(false);
 
   return (
     <nav className="border-b bg-background sticky top-0 z-50">
@@ -74,20 +77,15 @@ export const Navigation = () => {
               <span className="hidden sm:inline">TV Shows</span>
             </NavLink>
 
-            <NavLink
-              to="/wizard"
-              className={({ isActive }) =>
-                cn(
-                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded text-sm transition-colors",
-                  isActive
-                    ? "bg-foreground text-background"
-                    : "text-muted-foreground hover:text-foreground"
-                )
-              }
+            <Button
+              variant="ghost"
+              size="sm"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-muted-foreground hover:text-foreground"
+              onClick={() => setWizardOpen(true)}
             >
               <Sparkles className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Wizard</span>
-            </NavLink>
+            </Button>
             
             {isAdmin && (
               <NavLink
@@ -151,6 +149,7 @@ export const Navigation = () => {
           </div>
         </div>
       </div>
+      <WizardModal open={wizardOpen} onOpenChange={setWizardOpen} />
     </nav>
   );
 };

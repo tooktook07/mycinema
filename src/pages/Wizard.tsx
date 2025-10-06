@@ -12,7 +12,12 @@ import { toast } from "sonner";
 import { WizardSignUpBanner } from "@/components/WizardSignUpBanner";
 import { saveGuestRating, getGuestRatings, getGuestRatedCount, saveGuestSkipped, getGuestSkipped } from "@/lib/guestRatings";
 
-const Wizard = () => {
+interface WizardProps {
+  isModal?: boolean;
+  onClose?: () => void;
+}
+
+const Wizard = ({ isModal = false, onClose }: WizardProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [currentMovie, setCurrentMovie] = useState<RecommendationMovie | null>(null);
@@ -174,8 +179,8 @@ const Wizard = () => {
   }
 
   return (
-    <div className="min-h-screen py-8 px-4">
-      <div className="container mx-auto max-w-7xl">
+    <div className={isModal ? "h-full py-8 px-4" : "min-h-screen py-8 px-4"}>
+      <div className="container mx-auto max-w-7xl h-full flex flex-col">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-2">
@@ -227,7 +232,7 @@ const Wizard = () => {
 
         {/* Movie Card */}
         {currentMovie ? (
-          <div className="flex justify-center items-center mb-8 min-h-[calc(100vh-280px)]">
+          <div className="flex-1 flex justify-center items-center mb-8">
             <MovieWizardCard
               movie={currentMovie}
               onRate={handleRate}
@@ -267,14 +272,16 @@ const Wizard = () => {
 
 
         {/* Action Buttons */}
-        <div className="flex justify-center gap-4 mt-8">
-          <Button variant="outline" onClick={() => navigate("/")}>
-            Back to Home
-          </Button>
-          <Button variant="outline" onClick={() => navigate("/movies")}>
-            Browse Movies
-          </Button>
-        </div>
+        {!isModal && (
+          <div className="flex justify-center gap-4 mt-8">
+            <Button variant="outline" onClick={() => navigate("/")}>
+              Back to Home
+            </Button>
+            <Button variant="outline" onClick={() => navigate("/movies")}>
+              Browse Movies
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -25,7 +25,7 @@ export const MovieWizardCard = ({ movie, onRate, onSkip, totalRated, isProcessin
   const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(movie.title)}+${movie.year}`;
 
   return (
-    <Card className="w-full max-w-2xl mx-auto overflow-hidden relative flex flex-col max-h-[calc(100vh-300px)]">
+    <Card className="w-full max-w-2xl mx-auto overflow-hidden relative flex flex-col h-[calc(100vh-200px)] max-h-[900px]">
       {/* Loading Overlay */}
       {isProcessing && (
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
@@ -201,7 +201,7 @@ export const MovieWizardCard = ({ movie, onRate, onSkip, totalRated, isProcessin
         </Dialog>
 
         {/* Movie Poster */}
-        <div className="aspect-[2/3] w-full max-h-[40vh] overflow-hidden flex-shrink-0">
+        <div className="w-full h-[45%] overflow-hidden flex-shrink-0">
           <img 
             {...imageProps}
             alt={movie.title}
@@ -211,7 +211,7 @@ export const MovieWizardCard = ({ movie, onRate, onSkip, totalRated, isProcessin
       </div>
 
       {/* Movie Info */}
-      <div className="p-6 space-y-4 overflow-y-auto flex-1">
+      <div className="p-6 space-y-3 overflow-y-auto flex-1 min-h-0">
         <div>
           <h2 className="text-2xl font-bold line-clamp-2">{movie.title}</h2>
           <div className="flex items-center gap-3 mt-2">
