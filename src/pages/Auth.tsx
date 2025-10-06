@@ -166,73 +166,68 @@ const Auth = () => {
         {/* Two Column Layout */}
         <div className="grid md:grid-cols-2 gap-8 items-start">
           {/* Benefits Section */}
-          <Card className="bg-card/50 backdrop-blur">
-            <CardHeader>
-              <CardTitle className="text-2xl">Why Create an Account?</CardTitle>
-              <CardDescription>Unlock the full My Cinema experience</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex gap-3">
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Save className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-1">Save Your Ratings</h3>
-                  <p className="text-sm text-muted-foreground">Keep your movie preferences across all devices</p>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Target className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-1">Personalized Recommendations</h3>
-                  <p className="text-sm text-muted-foreground">Get better suggestions based on your unique taste</p>
+          <div className="space-y-6">
+            <div className="text-center md:text-left">
+              <h2 className="text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                Why Join Us?
+              </h2>
+              <p className="text-muted-foreground">Unlock the full My Cinema experience</p>
+            </div>
+            
+            <div className="grid gap-4">
+              <div className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-4 transition-all hover:shadow-lg hover:scale-[1.02] animate-fade-in">
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/10 to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative flex gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg">
+                    <Save className="h-6 w-6 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg mb-1">Save Your Ratings</h3>
+                    <p className="text-sm text-muted-foreground">Keep your movie preferences synced across all your devices</p>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex gap-3">
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-1">Movie Wizard</h3>
-                  <p className="text-sm text-muted-foreground">Rate movies quickly to build your profile</p>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Globe className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-1">Sync Everywhere</h3>
-                  <p className="text-sm text-muted-foreground">Access your ratings from any device, anytime</p>
+              <div className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-purple-500/10 via-purple-500/5 to-transparent p-4 transition-all hover:shadow-lg hover:scale-[1.02] animate-fade-in" style={{ animationDelay: '0.1s' }}>
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/10 to-purple-500/0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative flex gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg">
+                    <Target className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg mb-1">Smart Recommendations</h3>
+                    <p className="text-sm text-muted-foreground">AI-powered suggestions tailored to your unique taste</p>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex gap-3">
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-1">Track Your Journey</h3>
-                  <p className="text-sm text-muted-foreground">See all your rated movies in one place</p>
+              <div className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent p-4 transition-all hover:shadow-lg hover:scale-[1.02] animate-fade-in" style={{ animationDelay: '0.2s' }}>
+                <div className="absolute inset-0 bg-gradient-to-r from-amber-500/0 via-amber-500/10 to-amber-500/0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative flex gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg">
+                    <Sparkles className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg mb-1">Movie Wizard</h3>
+                    <p className="text-sm text-muted-foreground">Discover your perfect matches with our quick rating flow</p>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex gap-3">
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Star className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-1">Advanced Features</h3>
-                  <p className="text-sm text-muted-foreground">Unlock watchlists and more coming soon</p>
+              <div className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent p-4 transition-all hover:shadow-lg hover:scale-[1.02] animate-fade-in" style={{ animationDelay: '0.3s' }}>
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-500/10 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative flex gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
+                    <Star className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg mb-1">Track Everything</h3>
+                    <p className="text-sm text-muted-foreground">See your ratings, stats, and movie journey in one place</p>
+                  </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Auth Forms Section */}
           <Card>
