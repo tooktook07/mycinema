@@ -13,6 +13,7 @@ import TvShows from "./pages/TvShows";
 import Account from "./pages/Account";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
+import Wizard from "./pages/Wizard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/movies" element={<Movies />} />
                 <Route path="/tv-shows" element={<TvShows />} />
+                <Route path="/wizard" element={<Wizard />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/account" element={<Account />} />
                 <Route path="/profile" element={<Profile />} />

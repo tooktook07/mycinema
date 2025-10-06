@@ -1,0 +1,233 @@
+import { supabase } from "@/integrations/supabase/client";
+
+export interface RecommendationMovie {
+  id: string;
+  title: string;
+  year: number;
+  genre: string[];
+  poster: string;
+  rating: number;
+  plot: string;
+  imdbId: string;
+  voteCount?: number;
+  originalLanguage?: string;
+  actors?: string;
+  director?: string;
+  runtime?: string;
+  writing?: string;
+  sound?: string;
+  keywords?: string[];
+}
+
+const RATING_THRESHOLD = 5; // User's liked movies threshold (Like rating = 5)
+const CANDIDATE_RATING_THRESHOLD = 6.5; // Minimum quality for recommendations
+const MIN_RATINGS_FOR_PERSONALIZATION = 5; // Minimum ratings needed for similarity algorithm
+
+// Similarity weights
+const WEIGHTS = {
+  GENRE: 0.35,
+  DIRECTOR: 0.20,
+  ACTOR: 0.20,
+  KEYWORD: 0.15,
+  LANGUAGE: 0.10,
+};
+
+export async function getNextRecommendation(
+  userId: string,
+  excludeIds: string[] = []
+): Promise<RecommendationMovie | null> {
+  try {
+    // Fetch user's rated movies
+    const { data: userRatings } = await supabase
+      .from('user_ratings')
+      .select('media_id, user_rating')
+      .eq('user_id', userId)
+      .eq('media_type', 'movie')
+      .not('user_rating', 'is', null);
+    
+    const ratedMovieIds = (userRatings || []).map(r => r.media_id).filter(Boolean) as string[];
+    const allExcludedIds = [...ratedMovieIds, ...excludeIds];
+    
+    // Get movies the user liked (rating >= 5 - "Like" or "Love")
+    const likedRatings = (userRatings || []).filter(r => (r.user_rating || 0) >= RATING_THRESHOLD);
+    
+    // If user has enough ratings, use similarity algorithm
+    if (likedRatings.length >= MIN_RATINGS_FOR_PERSONALIZATION) {
+      const { data: likedMoviesData } = await supabase
+        .from('movies')
+        .select('genres, director, actors, keywords, original_language')
+        .in('id', likedRatings.map(r => r.media_id));
+      
+      if (!likedMoviesData || likedMoviesData.length === 0) {
+        return getFallbackRecommendation(allExcludedIds);
+      }
+
+      // Analyze user preferences
+      const genreCounts: Record<string, number> = {};
+      const directorCounts: Record<string, number> = {};
+      const actorCounts: Record<string, number> = {};
+      const keywordCounts: Record<string, number> = {};
+      const languageCounts: Record<string, number> = {};
+
+      likedMoviesData.forEach(movie => {
+        // Count genres
+        (movie.genres || []).forEach((genre: string) => {
+          genreCounts[genre] = (genreCounts[genre] || 0) + 1;
+        });
+        
+        // Count directors
+        if (movie.director) {
+          directorCounts[movie.director] = (directorCounts[movie.director] || 0) + 1;
+        }
+        
+        // Count actors
+        if (movie.actors) {
+          movie.actors.split(',').forEach((actor: string) => {
+            const cleanActor = actor.trim();
+            if (cleanActor) {
+              actorCounts[cleanActor] = (actorCounts[cleanActor] || 0) + 1;
+            }
+          });
+        }
+        
+        // Count keywords
+        (movie.keywords || []).forEach((keyword: string) => {
+          keywordCounts[keyword] = (keywordCounts[keyword] || 0) + 1;
+        });
+        
+        // Count languages
+        if (movie.original_language) {
+          languageCounts[movie.original_language] = (languageCounts[movie.original_language] || 0) + 1;
+        }
+      });
+
+      // Fetch candidate movies
+      let query = supabase
+        .from('movies')
+        .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords')
+        .gte('rating', CANDIDATE_RATING_THRESHOLD)
+        .not('rating', 'is', null);
+
+      if (allExcludedIds.length > 0) {
+        query = query.not('id', 'in', `(${allExcludedIds.join(',')})`);
+      }
+
+      const { data: candidateMovies } = await query.limit(100);
+
+      if (!candidateMovies || candidateMovies.length === 0) {
+        return null;
+      }
+
+      // Calculate similarity scores
+      const moviesWithScores = candidateMovies.map(movie => {
+        let score = 0;
+        
+        // Genre similarity
+        const genreMatches = (movie.genres || []).filter((g: string) => genreCounts[g]).length;
+        const genreWeight = genreMatches / Math.max(Object.keys(genreCounts).length, 1);
+        score += genreWeight * WEIGHTS.GENRE;
+        
+        // Director similarity
+        if (movie.director && directorCounts[movie.director]) {
+          score += WEIGHTS.DIRECTOR;
+        }
+        
+        // Actor similarity
+        let actorMatches = 0;
+        if (movie.actors) {
+          const movieActors = movie.actors.split(',').map((a: string) => a.trim());
+          actorMatches = movieActors.filter((a: string) => actorCounts[a]).length;
+        }
+        const actorWeight = Math.min(actorMatches / 3, 1);
+        score += actorWeight * WEIGHTS.ACTOR;
+        
+        // Keyword similarity
+        const keywordMatches = (movie.keywords || []).filter((k: string) => keywordCounts[k]).length;
+        const keywordWeight = Math.min(keywordMatches / 3, 1);
+        score += keywordWeight * WEIGHTS.KEYWORD;
+        
+        // Language similarity
+        if (movie.original_language && languageCounts[movie.original_language]) {
+          score += WEIGHTS.LANGUAGE;
+        }
+        
+        // Slight boost for popularity
+        const popularityBoost = Math.min((movie.vote_count || 0) / 10000, 0.1);
+        score += popularityBoost;
+        
+        return { ...movie, similarityScore: score };
+      });
+
+      // Get the best match
+      const bestMatch = moviesWithScores
+        .sort((a, b) => b.similarityScore - a.similarityScore)[0];
+
+      if (!bestMatch) return null;
+
+      return {
+        id: bestMatch.id,
+        title: bestMatch.title,
+        year: bestMatch.year,
+        poster: bestMatch.poster || '',
+        rating: bestMatch.rating || 0,
+        plot: bestMatch.plot || '',
+        imdbId: bestMatch.imdb_id,
+        voteCount: bestMatch.vote_count,
+        originalLanguage: bestMatch.original_language,
+        genre: bestMatch.genres || [],
+        actors: bestMatch.actors || '',
+        director: bestMatch.director || '',
+        runtime: bestMatch.runtime || '',
+        writing: bestMatch.writing || '',
+        sound: bestMatch.sound || '',
+        keywords: bestMatch.keywords || []
+      };
+    } else {
+      // Fallback: Show popular movies for users with few/no ratings
+      return getFallbackRecommendation(allExcludedIds);
+    }
+  } catch (error) {
+    console.error("Error getting recommendation:", error);
+    return null;
+  }
+}
+
+async function getFallbackRecommendation(excludeIds: string[]): Promise<RecommendationMovie | null> {
+  let query = supabase
+    .from('movies')
+    .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords')
+    .gte('rating', 7.0)
+    .not('rating', 'is', null)
+    .order('vote_count', { ascending: false });
+
+  if (excludeIds.length > 0) {
+    query = query.not('id', 'in', `(${excludeIds.join(',')})`);
+  }
+
+  const { data: movies } = await query.limit(50);
+
+  if (!movies || movies.length === 0) return null;
+
+  // Randomly select from top-rated
+  const randomIndex = Math.floor(Math.random() * movies.length);
+  const movie = movies[randomIndex];
+
+  return {
+    id: movie.id,
+    title: movie.title,
+    year: movie.year,
+    poster: movie.poster || '',
+    rating: movie.rating || 0,
+    plot: movie.plot || '',
+    imdbId: movie.imdb_id,
+    voteCount: movie.vote_count,
+    originalLanguage: movie.original_language,
+    genre: movie.genres || [],
+    actors: movie.actors || '',
+    director: movie.director || '',
+    runtime: movie.runtime || '',
+    writing: movie.writing || '',
+    sound: movie.sound || '',
+    keywords: movie.keywords || []
+  };
+}

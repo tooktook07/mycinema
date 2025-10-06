@@ -1,4 +1,4 @@
-import { Film, Home, Tv, Settings, LogIn, LogOut, User } from "lucide-react";
+import { Film, Home, Tv, Settings, LogIn, LogOut, User, Sparkles } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -72,6 +72,21 @@ export const Navigation = () => {
             >
               <Tv className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">TV Shows</span>
+            </NavLink>
+
+            <NavLink
+              to="/wizard"
+              className={({ isActive }) =>
+                cn(
+                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded text-sm transition-colors",
+                  isActive
+                    ? "bg-foreground text-background"
+                    : "text-muted-foreground hover:text-foreground"
+                )
+              }
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Wizard</span>
             </NavLink>
             
             {isAdmin && (
