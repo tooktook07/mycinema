@@ -11,7 +11,7 @@ interface WizardModalProps {
 export const WizardModal = ({ open, onOpenChange }: WizardModalProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl w-full h-[95vh] p-0 overflow-hidden">
+      <DialogContent className="max-w-[95vw] lg:max-w-7xl w-full h-[95vh] p-0 overflow-hidden">
         <Button
           variant="ghost"
           size="icon"
