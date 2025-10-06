@@ -68,16 +68,10 @@ export const MovieCard = ({
             </DialogHeader>
             <ScrollArea className="max-h-[70vh] pr-4">
               <div className="space-y-4">
-                {/* Rating and Votes */}
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1">
-                    <Star className="h-5 w-5 fill-foreground" />
-                    <span className="text-lg font-bold">{rating}/10</span>
-                  </div>
-                  {voteCount !== undefined && <div className="flex items-center gap-1 text-muted-foreground">
-                      <Users className="h-4 w-4" />
-                      <span>{voteCount.toLocaleString()} votes</span>
-                    </div>}
+                {/* Rating */}
+                <div className="flex items-center gap-1">
+                  <Star className="h-5 w-5 fill-foreground" />
+                  <span className="text-lg font-bold">{rating}/10</span>
                 </div>
 
                 {/* Plot */}
@@ -201,15 +195,9 @@ export const MovieCard = ({
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-2">
           <h3 className="line-clamp-2 text-base font-semibold">{title}</h3>
-          <div className="flex flex-col items-end gap-1 shrink-0">
-            <div className="flex items-center gap-1">
-              <Star className="h-4 w-4 fill-foreground" />
-              <span className="font-bold">{rating}</span>
-            </div>
-            {voteCount !== undefined && <div className="flex items-center gap-1 text-muted-foreground text-xs">
-                <Users className="h-3 w-3" />
-                <span>{voteCount.toLocaleString()}</span>
-              </div>}
+          <div className="flex items-center gap-1 shrink-0">
+            <Star className="h-4 w-4 fill-foreground" />
+            <span className="font-bold">{rating}</span>
           </div>
         </div>
         <div className="mt-2 flex flex-wrap gap-1.5">
