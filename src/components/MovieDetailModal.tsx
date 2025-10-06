@@ -31,7 +31,11 @@ export const MovieDetailModal = () => {
   });
 
   const handleClose = () => {
-    navigate(-1);
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/movies');
+    }
   };
 
   const imageProps = movie ? getOptimizedImageProps(movie.poster) : null;
