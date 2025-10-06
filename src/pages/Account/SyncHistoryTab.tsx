@@ -83,6 +83,30 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
     }
   };
 
+  const handleStopSync = async (syncId: string) => {
+    try {
+      const { error } = await supabase.functions.invoke("cancel-sync", {
+        body: { syncId },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Sync stopped",
+        description: "The sync has been cancelled.",
+      });
+      
+      fetchSyncHistory();
+    } catch (error: any) {
+      console.error("Error stopping sync:", error);
+      toast({
+        title: "Stop failed",
+        description: error.message || "Failed to stop sync",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleDeleteSync = async (syncId: string) => {
     try {
       const { error } = await supabase
@@ -224,24 +248,35 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
 
             {/* Action Buttons */}
             <div className="flex gap-2 mb-4">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onRerunSync(sync.filters)}
-                disabled={sync.status === 'running'}
-              >
-                <RotateCw className="h-3 w-3 mr-1" />
-                Re-run
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => handleDeleteSync(sync.id)}
-                disabled={sync.status === 'running'}
-              >
-                <Trash2 className="h-3 w-3 mr-1" />
-                Delete
-              </Button>
+              {sync.status === 'running' ? (
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => handleStopSync(sync.id)}
+                >
+                  <StopCircle className="h-3 w-3 mr-1" />
+                  Stop Sync
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onRerunSync(sync.filters)}
+                  >
+                    <RotateCw className="h-3 w-3 mr-1" />
+                    Re-run
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleDeleteSync(sync.id)}
+                  >
+                    <Trash2 className="h-3 w-3 mr-1" />
+                    Delete
+                  </Button>
+                </>
+              )}
             </div>
 
             {/* Stats Grid */}
