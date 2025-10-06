@@ -4,7 +4,6 @@ import { Settings, Shield } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { SyncMovies } from "./Account/SyncMovies";
-import { SyncTvShows } from "./Account/SyncTvShows";
 import { SyncHistoryTab } from "./Account/SyncHistoryTab";
 import { GeneralSettings } from "./Account/GeneralSettings";
 import { useEffectiveAuth } from "@/contexts/DevModeContext";
@@ -56,19 +55,14 @@ const Account = () => {
         </div>
 
         <Tabs defaultValue="sync-movies" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="sync-movies">Sync Movies</TabsTrigger>
-            <TabsTrigger value="sync-tv-shows">Sync TV Shows</TabsTrigger>
             <TabsTrigger value="sync-history">Sync History</TabsTrigger>
             <TabsTrigger value="general">General Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="sync-movies">
             <SyncMovies />
-          </TabsContent>
-
-          <TabsContent value="sync-tv-shows">
-            <SyncTvShows />
           </TabsContent>
 
           <TabsContent value="sync-history">

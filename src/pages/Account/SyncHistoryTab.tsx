@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Loader2, ChevronDown, AlertCircle } from "lucide-react";
+import { Loader2, ChevronDown, AlertCircle, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { useDevMode } from "@/contexts/DevModeContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -58,11 +58,35 @@ export const SyncHistoryTab = () => {
 
   const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-      completed: "outline",
+      completed: "default",
       failed: "destructive",
       running: "secondary",
     };
     return variants[status] || "outline";
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch(status) {
+      case 'completed':
+        return <CheckCircle2 className="h-4 w-4" />;
+      case 'failed':
+        return <XCircle className="h-4 w-4" />;
+      case 'running':
+        return <Loader2 className="h-4 w-4 animate-spin" />;
+      default:
+        return null;
+    }
+  };
+
+  const calculateDuration = (start: string, end: string) => {
+    const duration = new Date(end).getTime() - new Date(start).getTime();
+    const seconds = Math.floor(duration / 1000);
+    const minutes = Math.floor(seconds / 60);
+    
+    if (minutes > 0) {
+      return `${minutes}m ${seconds % 60}s`;
+    }
+    return `${seconds}s`;
   };
 
   if (loading) {
@@ -98,24 +122,46 @@ export const SyncHistoryTab = () => {
       )}
 
       {syncHistory.length === 0 && !loading && !error ? (
-        <div className="py-12 text-center">
-          <p className="text-muted-foreground text-sm">No sync history found</p>
+        <div className="py-12 text-center space-y-4">
+          <div className="text-muted-foreground text-4xl">📊</div>
+          <p className="text-muted-foreground text-base font-medium">No sync history yet</p>
+          <p className="text-muted-foreground text-sm">
+            Run your first sync from the "Sync Movies" tab to see results here
+          </p>
         </div>
       ) : (
         syncHistory.map((sync) => (
           <div key={sync.id} className="border-b pb-8 last:border-0">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-base font-medium">
-                  {sync.sync_mode ? "Sync" : "Import"}
-                </h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {format(new Date(sync.created_at), "PPp")}
-                </p>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-medium">
+                    {sync.sync_mode ? "🔄 Sync" : "📥 Import"}
+                  </h3>
+                  {sync.completed_at && (
+                    <Badge variant="outline" className="text-xs">
+                      ⏱️ {calculateDuration(sync.created_at, sync.completed_at)}
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  <p className="text-sm text-muted-foreground">
+                    Started: {format(new Date(sync.created_at), "PPp")}
+                  </p>
+                  {sync.completed_at && (
+                    <p className="text-xs text-muted-foreground">
+                      • Ended: {format(new Date(sync.completed_at), "PPp")}
+                    </p>
+                  )}
+                </div>
               </div>
-              <Badge variant={getStatusVariant(sync.status)} className="text-xs">
-                {sync.status}
+              <Badge 
+                variant={getStatusVariant(sync.status)} 
+                className="flex items-center gap-1.5"
+              >
+                {getStatusIcon(sync.status)}
+                {sync.status.toUpperCase()}
               </Badge>
             </div>
 
@@ -146,6 +192,23 @@ export const SyncHistoryTab = () => {
                 <div className="text-xs text-muted-foreground">Failed</div>
               </div>
             </div>
+
+            {/* Summary Indicator */}
+            {sync.status === 'completed' && (
+              <div className="mt-4 p-3 rounded-md bg-muted/30 text-sm">
+                {sync.failed === 0 && sync.skipped === 0 ? (
+                  <p className="text-green-600 dark:text-green-400 flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Sync completed successfully! All {sync.imported + sync.updated} items processed.
+                  </p>
+                ) : (
+                  <p className="text-yellow-600 dark:text-yellow-400 flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    Sync completed with {sync.failed} failures and {sync.skipped} skipped items.
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Error Message */}
             {sync.error_message && (

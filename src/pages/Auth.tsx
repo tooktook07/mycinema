@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Film } from "lucide-react";
+import { Film, Save, Target, Sparkles, Globe, TrendingUp, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -153,86 +153,167 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/10 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
+      <div className="container mx-auto max-w-6xl">
+        {/* Hero Header */}
+        <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <Film className="h-12 w-12 text-primary" />
+            <Film className="h-16 w-16 text-primary" />
           </div>
-          <CardTitle className="text-3xl">Welcome to My Cinema</CardTitle>
-          <CardDescription>Sign in to rate movies and access features</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
-                  <Input
-                    id="signin-email"
-                    type="email"
-                    placeholder="your@email.com"
-                    value={signInEmail}
-                    onChange={(e) => setSignInEmail(e.target.value)}
-                    required
-                  />
+          <h1 className="text-4xl font-bold mb-2">Welcome to My Cinema</h1>
+          <p className="text-muted-foreground text-lg">Discover your next favorite movie</p>
+        </div>
+
+        {/* Two Column Layout */}
+        <div className="grid md:grid-cols-2 gap-8 items-start">
+          {/* Benefits Section */}
+          <Card className="bg-card/50 backdrop-blur">
+            <CardHeader>
+              <CardTitle className="text-2xl">Why Create an Account?</CardTitle>
+              <CardDescription>Unlock the full My Cinema experience</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Save className="h-5 w-5 text-primary" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signin-password">Password</Label>
-                  <Input
-                    id="signin-password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={signInPassword}
-                    onChange={(e) => setSignInPassword(e.target.value)}
-                    required
-                  />
+                <div>
+                  <h3 className="font-semibold mb-1">Save Your Ratings</h3>
+                  <p className="text-sm text-muted-foreground">Keep your movie preferences across all devices</p>
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Signing in..." : "Sign In"}
-                </Button>
-              </form>
-            </TabsContent>
-            
-            <TabsContent value="signup">
-              <form onSubmit={handleSignUp} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    placeholder="your@email.com"
-                    value={signUpEmail}
-                    onChange={(e) => setSignUpEmail(e.target.value)}
-                    required
-                  />
+              </div>
+
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Target className="h-5 w-5 text-primary" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={signUpPassword}
-                    onChange={(e) => setSignUpPassword(e.target.value)}
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Password must be at least 6 characters
-                  </p>
+                <div>
+                  <h3 className="font-semibold mb-1">Personalized Recommendations</h3>
+                  <p className="text-sm text-muted-foreground">Get better suggestions based on your unique taste</p>
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Creating account..." : "Create Account"}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+              </div>
+
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-1">Movie Wizard</h3>
+                  <p className="text-sm text-muted-foreground">Rate movies quickly to build your profile</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Globe className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-1">Sync Everywhere</h3>
+                  <p className="text-sm text-muted-foreground">Access your ratings from any device, anytime</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-1">Track Your Journey</h3>
+                  <p className="text-sm text-muted-foreground">See all your rated movies in one place</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Star className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-1">Advanced Features</h3>
+                  <p className="text-sm text-muted-foreground">Unlock watchlists and more coming soon</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Auth Forms Section */}
+          <Card>
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl">Get Started</CardTitle>
+              <CardDescription>Sign in or create your account</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="signin" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="signin">Sign In</TabsTrigger>
+                  <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="signin">
+                  <form onSubmit={handleSignIn} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="signin-email">Email</Label>
+                      <Input
+                        id="signin-email"
+                        type="email"
+                        placeholder="your@email.com"
+                        value={signInEmail}
+                        onChange={(e) => setSignInEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signin-password">Password</Label>
+                      <Input
+                        id="signin-password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={signInPassword}
+                        onChange={(e) => setSignInPassword(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? "Signing in..." : "Sign In"}
+                    </Button>
+                  </form>
+                </TabsContent>
+                
+                <TabsContent value="signup">
+                  <form onSubmit={handleSignUp} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-email">Email</Label>
+                      <Input
+                        id="signup-email"
+                        type="email"
+                        placeholder="your@email.com"
+                        value={signUpEmail}
+                        onChange={(e) => setSignUpEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-password">Password</Label>
+                      <Input
+                        id="signup-password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={signUpPassword}
+                        onChange={(e) => setSignUpPassword(e.target.value)}
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Password must be at least 6 characters
+                      </p>
+                    </div>
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? "Creating account..." : "Create Account"}
+                    </Button>
+                  </form>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 };
