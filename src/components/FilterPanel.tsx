@@ -14,6 +14,8 @@ interface FilterPanelProps {
   onYearRangeChange: (range: [number, number]) => void;
   selectedLanguages: string[];
   onLanguageToggle: (language: string) => void;
+  userRatingRange: [number, number] | null;
+  onUserRatingRangeChange: (range: [number, number] | null) => void;
   onReset: () => void;
 }
 
@@ -54,12 +56,15 @@ export const FilterPanel = ({
   onYearRangeChange,
   selectedLanguages,
   onLanguageToggle,
+  userRatingRange,
+  onUserRatingRangeChange,
   onReset,
 }: FilterPanelProps) => {
   const selectedCount = selectedGenres.length + 
     (ratingRange[0] > 0 || ratingRange[1] < 10 ? 1 : 0) + 
     (yearRange[0] !== 1900 || yearRange[1] !== 2030 ? 1 : 0) +
-    selectedLanguages.length;
+    selectedLanguages.length +
+    (userRatingRange ? 1 : 0);
 
   return (
     <div className="space-y-6 rounded-lg border border-border bg-card p-6 shadow-lg">
@@ -83,7 +88,7 @@ export const FilterPanel = ({
         )}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-4">
+      <div className="grid gap-6 lg:grid-cols-5">
         <div className="space-y-3">
           <div>
             <Label className="text-base font-semibold text-foreground">Genres</Label>
@@ -160,6 +165,56 @@ export const FilterPanel = ({
               <span>5.0</span>
               <span>10.0</span>
             </div>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <Label className="text-base font-semibold text-foreground flex items-center justify-between">
+              <span>My Rating Range</span>
+              {userRatingRange && (
+                <Badge variant="secondary" className="text-sm font-bold">
+                  {userRatingRange[0].toFixed(1)} - {userRatingRange[1].toFixed(1)}
+                </Badge>
+              )}
+            </Label>
+            <p className="text-xs text-muted-foreground mt-1">Filter by your ratings</p>
+          </div>
+          <div className="pt-2">
+            {userRatingRange ? (
+              <>
+                <Slider
+                  value={userRatingRange}
+                  onValueChange={(values) => onUserRatingRangeChange(values as [number, number])}
+                  min={0}
+                  max={10}
+                  step={0.5}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                  <span>0.0</span>
+                  <span>5.0</span>
+                  <span>10.0</span>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => onUserRatingRangeChange(null)}
+                  className="w-full mt-2 text-xs"
+                >
+                  Clear Filter
+                </Button>
+              </>
+            ) : (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => onUserRatingRangeChange([0, 10])}
+                className="w-full"
+              >
+                Enable Filter
+              </Button>
+            )}
           </div>
         </div>
 
