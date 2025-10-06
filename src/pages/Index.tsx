@@ -9,14 +9,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { MovieCard } from "@/components/MovieCard";
 import { LastSyncCard } from "@/components/LastSyncCard";
-
 interface Stats {
   totalMovies: number;
   totalTvShows: number;
   avgMovieRating: number;
   userRatingsCount: number;
   userAvgRating: number;
-  topGenres: { genre: string; count: number }[];
+  topGenres: {
+    genre: string;
+    count: number;
+  }[];
   recentMovies: {
     title: string;
     rating: number;
@@ -29,7 +31,6 @@ interface Stats {
     updated: number;
   } | null;
 }
-
 interface Recommendation {
   id: string;
   title: string;
@@ -48,94 +49,88 @@ interface Recommendation {
   sound?: string;
   keywords?: string[];
 }
-
 const RATING_THRESHOLD = 7.0;
 const TOP_MOVIES_LIMIT = 100;
 const RECOMMENDATIONS_COUNT = 12;
-
 const Index = () => {
   const navigate = useNavigate();
-  const { user, isAdmin } = useAuth();
+  const {
+    user,
+    isAdmin
+  } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
-
   useEffect(() => {
     fetchStats();
     fetchRecommendations();
   }, [user]);
-
   const fetchStats = async () => {
     try {
       // Fetch total movies
-      const { count: moviesCount } = await supabase
-        .from("movies")
-        .select("*", { count: "exact", head: true });
+      const {
+        count: moviesCount
+      } = await supabase.from("movies").select("*", {
+        count: "exact",
+        head: true
+      });
 
       // Fetch total TV shows
-      const { count: tvShowsCount } = await supabase
-        .from("tv_shows")
-        .select("*", { count: "exact", head: true });
+      const {
+        count: tvShowsCount
+      } = await supabase.from("tv_shows").select("*", {
+        count: "exact",
+        head: true
+      });
 
       // Fetch average rating
-      const { data: moviesData } = await supabase
-        .from("movies")
-        .select("rating");
-      
-      const avgRating = moviesData && moviesData.length > 0
-        ? moviesData.reduce((acc, m) => acc + (m.rating || 0), 0) / moviesData.length
-        : 0;
+      const {
+        data: moviesData
+      } = await supabase.from("movies").select("rating");
+      const avgRating = moviesData && moviesData.length > 0 ? moviesData.reduce((acc, m) => acc + (m.rating || 0), 0) / moviesData.length : 0;
 
       // Fetch all movies with genres to calculate top genres
-      const { data: allMovies } = await supabase
-        .from("movies")
-        .select("genres");
-
+      const {
+        data: allMovies
+      } = await supabase.from("movies").select("genres");
       const genreCounts: Record<string, number> = {};
-      allMovies?.forEach((movie) => {
+      allMovies?.forEach(movie => {
         movie.genres?.forEach((genre: string) => {
           genreCounts[genre] = (genreCounts[genre] || 0) + 1;
         });
       });
-
-      const topGenres = Object.entries(genreCounts)
-        .map(([genre, count]) => ({ genre, count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 5);
+      const topGenres = Object.entries(genreCounts).map(([genre, count]) => ({
+        genre,
+        count
+      })).sort((a, b) => b.count - a.count).slice(0, 5);
 
       // Fetch recent top-rated movies
-      const { data: recentMovies } = await supabase
-        .from("movies")
-        .select("title, rating, year, poster")
-        .order("rating", { ascending: false })
-        .limit(5);
+      const {
+        data: recentMovies
+      } = await supabase.from("movies").select("title, rating, year, poster").order("rating", {
+        ascending: false
+      }).limit(5);
 
       // Fetch last sync
-      const { data: lastSync } = await supabase
-        .from("sync_history")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const {
+        data: lastSync
+      } = await supabase.from("sync_history").select("*").order("created_at", {
+        ascending: false
+      }).limit(1).maybeSingle();
 
       // Fetch user-specific ratings if logged in (only for real users)
       let userRatingsCount = 0;
       let userAvgRating = 0;
-      
       if (user && user.id !== 'dev-user-id') {
-        const { data: userRatings } = await supabase
-          .from("user_ratings")
-          .select("user_rating")
-          .eq("user_id", user.id)
-          .not("user_rating", "is", null);
-        
+        const {
+          data: userRatings
+        } = await supabase.from("user_ratings").select("user_rating").eq("user_id", user.id).not("user_rating", "is", null);
         if (userRatings?.length) {
           userRatingsCount = userRatings.length;
           userAvgRating = userRatings.reduce((acc, r) => acc + (r.user_rating || 0), 0) / userRatings.length;
         }
       }
-
       setStats({
         totalMovies: moviesCount || 0,
         totalTvShows: tvShowsCount || 0,
@@ -144,7 +139,7 @@ const Index = () => {
         userAvgRating,
         topGenres,
         recentMovies: recentMovies || [],
-        lastSync,
+        lastSync
       });
     } catch (error) {
       console.error("Error fetching stats:", error);
@@ -152,19 +147,16 @@ const Index = () => {
       setLoading(false);
     }
   };
-
   const fetchRecommendations = async () => {
     setLoadingRecommendations(true);
     try {
       // Fetch top-rated movies
-      const { data: topMovies, error } = await supabase
-        .from('movies')
-        .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords')
-        .gte('rating', RATING_THRESHOLD)
-        .not('rating', 'is', null)
-        .order('vote_count', { ascending: false })
-        .limit(TOP_MOVIES_LIMIT);
-
+      const {
+        data: topMovies,
+        error
+      } = await supabase.from('movies').select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords').gte('rating', RATING_THRESHOLD).not('rating', 'is', null).order('vote_count', {
+        ascending: false
+      }).limit(TOP_MOVIES_LIMIT);
       if (error) throw error;
 
       // Randomly select movies from top-rated
@@ -187,7 +179,6 @@ const Index = () => {
         sound: movie.sound || '',
         keywords: movie.keywords || []
       }));
-      
       setRecommendations(selected);
     } catch (error) {
       console.error("Error fetching recommendations:", error);
@@ -196,49 +187,37 @@ const Index = () => {
       setLoadingRecommendations(false);
     }
   };
-
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
+    return <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen">
+  return <div className="min-h-screen">
       {/* Hero Section */}
       <div className="border-b px-4 py-16">
         <div className="container mx-auto max-w-7xl">
           <div className="flex items-center justify-center gap-3 mb-4">
             <Film className="h-10 w-10" />
-            <h1 className="text-4xl font-bold md:text-5xl">
+            <h1 className="text-4xl font-bold md:text-4xl">
               Welcome to My Cinema App
             </h1>
           </div>
-          <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-6">
-            {user 
-              ? "Your personal movie and TV show statistics"
-              : "Discover and rate thousands of movies. Sign in to start rating!"
-            }
+          <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-6 text-base font-thin">
+            {user ? "Your personal movie and TV show statistics" : "Discover and rate thousands of movies. Sign in to start rating!"}
           </p>
-          {stats?.lastSync && (
-            <div className="flex justify-center">
+          {stats?.lastSync && <div className="flex justify-center">
               <Badge variant="outline" className="text-sm">
                 <Calendar className="h-3.5 w-3.5 mr-1.5" />
                 Last sync: {format(new Date(stats.lastSync.created_at), "PPp")} 
                 ({stats.lastSync.imported + stats.lastSync.updated} movies)
               </Badge>
-            </div>
-          )}
-          {!user && (
-            <div className="flex justify-center mt-4">
+            </div>}
+          {!user && <div className="flex justify-center mt-4">
               <Button size="lg" onClick={() => navigate("/auth")}>
                 <LogIn className="h-4 w-4 mr-2" />
                 Sign In to Rate Movies
               </Button>
-            </div>
-          )}
+            </div>}
         </div>
       </div>
 
@@ -283,24 +262,18 @@ const Index = () => {
               <Star className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              {user && stats?.userRatingsCount > 0 ? (
-                <>
+              {user && stats?.userRatingsCount > 0 ? <>
                   <div className="text-2xl font-bold">{stats.userAvgRating.toFixed(1)}/10</div>
                   <p className="text-xs text-muted-foreground">
                     {stats.userRatingsCount} {stats.userRatingsCount === 1 ? 'rating' : 'ratings'}
                   </p>
-                </>
-              ) : user ? (
-                <>
+                </> : user ? <>
                   <div className="text-2xl font-bold">0/10</div>
                   <p className="text-xs text-muted-foreground">No ratings yet</p>
-                </>
-              ) : (
-                <>
+                </> : <>
                   <div className="text-2xl font-bold">{stats?.avgMovieRating.toFixed(1)}/10</div>
                   <p className="text-xs text-muted-foreground">Across all movies</p>
-                </>
-              )}
+                </>}
             </CardContent>
           </Card>
 
@@ -317,12 +290,10 @@ const Index = () => {
             <Tv className="h-4 w-4 mr-2" />
             Browse TV Shows
           </Button>
-          {isAdmin && (
-            <Button onClick={() => navigate("/account")} variant="outline">
+          {isAdmin && <Button onClick={() => navigate("/account")} variant="outline">
               <TrendingUp className="h-4 w-4 mr-2" />
               Sync Data
-            </Button>
-          )}
+            </Button>}
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
@@ -330,77 +301,41 @@ const Index = () => {
           <Card className="md:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                {user ? (
-                  <>
+                {user ? <>
                     <Sparkles className="h-5 w-5 text-yellow-500" />
                     AI Recommendations For You
-                  </>
-                ) : (
-                  <>
+                  </> : <>
                     <Star className="h-5 w-5 text-yellow-500" />
                     Top Rated Movies
-                  </>
-                )}
+                  </>}
               </CardTitle>
               <CardDescription>
-                {user 
-                  ? "Based on your ratings, we think you'll love these movies"
-                  : "Discover highly-rated movies from our collection"
-                }
+                {user ? "Based on your ratings, we think you'll love these movies" : "Discover highly-rated movies from our collection"}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {loadingRecommendations ? (
-                <div className="flex items-center justify-center py-12">
+              {loadingRecommendations ? <div className="flex items-center justify-center py-12">
                   <div className="text-center space-y-2">
                     <Loader2 className="h-8 w-8 animate-spin mx-auto" />
                     <p className="text-sm text-muted-foreground">
                       {user ? "Finding movies you'll love..." : "Loading top movies..."}
                     </p>
                   </div>
-                </div>
-              ) : recommendations.length === 0 ? (
-                <div className="text-center py-12 px-4 bg-muted/30 rounded-lg border-2 border-dashed">
+                </div> : recommendations.length === 0 ? <div className="text-center py-12 px-4 bg-muted/30 rounded-lg border-2 border-dashed">
                   <Star className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <p className="text-lg font-semibold mb-2">
                     {user ? "No recommendations yet" : "No movies available"}
                   </p>
                   <p className="text-sm text-muted-foreground mb-4">
-                    {user 
-                      ? "Rate some movies with 7+ to get personalized recommendations"
-                      : "Check back later for top-rated movies"
-                    }
+                    {user ? "Rate some movies with 7+ to get personalized recommendations" : "Check back later for top-rated movies"}
                   </p>
                   <Button onClick={() => navigate("/movies")} variant="outline">
                     <Film className="h-4 w-4 mr-2" />
                     Browse Movies
                   </Button>
-                </div>
-              ) : (
-                <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                  {recommendations?.map((movie) => (
-                    <MovieCard
-                      key={movie.id}
-                      id={movie.id}
-                      title={movie.title}
-                      year={movie.year}
-                      rating={movie.rating}
-                      genre={movie.genre}
-                      poster={movie.poster}
-                      imdbId={movie.imdbId}
-                      plot={movie.plot}
-                      voteCount={movie.voteCount}
-                      originalLanguage={movie.originalLanguage}
-                      actors={movie.actors}
-                      director={movie.director}
-                      runtime={movie.runtime}
-                      writing={movie.writing}
-                      sound={movie.sound}
-                      keywords={movie.keywords}
-                    />
-                  ))}
-                </div>
-              )}
+                </div> : <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                  {recommendations?.map(movie => <MovieCard key={movie.id} id={movie.id} title={movie.title} year={movie.year} rating={movie.rating} genre={movie.genre} poster={movie.poster} imdbId={movie.imdbId} plot={movie.plot} voteCount={movie.voteCount} originalLanguage={movie.originalLanguage} actors={movie.actors} director={movie.director} runtime={movie.runtime} writing={movie.writing} sound={movie.sound} keywords={movie.keywords} />)}
+                </div>}
             </CardContent>
           </Card>
 
@@ -414,25 +349,15 @@ const Index = () => {
               <CardDescription>Most popular genres in your database</CardDescription>
             </CardHeader>
             <CardContent>
-              {stats?.topGenres.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No genres available yet</p>
-              ) : (
-                <div className="space-y-3">
-                  {stats?.topGenres.map((item, index) => (
-                    <Link
-                      key={item.genre}
-                      to={`/movies?genre=${encodeURIComponent(item.genre)}`}
-                      className="flex items-center justify-between hover:bg-accent/50 p-2 -mx-2 rounded-md transition-colors"
-                    >
+              {stats?.topGenres.length === 0 ? <p className="text-sm text-muted-foreground">No genres available yet</p> : <div className="space-y-3">
+                  {stats?.topGenres.map((item, index) => <Link key={item.genre} to={`/movies?genre=${encodeURIComponent(item.genre)}`} className="flex items-center justify-between hover:bg-accent/50 p-2 -mx-2 rounded-md transition-colors">
                       <div className="flex items-center gap-3">
                         <Badge variant="secondary">{index + 1}</Badge>
                         <span className="font-medium">{item.genre}</span>
                       </div>
                       <Badge variant="outline">{item.count} movies</Badge>
-                    </Link>
-                  ))}
-                </div>
-              )}
+                    </Link>)}
+                </div>}
             </CardContent>
           </Card>
 
@@ -446,12 +371,8 @@ const Index = () => {
               <CardDescription>Highest rated films in your collection</CardDescription>
             </CardHeader>
             <CardContent>
-              {stats?.recentMovies.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No movies available yet</p>
-              ) : (
-                <div className="space-y-3">
-                  {stats?.recentMovies.map((movie) => (
-                    <div key={movie.title} className="flex items-center justify-between">
+              {stats?.recentMovies.length === 0 ? <p className="text-sm text-muted-foreground">No movies available yet</p> : <div className="space-y-3">
+                  {stats?.recentMovies.map(movie => <div key={movie.title} className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{movie.title}</p>
                         <p className="text-xs text-muted-foreground">{movie.year}</p>
@@ -460,16 +381,12 @@ const Index = () => {
                         <Star className="h-3 w-3 mr-1" />
                         {movie.rating?.toFixed(1)}
                       </Badge>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    </div>)}
+                </div>}
             </CardContent>
           </Card>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
