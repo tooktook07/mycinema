@@ -290,7 +290,37 @@ export const MovieCard = ({
         </div>
 
         {/* Action Icons - At Bottom */}
-        <div className="flex items-center justify-center gap-1 mt-4 pt-3 border-t">
+        <div className="flex items-center justify-between gap-1 mt-4 pt-3 border-t">
+          <div className="flex items-center gap-1">
+            {hasValidImdbId && (
+              <Tooltip delayDuration={300}>
+                <TooltipTrigger asChild>
+                  <Button size="icon" variant="ghost" className="h-8 w-8" asChild>
+                    <a href={imdbUrl} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="text-xs">
+                  <p>View on IMDB</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            
+            <Tooltip delayDuration={300}>
+              <TooltipTrigger asChild>
+                <Button size="icon" variant="ghost" className="h-8 w-8" asChild>
+                  <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer nofollow">
+                    <Search className="h-4 w-4" />
+                  </a>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="text-xs">
+                <p>Google Search</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+          
           <Tooltip delayDuration={300}>
             <TooltipTrigger asChild>
               <div>
@@ -299,34 +329,6 @@ export const MovieCard = ({
             </TooltipTrigger>
             <TooltipContent className="text-xs">
               <p>Rate this movie</p>
-            </TooltipContent>
-          </Tooltip>
-          
-          {hasValidImdbId && (
-            <Tooltip delayDuration={300}>
-              <TooltipTrigger asChild>
-                <Button size="icon" variant="ghost" className="h-8 w-8" asChild>
-                  <a href={imdbUrl} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="text-xs">
-                <p>View on IMDB</p>
-              </TooltipContent>
-            </Tooltip>
-          )}
-          
-          <Tooltip delayDuration={300}>
-            <TooltipTrigger asChild>
-              <Button size="icon" variant="ghost" className="h-8 w-8" asChild>
-                <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer nofollow">
-                  <Search className="h-4 w-4" />
-                </a>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent className="text-xs">
-              <p>Google Search</p>
             </TooltipContent>
           </Tooltip>
         </div>
