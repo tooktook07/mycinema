@@ -9,11 +9,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Star, ExternalLink, Search, Users, Globe, Info, DollarSign, Calendar, Film, Languages } from "lucide-react";
 import { getOptimizedImageProps } from "@/lib/imageUtils";
 import { MovieRating } from "@/components/MovieRating";
+import { useFilters } from "@/contexts/FilterContext";
 
 export const MovieDetailModal = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  
+  const {
+    setAppliedGenres,
+    setAppliedYearRange,
+    setAppliedLanguages,
+    setAppliedSearchText
+  } = useFilters();
 
   const { data: movie, isLoading, error } = useQuery({
     queryKey: ['movie', id],
@@ -51,15 +59,24 @@ export const MovieDetailModal = () => {
 
   // Navigation handlers for internal linking
   const handleFieldClick = (filterType: 'year' | 'genre' | 'language' | 'search', value: string | number) => {
+    // Apply the filter directly via context
     if (filterType === 'year' && typeof value === 'number') {
-      navigate('/movies', { state: { yearFilter: [value, value] } });
+      setAppliedYearRange([value, value]);
     } else if (filterType === 'genre' && typeof value === 'string') {
-      navigate('/movies', { state: { genreFilter: [value] } });
+      setAppliedGenres([value]);
     } else if (filterType === 'language' && typeof value === 'string') {
-      navigate('/movies', { state: { languageFilter: [value] } });
+      setAppliedLanguages([value]);
     } else if (filterType === 'search' && typeof value === 'string') {
-      navigate('/movies', { state: { searchFilter: value } });
+      setAppliedSearchText(value);
     }
+    
+    // Navigate to movies page
+    navigate('/movies');
+    
+    // Close modal after a short delay to ensure navigation starts
+    setTimeout(() => {
+      handleClose();
+    }, 50);
   };
 
   // Parse watch providers

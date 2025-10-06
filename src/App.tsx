@@ -7,6 +7,7 @@ import { Navigation } from "@/components/Navigation";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DevModeProvider } from "@/contexts/DevModeContext";
+import { FilterProvider } from "@/contexts/FilterContext";
 import { DevModeSwitcher } from "@/components/DevModeSwitcher";
 import { MovieDetailModal } from "@/components/MovieDetailModal";
 import Index from "./pages/Index";
@@ -61,11 +62,13 @@ const App = () => (
       <TooltipProvider>
         <AuthProvider>
           <DevModeProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <AppRoutes />
-            </BrowserRouter>
+            <FilterProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <AppRoutes />
+              </BrowserRouter>
+            </FilterProvider>
           </DevModeProvider>
         </AuthProvider>
       </TooltipProvider>
