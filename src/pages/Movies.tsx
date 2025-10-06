@@ -318,7 +318,10 @@ const Movies = () => {
         }} yearRange={appliedYearRange} onYearRangeChange={range => {
           setAppliedYearRange(range);
           setCurrentPage(1);
-        }} selectedLanguages={appliedLanguages} onLanguageToggle={handleLanguageToggle} onReset={handleResetFilters} />
+        }} selectedLanguages={appliedLanguages} onLanguageToggle={handleLanguageToggle} searchText={appliedSearchText} onSearchTextChange={text => {
+          setAppliedSearchText(text);
+          setCurrentPage(1);
+        }} onReset={handleResetFilters} />
         </div>
 
         {/* Results */}

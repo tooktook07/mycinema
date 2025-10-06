@@ -9,19 +9,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Star, ExternalLink, Search, Users, Globe, Info, DollarSign, Calendar, Film, Languages } from "lucide-react";
 import { getOptimizedImageProps } from "@/lib/imageUtils";
 import { MovieRating } from "@/components/MovieRating";
-import { useFilters } from "@/contexts/FilterContext";
 
 export const MovieDetailModal = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  
-  const {
-    setAppliedGenres,
-    setAppliedYearRange,
-    setAppliedLanguages,
-    setAppliedSearchText
-  } = useFilters();
 
   const { data: movie, isLoading, error } = useQuery({
     queryKey: ['movie', id],
@@ -59,21 +51,22 @@ export const MovieDetailModal = () => {
 
   // Navigation handlers for internal linking
   const handleFieldClick = (filterType: 'year' | 'genre' | 'language' | 'search', value: string | number) => {
-    // Apply the filter directly via context
+    const params = new URLSearchParams();
+    
     if (filterType === 'year' && typeof value === 'number') {
-      setAppliedYearRange([value, value]);
+      params.set('year', `${value}-${value}`);
     } else if (filterType === 'genre' && typeof value === 'string') {
-      setAppliedGenres([value]);
+      params.set('genres', value);
     } else if (filterType === 'language' && typeof value === 'string') {
-      setAppliedLanguages([value]);
+      params.set('languages', value);
     } else if (filterType === 'search' && typeof value === 'string') {
-      setAppliedSearchText(value);
+      params.set('search', value);
     }
     
-    // Navigate to movies page
-    navigate('/movies');
+    // Navigate to movies page with filter params
+    navigate(`/movies?${params.toString()}`);
     
-    // Close modal after a short delay to ensure navigation starts
+    // Close modal after a short delay
     setTimeout(() => {
       handleClose();
     }, 50);

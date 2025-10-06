@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 interface FilterContextType {
   appliedGenres: string[];
@@ -17,18 +18,72 @@ interface FilterContextType {
 const FilterContext = createContext<FilterContextType | undefined>(undefined);
 
 export const FilterProvider = ({ children }: { children: ReactNode }) => {
-  const [appliedGenres, setAppliedGenres] = useState<string[]>([]);
-  const [appliedRatingRange, setAppliedRatingRange] = useState<[number, number]>([0, 10]);
-  const [appliedYearRange, setAppliedYearRange] = useState<[number, number]>([1900, 2030]);
-  const [appliedLanguages, setAppliedLanguages] = useState<string[]>([]);
-  const [appliedSearchText, setAppliedSearchText] = useState<string>("");
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Read from URL params
+  const appliedGenres = searchParams.get('genres')?.split(',').filter(Boolean) || [];
+  const appliedRatingRange: [number, number] = searchParams.get('rating')
+    ? searchParams.get('rating')!.split('-').map(Number) as [number, number]
+    : [0, 10];
+  const appliedYearRange: [number, number] = searchParams.get('year')
+    ? searchParams.get('year')!.split('-').map(Number) as [number, number]
+    : [1900, 2030];
+  const appliedLanguages = searchParams.get('languages')?.split(',').filter(Boolean) || [];
+  const appliedSearchText = searchParams.get('search') || "";
+
+  // Write to URL params
+  const setAppliedGenres = (genres: string[]) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (genres.length > 0) {
+      newParams.set('genres', genres.join(','));
+    } else {
+      newParams.delete('genres');
+    }
+    setSearchParams(newParams);
+  };
+
+  const setAppliedRatingRange = (range: [number, number]) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (range[0] !== 0 || range[1] !== 10) {
+      newParams.set('rating', `${range[0]}-${range[1]}`);
+    } else {
+      newParams.delete('rating');
+    }
+    setSearchParams(newParams);
+  };
+
+  const setAppliedYearRange = (range: [number, number]) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (range[0] !== 1900 || range[1] !== 2030) {
+      newParams.set('year', `${range[0]}-${range[1]}`);
+    } else {
+      newParams.delete('year');
+    }
+    setSearchParams(newParams);
+  };
+
+  const setAppliedLanguages = (languages: string[]) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (languages.length > 0) {
+      newParams.set('languages', languages.join(','));
+    } else {
+      newParams.delete('languages');
+    }
+    setSearchParams(newParams);
+  };
+
+  const setAppliedSearchText = (text: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (text) {
+      newParams.set('search', text);
+    } else {
+      newParams.delete('search');
+    }
+    setSearchParams(newParams);
+  };
 
   const resetFilters = () => {
-    setAppliedGenres([]);
-    setAppliedRatingRange([0, 10]);
-    setAppliedYearRange([1900, 2030]);
-    setAppliedLanguages([]);
-    setAppliedSearchText("");
+    setSearchParams(new URLSearchParams());
   };
 
   return (

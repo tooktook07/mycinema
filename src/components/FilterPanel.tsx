@@ -4,6 +4,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Search, X } from "lucide-react";
+import { useState, useEffect } from "react";
 
 interface FilterPanelProps {
   selectedGenres: string[];
@@ -14,6 +16,8 @@ interface FilterPanelProps {
   onYearRangeChange: (range: [number, number]) => void;
   selectedLanguages: string[];
   onLanguageToggle: (language: string) => void;
+  searchText: string;
+  onSearchTextChange: (text: string) => void;
   onReset: () => void;
 }
 
@@ -54,12 +58,30 @@ export const FilterPanel = ({
   onYearRangeChange,
   selectedLanguages,
   onLanguageToggle,
+  searchText,
+  onSearchTextChange,
   onReset,
 }: FilterPanelProps) => {
+  const [localSearch, setLocalSearch] = useState(searchText);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onSearchTextChange(localSearch);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [localSearch, onSearchTextChange]);
+
+  // Sync with external changes
+  useEffect(() => {
+    setLocalSearch(searchText);
+  }, [searchText]);
+
   const selectedCount = selectedGenres.length + 
     (ratingRange[0] > 0 || ratingRange[1] < 10 ? 1 : 0) + 
     (yearRange[0] !== 1900 || yearRange[1] !== 2030 ? 1 : 0) +
-    selectedLanguages.length;
+    selectedLanguages.length +
+    (searchText ? 1 : 0);
 
   return (
     <div className="space-y-6 rounded-lg border border-border bg-card p-6 shadow-lg">
@@ -81,6 +103,31 @@ export const FilterPanel = ({
             Reset All Filters
           </Button>
         )}
+      </div>
+
+      <div className="mb-4">
+        <Label className="text-base font-semibold text-foreground">Search</Label>
+        <p className="text-xs text-muted-foreground mt-1 mb-2">Search movies, actors, directors...</p>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Type to search..."
+            value={localSearch}
+            onChange={(e) => setLocalSearch(e.target.value)}
+            className="pl-10 pr-10"
+          />
+          {localSearch && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+              onClick={() => setLocalSearch("")}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-4">
