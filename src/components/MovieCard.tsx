@@ -257,12 +257,12 @@ export const MovieCard = ({
           </DialogContent>
         </Dialog>
       </div>
-      <CardContent className="p-4 space-y-3">
+      <CardContent className="p-4 flex flex-col h-full">
         {/* Title - Full Width */}
         <h3 className="line-clamp-2 text-base font-semibold leading-tight">{title}</h3>
         
         {/* Info Row: Left (Year + Lang) | Right (Rating) */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mt-3">
           <div className="flex items-center gap-2">
             <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80 transition-colors" onClick={() => onYearClick?.(year)}>
               {year}
@@ -281,7 +281,7 @@ export const MovieCard = ({
         </div>
 
         {/* Genres */}
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1.5 mt-3">
           {genre.slice(0, 3).map(g => (
             <Badge key={g} variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80 transition-colors" onClick={() => onGenreClick?.(g)}>
               {g}
@@ -289,21 +289,24 @@ export const MovieCard = ({
           ))}
         </div>
 
-        {/* Action Icons with Tooltips */}
-        <div className="flex items-center gap-1 pt-1">
-          <Tooltip>
+        {/* Spacer to push buttons to bottom */}
+        <div className="flex-1" />
+
+        {/* Action Icons - Stuck to Bottom */}
+        <div className="flex items-center justify-center gap-1 mt-3 pt-3 border-t">
+          <Tooltip delayDuration={300}>
             <TooltipTrigger asChild>
               <div>
                 <MovieRating movieId={id} movieTitle={title} iconOnly />
               </div>
             </TooltipTrigger>
-            <TooltipContent>
+            <TooltipContent className="text-xs">
               <p>Rate this movie</p>
             </TooltipContent>
           </Tooltip>
           
           {hasValidImdbId && (
-            <Tooltip>
+            <Tooltip delayDuration={300}>
               <TooltipTrigger asChild>
                 <Button size="icon" variant="ghost" className="h-8 w-8" asChild>
                   <a href={imdbUrl} target="_blank" rel="noopener noreferrer">
@@ -311,13 +314,13 @@ export const MovieCard = ({
                   </a>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>
+              <TooltipContent className="text-xs">
                 <p>View on IMDB</p>
               </TooltipContent>
             </Tooltip>
           )}
           
-          <Tooltip>
+          <Tooltip delayDuration={300}>
             <TooltipTrigger asChild>
               <Button size="icon" variant="ghost" className="h-8 w-8" asChild>
                 <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer nofollow">
@@ -325,7 +328,7 @@ export const MovieCard = ({
                 </a>
               </Button>
             </TooltipTrigger>
-            <TooltipContent>
+            <TooltipContent className="text-xs">
               <p>Google Search</p>
             </TooltipContent>
           </Tooltip>
