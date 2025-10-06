@@ -24,7 +24,7 @@ const Movies = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<"rating" | "year" | "title" | "user_rating">("rating");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [itemsPerPage, setItemsPerPage] = useState(50);
+  const [itemsPerPage, setItemsPerPage] = useState(100);
 
   // Filter states
   const [appliedGenres, setAppliedGenres] = useState<string[]>([]);
