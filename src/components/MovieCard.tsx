@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Movie } from "@/data/types";
 import { MovieRating } from "@/components/MovieRating";
 import { useState } from "react";
@@ -256,31 +257,31 @@ export const MovieCard = ({
           </DialogContent>
         </Dialog>
       </div>
-      <CardContent className="p-4">
+      <CardContent className="p-4 space-y-3">
         {/* Title - Full Width */}
-        <h3 className="line-clamp-2 text-base font-semibold leading-tight mb-3">{title}</h3>
+        <h3 className="line-clamp-2 text-base font-semibold leading-tight">{title}</h3>
         
-        {/* Rating & Year Row */}
-        <div className="flex items-center justify-between mb-3">
+        {/* Info Row: Left (Year + Lang) | Right (Rating) */}
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 text-primary">
-              <Star className="h-4 w-4 fill-primary" />
-              <span className="font-bold">{rating}</span>
-            </div>
             <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80 transition-colors" onClick={() => onYearClick?.(year)}>
               {year}
             </Badge>
+            {originalLanguage && (
+              <Badge variant="outline" className="text-xs flex items-center gap-1 cursor-pointer hover:bg-secondary transition-colors" onClick={() => onLanguageClick?.(originalLanguage)}>
+                <Globe className="h-3 w-3" />
+                {originalLanguage.toUpperCase()}
+              </Badge>
+            )}
           </div>
-          {originalLanguage && (
-            <Badge variant="outline" className="text-xs flex items-center gap-1 cursor-pointer hover:bg-secondary transition-colors" onClick={() => onLanguageClick?.(originalLanguage)}>
-              <Globe className="h-3 w-3" />
-              {originalLanguage.toUpperCase()}
-            </Badge>
-          )}
+          <div className="flex items-center gap-1 text-primary">
+            <Star className="h-4 w-4 fill-primary" />
+            <span className="font-bold text-sm">{rating}</span>
+          </div>
         </div>
 
         {/* Genres */}
-        <div className="flex flex-wrap gap-1.5 mb-3">
+        <div className="flex flex-wrap gap-1.5">
           {genre.slice(0, 3).map(g => (
             <Badge key={g} variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80 transition-colors" onClick={() => onGenreClick?.(g)}>
               {g}
@@ -288,27 +289,46 @@ export const MovieCard = ({
           ))}
         </div>
 
-        {/* User Rating */}
-        <div className="mb-2">
-          <MovieRating movieId={id} movieTitle={title} />
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex gap-2">
+        {/* Action Icons with Tooltips */}
+        <div className="flex items-center gap-1 pt-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <MovieRating movieId={id} movieTitle={title} iconOnly />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Rate this movie</p>
+            </TooltipContent>
+          </Tooltip>
+          
           {hasValidImdbId && (
-            <Button size="sm" variant="outline" className="flex-1" asChild>
-              <a href={imdbUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5">
-                <ExternalLink className="h-3.5 w-3.5" />
-                IMDB
-              </a>
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="icon" variant="ghost" className="h-8 w-8" asChild>
+                  <a href={imdbUrl} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>View on IMDB</p>
+              </TooltipContent>
+            </Tooltip>
           )}
-          <Button size="sm" variant="outline" className="flex-1" asChild>
-            <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer nofollow" className="flex items-center justify-center gap-1.5">
-              <Search className="h-3.5 w-3.5" />
-              Search
-            </a>
-          </Button>
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="icon" variant="ghost" className="h-8 w-8" asChild>
+                <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer nofollow">
+                  <Search className="h-4 w-4" />
+                </a>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Google Search</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </CardContent>
     </Card>;

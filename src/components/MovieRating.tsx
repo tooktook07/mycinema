@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 interface MovieRatingProps {
   movieId: string;
   movieTitle: string;
+  iconOnly?: boolean;
 }
 
 type SentimentRating = 1 | 5 | 10 | null;
@@ -28,7 +29,7 @@ const sentimentLabels = {
   10: "Love",
 };
 
-export const MovieRating = ({ movieId, movieTitle }: MovieRatingProps) => {
+export const MovieRating = ({ movieId, movieTitle, iconOnly = false }: MovieRatingProps) => {
   const { user } = useEffectiveAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -116,6 +117,18 @@ export const MovieRating = ({ movieId, movieTitle }: MovieRatingProps) => {
   };
 
   if (!user) {
+    if (iconOnly) {
+      return (
+        <Button
+          size="icon"
+          variant="ghost"
+          disabled
+          className="h-8 w-8"
+        >
+          <Heart className="h-4 w-4" />
+        </Button>
+      );
+    }
     return (
       <Button
         size="sm"
@@ -132,17 +145,30 @@ export const MovieRating = ({ movieId, movieTitle }: MovieRatingProps) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button
-          size="sm"
-          variant={savedRating ? "default" : "outline"}
-          className="gap-1"
-        >
-          {savedRating === 1 && <ThumbsDown className="h-3.5 w-3.5" />}
-          {savedRating === 5 && <ThumbsUp className="h-3.5 w-3.5" />}
-          {savedRating === 10 && <Heart className="h-3.5 w-3.5 fill-current" />}
-          {!savedRating && <Heart className="h-3.5 w-3.5" />}
-          {savedRating ? sentimentLabels[savedRating] : "Rate this movie"}
-        </Button>
+        {iconOnly ? (
+          <Button
+            size="icon"
+            variant={savedRating ? "default" : "ghost"}
+            className="h-8 w-8"
+          >
+            {savedRating === 1 && <ThumbsDown className="h-4 w-4" />}
+            {savedRating === 5 && <ThumbsUp className="h-4 w-4" />}
+            {savedRating === 10 && <Heart className="h-4 w-4 fill-current" />}
+            {!savedRating && <Heart className="h-4 w-4" />}
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            variant={savedRating ? "default" : "outline"}
+            className="gap-1"
+          >
+            {savedRating === 1 && <ThumbsDown className="h-3.5 w-3.5" />}
+            {savedRating === 5 && <ThumbsUp className="h-3.5 w-3.5" />}
+            {savedRating === 10 && <Heart className="h-3.5 w-3.5 fill-current" />}
+            {!savedRating && <Heart className="h-3.5 w-3.5" />}
+            {savedRating ? sentimentLabels[savedRating] : "Rate this movie"}
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
