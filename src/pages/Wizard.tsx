@@ -227,7 +227,7 @@ const Wizard = () => {
 
         {/* Movie Card */}
         {currentMovie ? (
-          <div className="flex justify-center mb-8">
+          <div className="flex justify-center items-center mb-8 min-h-[calc(100vh-280px)]">
             <MovieWizardCard
               movie={currentMovie}
               onRate={handleRate}
