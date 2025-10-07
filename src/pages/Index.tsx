@@ -413,13 +413,6 @@ const Index = () => {
               : `Discover and rate ${stats?.totalMovies.toLocaleString() || 0} movies${stats?.yearRange ? ` (${stats.yearRange.earliest} - ${stats.yearRange.latest})` : ''}. Sign in to start rating!`
             }
           </p>
-          {stats?.lastSync && <div className="flex justify-center">
-              <Badge variant="outline" className="text-sm">
-                <Calendar className="h-3.5 w-3.5 mr-1.5" />
-                Last sync: {format(new Date(stats.lastSync.created_at), "PPp")} 
-                ({stats.lastSync.imported + stats.lastSync.updated} movies)
-              </Badge>
-            </div>}
           {!user && <div className="flex justify-center mt-4">
               <Button size="lg" onClick={() => navigate("/auth")}>
                 <LogIn className="h-4 w-4 mr-2" />
@@ -430,48 +423,6 @@ const Index = () => {
       </div>
 
       <div className="container mx-auto max-w-7xl px-4 py-8">
-        {/* Stats Overview */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
-          <Link to="/movies">
-            <Card className="cursor-pointer transition-all hover:shadow-lg hover:scale-105">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Movies</CardTitle>
-                <Film className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats?.totalMovies.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  Browse collection <ArrowRight className="h-3 w-3" />
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                {user ? "Your Ratings" : "Average Rating"}
-              </CardTitle>
-              <Star className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {user && stats?.userRatingsCount > 0 ? <>
-                  <div className="text-2xl font-bold">{stats.userAvgRating.toFixed(1)}/10</div>
-                  <p className="text-xs text-muted-foreground">
-                    {stats.userRatingsCount} {stats.userRatingsCount === 1 ? 'rating' : 'ratings'}
-                  </p>
-                </> : user ? <>
-                  <div className="text-2xl font-bold">0/10</div>
-                  <p className="text-xs text-muted-foreground">No ratings yet</p>
-                </> : <>
-                  <div className="text-2xl font-bold">{stats?.avgMovieRating.toFixed(1)}/10</div>
-                  <p className="text-xs text-muted-foreground">Across all movies</p>
-                </>}
-            </CardContent>
-          </Card>
-
-          <LastSyncCard lastSync={stats?.lastSync || null} isAdmin={isAdmin} />
-        </div>
 
         {/* Wizard CTA for users with < 5 ratings */}
         {stats && stats.userRatingsCount < 5 && (
@@ -501,21 +452,9 @@ const Index = () => {
           </Card>
         )}
 
-        {/* Quick Actions */}
-        <div className="flex flex-wrap gap-3 mb-8">
-          <Button onClick={() => navigate("/movies")} variant="outline">
-            <Film className="h-4 w-4 mr-2" />
-            Browse Movies
-          </Button>
-          {isAdmin && <Button onClick={() => navigate("/account")} variant="outline">
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Sync Data
-            </Button>}
-        </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Recommendations for all users */}
-          <Card className="md:col-span-2">
+        {/* Recommendations for all users */}
+        <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 {user ? <>
@@ -582,55 +521,7 @@ const Index = () => {
                   )}
                 </>}
             </CardContent>
-          </Card>
-
-          {/* Top Genres */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Top Genres
-              </CardTitle>
-              <CardDescription>Most popular genres in your database</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {stats?.topGenres.length === 0 ? <p className="text-sm text-muted-foreground">No genres available yet</p> : <div className="space-y-3">
-                  {stats?.topGenres.map((item, index) => <Link key={item.genre} to={`/movies?genre=${encodeURIComponent(item.genre)}`} className="flex items-center justify-between hover:bg-accent/50 p-2 -mx-2 rounded-md transition-colors">
-                      <div className="flex items-center gap-3">
-                        <Badge variant="secondary">{index + 1}</Badge>
-                        <span className="font-medium">{item.genre}</span>
-                      </div>
-                      <Badge variant="outline">{item.count} movies</Badge>
-                    </Link>)}
-                </div>}
-            </CardContent>
-          </Card>
-
-          {/* Top Rated Movies */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Star className="h-5 w-5" />
-                Top Rated Movies
-              </CardTitle>
-              <CardDescription>Highest rated films in your collection</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {stats?.recentMovies.length === 0 ? <p className="text-sm text-muted-foreground">No movies available yet</p> : <div className="space-y-3">
-                  {stats?.recentMovies.map(movie => <div key={movie.title} className="flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{movie.title}</p>
-                        <p className="text-xs text-muted-foreground">{movie.year}</p>
-                      </div>
-                      <Badge className="ml-2">
-                        <Star className="h-3 w-3 mr-1" />
-                        {movie.rating?.toFixed(1)}
-                      </Badge>
-                    </div>)}
-                </div>}
-            </CardContent>
-          </Card>
-        </div>
+        </Card>
       </div>
     </div>;
 };
