@@ -10,10 +10,10 @@ import { UserManagement } from "./Account/UserManagement";
 import { ActivityLogs } from "./Account/ActivityLogs";
 import { RoleManagement } from "./Account/RoleManagement";
 import { SubscriptionManagement } from "./Account/SubscriptionManagement";
-import { useEffectiveAuth } from "@/contexts/DevModeContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Account = () => {
-  const { isAdmin } = useEffectiveAuth();
+  const { isAdmin } = useAuth();
   const loading = false;
   const navigate = useNavigate();
 

@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -39,10 +39,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           
           // Update last login on sign in
           if (event === 'SIGNED_IN') {
-            await supabase
-              .from('profiles')
-              .update({ last_login_at: new Date().toISOString() })
-              .eq('user_id', session.user.id);
+            setTimeout(() => {
+              supabase
+                .from('profiles')
+                .update({ last_login_at: new Date().toISOString() })
+                .eq('user_id', session.user.id);
+            }, 0);
           }
         } else {
           setIsAdmin(false);
@@ -81,7 +83,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .from('profiles')
         .select('subscription_tier')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
       
       setSubscriptionTier(profile?.subscription_tier as 'free' | 'pro' || 'free');
     } catch (error) {
@@ -92,17 +94,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     
-    if (!error && session?.user) {
+    if (!error && data?.user) {
       // Update last login
       await supabase
         .from('profiles')
         .update({ last_login_at: new Date().toISOString() })
-        .eq('user_id', session.user.id);
+        .eq('user_id', data.user.id);
     }
     
     return { error };
