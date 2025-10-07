@@ -8,6 +8,8 @@ import { SyncFilterPanel } from "@/components/SyncFilterPanel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface SyncResult {
   totalFound: number;
@@ -16,6 +18,7 @@ interface SyncResult {
   removed: number;
   skipped: number;
   failed: number;
+  enriched?: number;
   logs: string[];
   error?: string;
   pagesProcessed?: number;
@@ -70,6 +73,7 @@ export const SyncMovies = ({
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   const [currentSyncId, setCurrentSyncId] = useState<string | null>(null);
+  const [enrichWithOMDb, setEnrichWithOMDb] = useState(false);
 
   // Auto-start sync if requested
   useEffect(() => {
@@ -127,6 +131,7 @@ export const SyncMovies = ({
           minVoteCount,
           minPopularity,
           syncMode: true,
+          enrichWithOMDb,
         }
       });
 
@@ -208,7 +213,22 @@ export const SyncMovies = ({
           onMinPopularityChange={onMinPopularityChange}
         />
 
-        <div className="flex gap-3 pt-4 border-t border-border">
+        <div className="flex items-center space-x-2 pt-4 border-t">
+          <Switch
+            id="enrich-omdb"
+            checked={enrichWithOMDb}
+            onCheckedChange={setEnrichWithOMDb}
+            disabled={isSyncing}
+          />
+          <Label htmlFor="enrich-omdb" className="cursor-pointer">
+            <div className="font-medium">Enrich with IMDb data</div>
+            <div className="text-xs text-muted-foreground">
+              Adds IMDb ratings, Metascores, awards, and box office data (limited to 50 movies per sync)
+            </div>
+          </Label>
+        </div>
+
+        <div className="flex gap-3 pt-4">
           {isSyncing ? (
             <Button
               onClick={handleStopSync}

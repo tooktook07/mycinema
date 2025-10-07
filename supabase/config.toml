@@ -8,3 +8,6 @@ verify_jwt = true
 
 [functions.cancel-sync]
 verify_jwt = true
+
+[functions.enrich-with-omdb]
+verify_jwt = true

@@ -10,6 +10,7 @@ import { UserManagement } from "./Account/UserManagement";
 import { ActivityLogs } from "./Account/ActivityLogs";
 import { RoleManagement } from "./Account/RoleManagement";
 import { SubscriptionManagement } from "./Account/SubscriptionManagement";
+import { OMDbEnrichment } from "./Account/OMDbEnrichment";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Account = () => {
@@ -138,8 +139,9 @@ const Account = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="sync-movies">Sync Movies</TabsTrigger>
+            <TabsTrigger value="omdb-enrichment">OMDb Enrichment</TabsTrigger>
             <TabsTrigger value="sync-history">Sync History</TabsTrigger>
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
@@ -168,6 +170,10 @@ const Account = () => {
               minPopularity={minPopularity}
               onMinPopularityChange={setMinPopularity}
             />
+          </TabsContent>
+
+          <TabsContent value="omdb-enrichment">
+            <OMDbEnrichment />
           </TabsContent>
 
           <TabsContent value="sync-history">

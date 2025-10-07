@@ -14,8 +14,9 @@ serve(async (req) => {
   let syncId: string | undefined;
 
   try {
-    const { minRating = 0, maxRating = 10, yearRange = [2025, 2025], genres, excludedGenres, statuses, languages, minVoteCount = 100, minPopularity = 0, syncMode = false, maxPages = 10 } = await req.json();
+    const { minRating = 0, maxRating = 10, yearRange = [2025, 2025], genres, excludedGenres, statuses, languages, minVoteCount = 100, minPopularity = 0, syncMode = false, maxPages = 10, enrichWithOMDb = false } = await req.json();
     const TMDB_API_KEY = Deno.env.get("TMDB_API_KEY");
+    const OMDB_API_KEY = Deno.env.get("OMDB_API_KEY");
 
     // Initialize Supabase client with auth
     const authHeader = req.headers.get('Authorization')!;
@@ -93,6 +94,7 @@ serve(async (req) => {
     let removedMovies = 0;
     let skippedMovies = 0;
     let failedMovies = 0;
+    let enrichedMovies = 0;
     let page = 1;
     let totalPages = 1;
     const logs: string[] = [];
@@ -327,7 +329,7 @@ serve(async (req) => {
           // Track this IMDB ID as processed
           processedImdbIds.add(actualImdbId);
 
-          const movieData = {
+          const movieData: any = {
             imdb_id: actualImdbId,
             title: details.title,
             year: parseInt(details.release_date?.split("-")[0] || yearRange[0].toString()),
@@ -353,7 +355,43 @@ serve(async (req) => {
             revenue: details.revenue || null,
             watch_providers: details['watch/providers'] || null,
             translations: details.translations || null,
+            data_sources: { tmdb: true, omdb: false },
           };
+
+          // Enrich with OMDb data if enabled
+          if (enrichWithOMDb && OMDB_API_KEY && actualImdbId.startsWith('tt')) {
+            try {
+              // Check if we should fetch OMDb data (not fetched recently)
+              const shouldFetch = !existing || !existing.last_omdb_fetch || 
+                new Date().getTime() - new Date(existing.last_omdb_fetch).getTime() > 30 * 24 * 60 * 60 * 1000;
+
+              if (shouldFetch && enrichedMovies < 50) { // Limit enrichment per sync
+                const omdbResponse = await fetch(
+                  `https://www.omdbapi.com/?i=${actualImdbId}&apikey=${OMDB_API_KEY}&plot=full`
+                );
+
+                if (omdbResponse.ok) {
+                  const omdbData = await omdbResponse.json();
+                  if (omdbData.Response !== "False") {
+                    movieData.imdb_rating = omdbData.imdbRating !== "N/A" ? parseFloat(omdbData.imdbRating) : null;
+                    movieData.imdb_votes = omdbData.imdbVotes !== "N/A" ? parseInt(omdbData.imdbVotes.replace(/,/g, '')) : null;
+                    movieData.metascore = omdbData.Metascore !== "N/A" ? parseInt(omdbData.Metascore) : null;
+                    movieData.box_office = omdbData.BoxOffice !== "N/A" ? omdbData.BoxOffice : null;
+                    movieData.awards = omdbData.Awards !== "N/A" ? omdbData.Awards : null;
+                    movieData.data_sources = { tmdb: true, omdb: true };
+                    movieData.last_omdb_fetch = new Date().toISOString();
+                    enrichedMovies++;
+                    logMsg(`✨ Enriched with OMDb: "${details.title}"`);
+                  }
+                }
+                // Small delay to respect rate limits
+                await new Promise(resolve => setTimeout(resolve, 100));
+              }
+            } catch (error: any) {
+              // Log but don't fail - OMDb is optional enrichment
+              logMsg(`⚠️ OMDb enrichment failed for "${details.title}": ${error.message}`);
+            }
+          }
 
           if (existing && syncMode) {
             // Update existing movie using its database ID
@@ -463,7 +501,7 @@ serve(async (req) => {
       }
     }
 
-    const completionMsg = `${syncMode ? 'Sync' : 'Import'} complete: ${importedMovies} imported, ${updatedMovies} updated, ${removedMovies} removed, ${skippedMovies} skipped, ${failedMovies} failed. Processed ${page - 1} pages out of ${totalPages} total (found ${totalMovies} total movies).`;
+    const completionMsg = `${syncMode ? 'Sync' : 'Import'} complete: ${importedMovies} imported, ${updatedMovies} updated, ${removedMovies} removed, ${skippedMovies} skipped, ${failedMovies} failed${enrichWithOMDb ? `, ${enrichedMovies} enriched with OMDb` : ''}. Processed ${page - 1} pages out of ${totalPages} total (found ${totalMovies} total movies).`;
     logMsg(completionMsg);
     
     if (page - 1 < totalPages) {
@@ -497,13 +535,14 @@ serve(async (req) => {
         removed: removedMovies,
         skipped: skippedMovies,
         failed: failedMovies,
+        enriched: enrichedMovies,
         logs,
         pagesProcessed: page - 1,
         totalPages,
         hasMorePages: page - 1 < totalPages,
         message: syncMode 
-          ? `Sync complete: ${importedMovies} imported, ${updatedMovies} updated, ${removedMovies} removed, ${skippedMovies} skipped, ${failedMovies} failed. Processed ${page - 1}/${totalPages} pages.${page - 1 < totalPages ? ' Run sync again to process more.' : ''}`
-          : `Found ${totalMovies} movies. Imported ${importedMovies}, skipped ${skippedMovies} existing, ${failedMovies} failed. Processed ${page - 1}/${totalPages} pages.`
+          ? `Sync complete: ${importedMovies} imported, ${updatedMovies} updated, ${removedMovies} removed, ${skippedMovies} skipped, ${failedMovies} failed${enrichWithOMDb ? `, ${enrichedMovies} enriched` : ''}. Processed ${page - 1}/${totalPages} pages.${page - 1 < totalPages ? ' Run sync again to process more.' : ''}`
+          : `Found ${totalMovies} movies. Imported ${importedMovies}, skipped ${skippedMovies} existing, ${failedMovies} failed${enrichWithOMDb ? `, ${enrichedMovies} enriched` : ''}. Processed ${page - 1}/${totalPages} pages.`
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

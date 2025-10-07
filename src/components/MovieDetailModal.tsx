@@ -162,12 +162,42 @@ export const MovieDetailModal = () => {
 
                     {/* Stats and Action Buttons */}
                     <div className="flex flex-wrap items-center justify-between gap-4">
-                      <div className="flex items-center gap-4">
+                      <div className="flex flex-wrap items-center gap-4">
+                        {/* TMDB Rating */}
                         <div className="flex items-center gap-2">
-                          <Star className="h-6 w-6 fill-primary text-primary" />
-                          <span className="text-2xl font-bold">{movie.rating}/10</span>
+                          <Star className="h-6 w-6 fill-yellow-500 text-yellow-500" />
+                          <div>
+                            <span className="text-2xl font-bold">{movie.rating}/10</span>
+                            <div className="text-xs text-muted-foreground">TMDB</div>
+                          </div>
                         </div>
-                        {movie.vote_count && <div className="flex items-center gap-2 text-muted-foreground">
+                        
+                        {/* IMDB Rating (if available) */}
+                        {movie.imdb_rating && (
+                          <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-lg">
+                            <div>
+                              <span className="text-2xl font-bold">{movie.imdb_rating}/10</span>
+                              <div className="text-xs text-muted-foreground">IMDb</div>
+                            </div>
+                            {movie.imdb_votes && (
+                              <div className="text-xs text-muted-foreground">
+                                {movie.imdb_votes.toLocaleString()} votes
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Metascore (if available) */}
+                        {movie.metascore && (
+                          <div className="flex items-center gap-2 px-4 py-2 bg-green-500/10 rounded-lg">
+                            <div>
+                              <span className="text-2xl font-bold text-green-600">{movie.metascore}</span>
+                              <div className="text-xs text-muted-foreground">Metascore</div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {!movie.imdb_rating && movie.vote_count && <div className="flex items-center gap-2 text-muted-foreground">
                             <Users className="h-5 w-5" />
                             <span>{movie.vote_count.toLocaleString()} votes</span>
                           </div>}
@@ -202,8 +232,18 @@ export const MovieDetailModal = () => {
             {/* Content Section */}
             <ScrollArea className="max-h-[400px] p-8 pt-6">
               <div className="space-y-6">
+                {/* Awards Section */}
+                {movie.awards && movie.awards !== 'N/A' && (
+                  <div className="rounded-lg border p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10">
+                    <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3 flex items-center gap-2">
+                      🏆 Awards & Recognition
+                    </h4>
+                    <p className="text-sm">{movie.awards}</p>
+                  </div>
+                )}
+
                 {/* Financial Info */}
-                {(movie.budget || movie.revenue) && <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {(movie.budget || movie.revenue || movie.box_office) && <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {movie.budget && <div className="rounded-lg border p-4">
                         <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-2">
                           <DollarSign className="h-4 w-4" />
@@ -217,6 +257,13 @@ export const MovieDetailModal = () => {
                           Revenue
                         </h4>
                         <p className="text-2xl font-bold">{formatCurrency(movie.revenue)}</p>
+                      </div>}
+                    {movie.box_office && <div className="rounded-lg border p-4">
+                        <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-2">
+                          <DollarSign className="h-4 w-4" />
+                          Box Office
+                        </h4>
+                        <p className="text-2xl font-bold">{movie.box_office}</p>
                       </div>}
                   </div>}
 

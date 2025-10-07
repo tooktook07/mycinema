@@ -110,10 +110,10 @@ export async function getNextRecommendation(
         }
       });
 
-      // Fetch candidate movies
+      // Fetch candidate movies (prefer movies with IMDB data)
       let query = supabase
         .from('movies')
-        .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords')
+        .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes')
         .gte('rating', CANDIDATE_RATING_THRESHOLD)
         .not('rating', 'is', null);
 
@@ -130,6 +130,20 @@ export async function getNextRecommendation(
       // Calculate similarity scores
       const moviesWithScores = candidateMovies.map(movie => {
         let score = 0;
+        
+        // Use IMDB rating if available, otherwise TMDB rating
+        const effectiveRating = movie.imdb_rating || movie.rating;
+        const effectiveVotes = movie.imdb_votes || movie.vote_count;
+        
+        // Boost score for IMDB-verified movies
+        if (movie.imdb_rating) {
+          score += 0.5; // Bonus for having IMDB data
+        }
+        
+        // Hidden gems detection (high IMDB but low TMDB votes)
+        if (movie.imdb_rating >= 7.5 && (movie.vote_count || 0) < 5000) {
+          score += 2.0; // Strong boost for hidden gems
+        }
         
         // Genre similarity
         const genreMatches = (movie.genres || []).filter((g: string) => genreCounts[g]).length;
@@ -160,8 +174,8 @@ export async function getNextRecommendation(
           score += WEIGHTS.LANGUAGE;
         }
         
-        // Slight boost for popularity
-        const popularityBoost = Math.min((movie.vote_count || 0) / 10000, 0.1);
+        // Slight boost for popularity (use IMDB votes if available)
+        const popularityBoost = Math.min((effectiveVotes || 0) / 10000, 0.1);
         score += popularityBoost;
         
         return { ...movie, similarityScore: score };
@@ -204,10 +218,13 @@ export async function getNextRecommendation(
 async function getFallbackRecommendation(excludeIds: string[]): Promise<RecommendationMovie | null> {
   let query = supabase
     .from('movies')
-    .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords')
+    .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes')
     .gte('rating', 7.0)
-    .not('rating', 'is', null)
-    .order('vote_count', { ascending: false });
+    .not('rating', 'is', null);
+
+  // Prefer IMDB-verified movies for new users
+  query = query.order('imdb_rating', { ascending: false, nullsFirst: false });
+  query = query.order('vote_count', { ascending: false });
 
   if (excludeIds.length > 0) {
     query = query.not('id', 'in', `(${excludeIds.join(',')})`);

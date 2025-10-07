@@ -17,13 +17,20 @@ export type Database = {
       movies: {
         Row: {
           actors: string | null
+          awards: string | null
+          box_office: string | null
           budget: number | null
           created_at: string | null
+          data_sources: Json | null
           director: string | null
           genres: string[] | null
           id: string
           imdb_id: string
+          imdb_rating: number | null
+          imdb_votes: number | null
           keywords: string[] | null
+          last_omdb_fetch: string | null
+          metascore: number | null
           original_language: string | null
           plot: string | null
           popularity: number | null
@@ -47,13 +54,20 @@ export type Database = {
         }
         Insert: {
           actors?: string | null
+          awards?: string | null
+          box_office?: string | null
           budget?: number | null
           created_at?: string | null
+          data_sources?: Json | null
           director?: string | null
           genres?: string[] | null
           id?: string
           imdb_id: string
+          imdb_rating?: number | null
+          imdb_votes?: number | null
           keywords?: string[] | null
+          last_omdb_fetch?: string | null
+          metascore?: number | null
           original_language?: string | null
           plot?: string | null
           popularity?: number | null
@@ -77,13 +91,20 @@ export type Database = {
         }
         Update: {
           actors?: string | null
+          awards?: string | null
+          box_office?: string | null
           budget?: number | null
           created_at?: string | null
+          data_sources?: Json | null
           director?: string | null
           genres?: string[] | null
           id?: string
           imdb_id?: string
+          imdb_rating?: number | null
+          imdb_votes?: number | null
           keywords?: string[] | null
+          last_omdb_fetch?: string | null
+          metascore?: number | null
           original_language?: string | null
           plot?: string | null
           popularity?: number | null
@@ -104,6 +125,30 @@ export type Database = {
           watch_providers?: Json | null
           writing?: string | null
           year?: number
+        }
+        Relationships: []
+      }
+      omdb_api_usage: {
+        Row: {
+          created_at: string | null
+          date: string
+          id: string
+          requests_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          id?: string
+          requests_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          requests_count?: number | null
+          updated_at?: string | null
         }
         Relationships: []
       }

@@ -22,4 +22,12 @@ export interface Movie {
   revenue?: number;
   watchProviders?: any;
   translations?: any;
+  // OMDb enrichment fields
+  imdbRating?: number;
+  imdbVotes?: number;
+  metascore?: number;
+  boxOffice?: string;
+  awards?: string;
+  dataSources?: { tmdb: boolean; omdb: boolean };
+  lastOmdbFetch?: string;
 }
