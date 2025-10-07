@@ -10,28 +10,31 @@ import { Star, ExternalLink, Search, Users, Globe, Info, DollarSign, Calendar, F
 import { getOptimizedImageProps } from "@/lib/imageUtils";
 import { MovieRating } from "@/components/MovieRating";
 import { MovieWatchlist } from "@/components/MovieWatchlist";
-
 export const MovieDetailModal = () => {
-  const { id } = useParams<{ id: string }>();
+  const {
+    id
+  } = useParams<{
+    id: string;
+  }>();
   const navigate = useNavigate();
   const location = useLocation();
-
-  const { data: movie, isLoading, error } = useQuery({
+  const {
+    data: movie,
+    isLoading,
+    error
+  } = useQuery({
     queryKey: ['movie', id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('movies')
-        .select('*')
-        .eq('id', id)
-        .maybeSingle();
-
+      const {
+        data,
+        error
+      } = await supabase.from('movies').select('*').eq('id', id).maybeSingle();
       if (error) throw error;
       if (!data) throw new Error('Movie not found');
       return data;
     },
-    enabled: !!id,
+    enabled: !!id
   });
-
   const handleClose = () => {
     if (location.state?.backgroundLocation) {
       navigate(-1);
@@ -39,21 +42,22 @@ export const MovieDetailModal = () => {
       navigate('/');
     }
   };
-
   const imageProps = movie ? getOptimizedImageProps(movie.poster) : null;
   const hasValidImdbId = movie?.imdb_id && movie.imdb_id.startsWith('tt');
   const imdbUrl = hasValidImdbId ? `https://www.imdb.com/title/${movie.imdb_id}/` : '';
   const googleSearchUrl = movie ? `https://www.google.com/search?q=${encodeURIComponent(movie.title)}+${movie.year}` : '';
-
   const formatCurrency = (amount: number | null | undefined) => {
     if (!amount) return 'N/A';
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount);
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0
+    }).format(amount);
   };
 
   // Navigation handlers for internal linking
   const handleFieldClick = (filterType: 'year' | 'genre' | 'language' | 'search', value: string | number) => {
     const params = new URLSearchParams();
-    
     if (filterType === 'year' && typeof value === 'number') {
       params.set('year', `${value}-${value}`);
     } else if (filterType === 'genre' && typeof value === 'string') {
@@ -63,10 +67,10 @@ export const MovieDetailModal = () => {
     } else if (filterType === 'search' && typeof value === 'string') {
       params.set('search', value);
     }
-    
+
     // Navigate to movies page with filter params
     navigate(`/movies?${params.toString()}`);
-    
+
     // Close modal after a short delay
     setTimeout(() => {
       handleClose();
@@ -76,110 +80,71 @@ export const MovieDetailModal = () => {
   // Parse watch providers
   const parseWatchProviders = (providers: any) => {
     if (!providers) return null;
-    
+
     // Check if providers has a 'results' key (TMDB structure)
     const regions = providers.results || providers;
-    
+
     // Try to get US region first, or first available region
     const region = regions['US'] || regions['GB'] || Object.values(regions)[0];
     if (!region || typeof region !== 'object') return null;
-    
     return {
       flatrate: (region as any).flatrate || [],
       rent: (region as any).rent || [],
       buy: (region as any).buy || []
     };
   };
-
   const watchProviders = movie ? parseWatchProviders(movie.watch_providers) : null;
-
-  return (
-    <Dialog open={true} onOpenChange={handleClose}>
+  return <Dialog open={true} onOpenChange={handleClose}>
       <DialogContent className="max-w-6xl max-h-[95vh] p-0 gap-0 overflow-hidden">
-        {isLoading ? (
-          <div className="p-6 space-y-4">
+        {isLoading ? <div className="p-6 space-y-4">
             <Skeleton className="h-8 w-3/4" />
             <Skeleton className="h-4 w-1/2" />
             <Skeleton className="h-64 w-full" />
-          </div>
-        ) : error ? (
-          <div className="p-6">
+          </div> : error ? <div className="p-6">
             <h2 className="text-2xl font-bold text-destructive mb-2">Movie Not Found</h2>
             <p className="text-muted-foreground">The movie you're looking for doesn't exist or has been removed.</p>
-          </div>
-        ) : movie ? (
-          <>
+          </div> : movie ? <>
             {/* Hero Section with Poster */}
             <div className="relative overflow-hidden bg-gradient-to-b from-background/50 to-background">
-              {imageProps && (
-                <img
-                  {...imageProps}
-                  alt={movie.title}
-                  className="absolute inset-0 w-full h-full object-cover opacity-30 blur-sm"
-                />
-              )}
+              {imageProps && <img {...imageProps} alt={movie.title} className="absolute inset-0 w-full h-full object-cover opacity-30 blur-sm" />}
               <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/20" />
               
               <div className="relative p-8">
                 <div className="flex gap-6 items-start">
                   {/* Poster */}
-                  {imageProps && (
-                    <div className="hidden md:block w-48 rounded-lg overflow-hidden shadow-2xl flex-shrink-0">
-                      <img
-                        {...imageProps}
-                        alt={movie.title}
-                        className="w-full h-auto"
-                      />
-                    </div>
-                  )}
+                  {imageProps && <div className="hidden md:block w-48 rounded-lg overflow-hidden shadow-2xl flex-shrink-0">
+                      <img {...imageProps} alt={movie.title} className="w-full h-auto" />
+                    </div>}
                   
                   {/* Title & Quick Info */}
                   <div className="flex-1 space-y-3">
                     <DialogHeader>
                       <DialogTitle className="text-4xl font-bold">{movie.title}</DialogTitle>
-                      {movie.tagline && (
-                        <p className="text-lg text-muted-foreground italic">"{movie.tagline}"</p>
-                      )}
+                      {movie.tagline && <p className="text-lg text-muted-foreground italic">"{movie.tagline}"</p>}
                     </DialogHeader>
 
                     {/* Plot - Right after tagline */}
-                    {movie.plot && (
-                      <div className="p-4 bg-background/50 backdrop-blur-sm rounded-lg border border-border/50">
-                        <h4 className="text-sm font-semibold mb-2">Plot</h4>
+                    {movie.plot && <div className="p-4 bg-background/50 backdrop-blur-sm rounded-lg border border-border/50">
+                        
                         <p className="text-sm leading-relaxed text-muted-foreground">{movie.plot}</p>
-                      </div>
-                    )}
+                      </div>}
                     
                     <div className="flex flex-wrap items-center gap-3">
-                      <Badge 
-                        variant="secondary" 
-                        className="text-sm cursor-pointer hover:scale-105 transition-transform"
-                        onClick={() => handleFieldClick('year', movie.year)}
-                      >
+                      <Badge variant="secondary" className="text-sm cursor-pointer hover:scale-105 transition-transform" onClick={() => handleFieldClick('year', movie.year)}>
                         <Calendar className="h-3 w-3 mr-1" />
                         {movie.year}
                       </Badge>
-                      {movie.runtime && (
-                        <Badge variant="secondary" className="text-sm">
+                      {movie.runtime && <Badge variant="secondary" className="text-sm">
                           <Film className="h-3 w-3 mr-1" />
                           {movie.runtime}
-                        </Badge>
-                      )}
-                      {movie.original_language && (
-                        <Badge 
-                          variant="secondary" 
-                          className="text-sm cursor-pointer hover:scale-105 transition-transform"
-                          onClick={() => handleFieldClick('language', movie.original_language)}
-                        >
+                        </Badge>}
+                      {movie.original_language && <Badge variant="secondary" className="text-sm cursor-pointer hover:scale-105 transition-transform" onClick={() => handleFieldClick('language', movie.original_language)}>
                           <Globe className="h-3 w-3 mr-1" />
                           {movie.original_language.toUpperCase()}
-                        </Badge>
-                      )}
-                      {movie.status && (
-                        <Badge variant="outline" className="text-sm">
+                        </Badge>}
+                      {movie.status && <Badge variant="outline" className="text-sm">
                           {movie.status}
-                        </Badge>
-                      )}
+                        </Badge>}
                     </div>
 
                     {/* Stats and Action Buttons */}
@@ -189,29 +154,23 @@ export const MovieDetailModal = () => {
                           <Star className="h-6 w-6 fill-primary text-primary" />
                           <span className="text-2xl font-bold">{movie.rating}/10</span>
                         </div>
-                        {movie.vote_count && (
-                          <div className="flex items-center gap-2 text-muted-foreground">
+                        {movie.vote_count && <div className="flex items-center gap-2 text-muted-foreground">
                             <Users className="h-5 w-5" />
                             <span>{movie.vote_count.toLocaleString()} votes</span>
-                          </div>
-                        )}
-                        {movie.popularity && (
-                          <Badge variant="outline">
+                          </div>}
+                        {movie.popularity && <Badge variant="outline">
                             Popularity: {Math.round(movie.popularity)}
-                          </Badge>
-                        )}
+                          </Badge>}
                       </div>
 
                       {/* Action Buttons */}
                       <div className="flex gap-2">
-                        {hasValidImdbId && (
-                          <Button variant="outline" size="sm" asChild>
+                        {hasValidImdbId && <Button variant="outline" size="sm" asChild>
                             <a href={imdbUrl} target="_blank" rel="noopener noreferrer">
                               <ExternalLink className="h-3 w-3 mr-1" />
                               IMDB
                             </a>
-                          </Button>
-                        )}
+                          </Button>}
                         <Button variant="outline" size="sm" asChild>
                           <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer nofollow">
                             <Search className="h-3 w-3 mr-1" />
@@ -231,288 +190,163 @@ export const MovieDetailModal = () => {
             <ScrollArea className="max-h-[400px] p-8 pt-6">
               <div className="space-y-6">
                 {/* Financial Info */}
-                {(movie.budget || movie.revenue) && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {movie.budget && (
-                      <div className="rounded-lg border p-4">
+                {(movie.budget || movie.revenue) && <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {movie.budget && <div className="rounded-lg border p-4">
                         <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-2">
                           <DollarSign className="h-4 w-4" />
                           Budget
                         </h4>
                         <p className="text-2xl font-bold">{formatCurrency(movie.budget)}</p>
-                      </div>
-                    )}
-                    {movie.revenue && (
-                      <div className="rounded-lg border p-4">
+                      </div>}
+                    {movie.revenue && <div className="rounded-lg border p-4">
                         <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-2">
                           <DollarSign className="h-4 w-4" />
                           Revenue
                         </h4>
                         <p className="text-2xl font-bold">{formatCurrency(movie.revenue)}</p>
-                      </div>
-                    )}
-                  </div>
-                )}
+                      </div>}
+                  </div>}
 
                 {/* Crew Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {movie.director && (
-                    <div className="rounded-lg border p-4">
+                  {movie.director && <div className="rounded-lg border p-4">
                       <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Director</h4>
                       <div className="flex flex-wrap gap-1.5">
-                        {movie.director.split(',').map(d => (
-                          <Badge 
-                            key={d.trim()} 
-                            variant="secondary"
-                            className="cursor-pointer hover:scale-105 transition-transform"
-                            onClick={() => handleFieldClick('search', d.trim())}
-                          >
+                        {movie.director.split(',').map(d => <Badge key={d.trim()} variant="secondary" className="cursor-pointer hover:scale-105 transition-transform" onClick={() => handleFieldClick('search', d.trim())}>
                             {d.trim()}
-                          </Badge>
-                        ))}
+                          </Badge>)}
                       </div>
-                    </div>
-                  )}
+                    </div>}
 
-                  {movie.writing && (
-                    <div className="rounded-lg border p-4">
+                  {movie.writing && <div className="rounded-lg border p-4">
                       <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Writers</h4>
                       <div className="flex flex-wrap gap-1.5">
-                        {movie.writing.split(',').map(writer => (
-                          <Badge 
-                            key={writer.trim()} 
-                            variant="secondary"
-                            className="cursor-pointer hover:scale-105 transition-transform"
-                            onClick={() => handleFieldClick('search', writer.trim())}
-                          >
+                        {movie.writing.split(',').map(writer => <Badge key={writer.trim()} variant="secondary" className="cursor-pointer hover:scale-105 transition-transform" onClick={() => handleFieldClick('search', writer.trim())}>
                             {writer.trim()}
-                          </Badge>
-                        ))}
+                          </Badge>)}
                       </div>
-                    </div>
-                  )}
+                    </div>}
                 </div>
 
                 {/* Cast */}
-                {movie.actors && (
-                  <div className="rounded-lg border p-4">
+                {movie.actors && <div className="rounded-lg border p-4">
                     <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Cast</h4>
                     <div className="flex flex-wrap gap-1.5">
-                      {movie.actors.split(',').slice(0, 15).map(actor => (
-                        <Badge 
-                          key={actor.trim()} 
-                          variant="secondary"
-                          className="cursor-pointer hover:scale-105 transition-transform"
-                          onClick={() => handleFieldClick('search', actor.trim())}
-                        >
+                      {movie.actors.split(',').slice(0, 15).map(actor => <Badge key={actor.trim()} variant="secondary" className="cursor-pointer hover:scale-105 transition-transform" onClick={() => handleFieldClick('search', actor.trim())}>
                           {actor.trim()}
-                        </Badge>
-                      ))}
+                        </Badge>)}
                     </div>
-                  </div>
-                )}
+                  </div>}
 
                 {/* Sound Department */}
-                {movie.sound && (
-                  <div className="rounded-lg border p-4">
+                {movie.sound && <div className="rounded-lg border p-4">
                     <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Sound Department</h4>
                     <div className="flex flex-wrap gap-1.5">
-                      {movie.sound.split(',').slice(0, 10).map(person => (
-                        <Badge 
-                          key={person.trim()} 
-                          variant="outline"
-                          className="cursor-pointer hover:scale-105 transition-transform"
-                          onClick={() => handleFieldClick('search', person.trim())}
-                        >
+                      {movie.sound.split(',').slice(0, 10).map(person => <Badge key={person.trim()} variant="outline" className="cursor-pointer hover:scale-105 transition-transform" onClick={() => handleFieldClick('search', person.trim())}>
                           {person.trim()}
-                        </Badge>
-                      ))}
+                        </Badge>)}
                     </div>
-                  </div>
-                )}
+                  </div>}
 
                 {/* Genres & Keywords */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {movie.genres && movie.genres.length > 0 && (
-                    <div className="rounded-lg border p-4">
+                  {movie.genres && movie.genres.length > 0 && <div className="rounded-lg border p-4">
                       <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Genres</h4>
                       <div className="flex flex-wrap gap-1.5">
-                        {movie.genres.map(g => (
-                          <Badge 
-                            key={g} 
-                            variant="secondary"
-                            className="cursor-pointer hover:scale-105 transition-transform"
-                            onClick={() => handleFieldClick('genre', g)}
-                          >
+                        {movie.genres.map(g => <Badge key={g} variant="secondary" className="cursor-pointer hover:scale-105 transition-transform" onClick={() => handleFieldClick('genre', g)}>
                             {g}
-                          </Badge>
-                        ))}
+                          </Badge>)}
                       </div>
-                    </div>
-                  )}
+                    </div>}
 
-                  {movie.keywords && movie.keywords.length > 0 && (
-                    <div className="rounded-lg border p-4">
+                  {movie.keywords && movie.keywords.length > 0 && <div className="rounded-lg border p-4">
                       <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Keywords</h4>
                       <div className="flex flex-wrap gap-1.5">
-                        {movie.keywords.map(keyword => (
-                          <Badge 
-                            key={keyword} 
-                            variant="outline" 
-                            className="text-xs cursor-pointer hover:scale-105 transition-transform"
-                            onClick={() => handleFieldClick('search', keyword)}
-                          >
+                        {movie.keywords.map(keyword => <Badge key={keyword} variant="outline" className="text-xs cursor-pointer hover:scale-105 transition-transform" onClick={() => handleFieldClick('search', keyword)}>
                             {keyword}
-                          </Badge>
-                        ))}
+                          </Badge>)}
                       </div>
-                    </div>
-                  )}
+                    </div>}
                 </div>
 
                 {/* Production Companies */}
-                {movie.production_companies && Array.isArray(movie.production_companies) && movie.production_companies.length > 0 && (
-                  <div className="rounded-lg border p-4">
+                {movie.production_companies && Array.isArray(movie.production_companies) && movie.production_companies.length > 0 && <div className="rounded-lg border p-4">
                     <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Production Companies</h4>
                     <div className="flex flex-wrap gap-1.5">
-                      {movie.production_companies.map((company: any, idx: number) => (
-                        <Badge 
-                          key={idx} 
-                          variant="outline"
-                          className="cursor-pointer hover:scale-105 transition-transform"
-                          onClick={() => handleFieldClick('search', company.name || company)}
-                        >
+                      {movie.production_companies.map((company: any, idx: number) => <Badge key={idx} variant="outline" className="cursor-pointer hover:scale-105 transition-transform" onClick={() => handleFieldClick('search', company.name || company)}>
                           {company.name || company}
-                        </Badge>
-                      ))}
+                        </Badge>)}
                     </div>
-                  </div>
-                )}
+                  </div>}
 
                 {/* Production Countries & Languages */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {movie.production_countries && Array.isArray(movie.production_countries) && movie.production_countries.length > 0 && (
-                    <div className="rounded-lg border p-4">
+                  {movie.production_countries && Array.isArray(movie.production_countries) && movie.production_countries.length > 0 && <div className="rounded-lg border p-4">
                       <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Production Countries</h4>
                       <div className="flex flex-wrap gap-1.5">
-                        {movie.production_countries.map((country: any, idx: number) => (
-                          <Badge 
-                            key={idx} 
-                            variant="outline"
-                            className="cursor-pointer hover:scale-105 transition-transform"
-                            onClick={() => handleFieldClick('search', country.name || country)}
-                          >
+                        {movie.production_countries.map((country: any, idx: number) => <Badge key={idx} variant="outline" className="cursor-pointer hover:scale-105 transition-transform" onClick={() => handleFieldClick('search', country.name || country)}>
                             {country.name || country}
-                          </Badge>
-                        ))}
+                          </Badge>)}
                       </div>
-                    </div>
-                  )}
+                    </div>}
 
-                  {movie.spoken_languages && Array.isArray(movie.spoken_languages) && movie.spoken_languages.length > 0 && (
-                    <div className="rounded-lg border p-4">
+                  {movie.spoken_languages && Array.isArray(movie.spoken_languages) && movie.spoken_languages.length > 0 && <div className="rounded-lg border p-4">
                       <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3 flex items-center gap-2">
                         <Languages className="h-4 w-4" />
                         Spoken Languages
                       </h4>
                       <div className="flex flex-wrap gap-1.5">
-                        {movie.spoken_languages.map((lang: any, idx: number) => (
-                          <Badge 
-                            key={idx} 
-                            variant="outline"
-                            className="cursor-pointer hover:scale-105 transition-transform"
-                            onClick={() => lang.iso_639_1 && handleFieldClick('language', lang.iso_639_1)}
-                          >
+                        {movie.spoken_languages.map((lang: any, idx: number) => <Badge key={idx} variant="outline" className="cursor-pointer hover:scale-105 transition-transform" onClick={() => lang.iso_639_1 && handleFieldClick('language', lang.iso_639_1)}>
                             {lang.english_name || lang.name || lang}
-                          </Badge>
-                        ))}
+                          </Badge>)}
                       </div>
-                    </div>
-                  )}
+                    </div>}
                 </div>
 
                 {/* Watch Providers */}
                 <div className="rounded-lg border p-4">
                   <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Where to Watch</h4>
-                  {watchProviders ? (
-                    <div className="space-y-3">
-                      {watchProviders.flatrate && watchProviders.flatrate.length > 0 && (
-                        <div>
+                  {watchProviders ? <div className="space-y-3">
+                      {watchProviders.flatrate && watchProviders.flatrate.length > 0 && <div>
                           <p className="text-xs font-medium text-muted-foreground mb-2">Streaming</p>
                           <div className="flex flex-wrap gap-2">
-                            {watchProviders.flatrate.map((provider: any, index: number) => (
-                              <Badge key={index} variant="secondary" className="gap-2">
-                                {provider.logo_path && (
-                                  <img 
-                                    src={`https://image.tmdb.org/t/p/original${provider.logo_path}`}
-                                    alt={provider.provider_name}
-                                    className="w-4 h-4 rounded"
-                                  />
-                                )}
+                            {watchProviders.flatrate.map((provider: any, index: number) => <Badge key={index} variant="secondary" className="gap-2">
+                                {provider.logo_path && <img src={`https://image.tmdb.org/t/p/original${provider.logo_path}`} alt={provider.provider_name} className="w-4 h-4 rounded" />}
                                 {provider.provider_name}
-                              </Badge>
-                            ))}
+                              </Badge>)}
                           </div>
-                        </div>
-                      )}
-                      {watchProviders.rent && watchProviders.rent.length > 0 && (
-                        <div>
+                        </div>}
+                      {watchProviders.rent && watchProviders.rent.length > 0 && <div>
                           <p className="text-xs font-medium text-muted-foreground mb-2">Rent</p>
                           <div className="flex flex-wrap gap-2">
-                            {watchProviders.rent.map((provider: any, index: number) => (
-                              <Badge key={index} variant="outline" className="gap-2">
-                                {provider.logo_path && (
-                                  <img 
-                                    src={`https://image.tmdb.org/t/p/original${provider.logo_path}`}
-                                    alt={provider.provider_name}
-                                    className="w-4 h-4 rounded"
-                                  />
-                                )}
+                            {watchProviders.rent.map((provider: any, index: number) => <Badge key={index} variant="outline" className="gap-2">
+                                {provider.logo_path && <img src={`https://image.tmdb.org/t/p/original${provider.logo_path}`} alt={provider.provider_name} className="w-4 h-4 rounded" />}
                                 {provider.provider_name}
-                              </Badge>
-                            ))}
+                              </Badge>)}
                           </div>
-                        </div>
-                      )}
-                      {watchProviders.buy && watchProviders.buy.length > 0 && (
-                        <div>
+                        </div>}
+                      {watchProviders.buy && watchProviders.buy.length > 0 && <div>
                           <p className="text-xs font-medium text-muted-foreground mb-2">Buy</p>
                           <div className="flex flex-wrap gap-2">
-                            {watchProviders.buy.map((provider: any, index: number) => (
-                              <Badge key={index} variant="outline" className="gap-2">
-                                {provider.logo_path && (
-                                  <img 
-                                    src={`https://image.tmdb.org/t/p/original${provider.logo_path}`}
-                                    alt={provider.provider_name}
-                                    className="w-4 h-4 rounded"
-                                  />
-                                )}
+                            {watchProviders.buy.map((provider: any, index: number) => <Badge key={index} variant="outline" className="gap-2">
+                                {provider.logo_path && <img src={`https://image.tmdb.org/t/p/original${provider.logo_path}`} alt={provider.provider_name} className="w-4 h-4 rounded" />}
                                 {provider.provider_name}
-                              </Badge>
-                            ))}
+                              </Badge>)}
                           </div>
-                        </div>
-                      )}
+                        </div>}
                       <p className="text-xs text-muted-foreground mt-2">Availability varies by region</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
+                    </div> : <div className="space-y-2">
                       <p className="text-sm text-muted-foreground">No streaming information available.</p>
-                      {hasValidImdbId && (
-                        <Button variant="outline" size="sm" asChild>
+                      {hasValidImdbId && <Button variant="outline" size="sm" asChild>
                           <a href={imdbUrl} target="_blank" rel="noopener noreferrer">
                             Check IMDB for Availability
                           </a>
-                        </Button>
-                      )}
-                    </div>
-                  )}
+                        </Button>}
+                    </div>}
                 </div>
               </div>
             </ScrollArea>
-          </>
-        ) : null}
+          </> : null}
       </DialogContent>
-    </Dialog>
-  );
+    </Dialog>;
 };
