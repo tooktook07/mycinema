@@ -32,10 +32,11 @@ export const MovieDetailModal = () => {
   });
 
   const handleClose = () => {
-    if (location.state?.backgroundLocation) {
-      navigate(-1);
+    const backgroundLocation = location.state?.backgroundLocation;
+    if (backgroundLocation) {
+      navigate(backgroundLocation.pathname + backgroundLocation.search);
     } else {
-      navigate('/');
+      navigate('/movies');
     }
   };
 
