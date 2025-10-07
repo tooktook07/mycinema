@@ -110,7 +110,7 @@ export const MovieWizardCard = ({ movie, onRate, onSkip, totalRated, isProcessin
 
           {/* Rating Buttons - Fixed at Bottom */}
           <div className="border-t p-4 bg-background">
-            <div className="space-y-3">
+            <div className="space-y-3 max-w-2xl mx-auto">
               <div className="grid grid-cols-3 gap-2">
                 <Button
                   variant="outline"
