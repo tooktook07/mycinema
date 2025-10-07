@@ -124,8 +124,7 @@ export const MovieDetailModal = () => {
                     </DialogHeader>
 
                     {/* Plot - Right after tagline */}
-                    {movie.plot && <div className="p-4 bg-background/50 backdrop-blur-sm rounded-lg border border-border/50">
-                        
+                    {movie.plot && <div className="mb-2">
                         <p className="text-sm leading-relaxed text-muted-foreground">{movie.plot}</p>
                       </div>}
                     
