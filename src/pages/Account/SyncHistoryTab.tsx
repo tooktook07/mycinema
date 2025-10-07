@@ -14,6 +14,7 @@ interface SyncHistoryRecord {
   created_at: string;
   completed_at: string | null;
   sync_mode: boolean;
+  sync_type: string;
   filters: any;
   total_found: number;
   imported: number;
@@ -168,6 +169,30 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
     return `${seconds}s`;
   };
 
+  const getSyncTypeDisplay = (syncType: string) => {
+    switch(syncType) {
+      case 'omdb_enrichment':
+        return {
+          emoji: '✨',
+          label: 'OMDb Enrichment',
+          description: 'Enriching movies with OMDb data'
+        };
+      case 'tmdb_sync':
+        return {
+          emoji: '🔄',
+          label: 'TMDB Sync',
+          description: 'Syncing with TMDB database'
+        };
+      case 'tmdb_import':
+      default:
+        return {
+          emoji: '📥',
+          label: 'TMDB Import',
+          description: 'Importing movies from TMDB'
+        };
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -216,7 +241,7 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <h3 className="text-base font-medium">
-                    {sync.sync_mode ? "🔄 Sync" : "📥 Import"}
+                    {getSyncTypeDisplay(sync.sync_type).emoji} {getSyncTypeDisplay(sync.sync_type).label}
                   </h3>
                   {sync.completed_at && (
                     <Badge variant="outline" className="text-xs">
@@ -280,32 +305,53 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-4 mb-4">
-              <div>
-                <div className="text-lg font-semibold">{sync.total_found}</div>
-                <div className="text-xs text-muted-foreground">Found</div>
+            {sync.sync_type === 'omdb_enrichment' ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div>
+                  <div className="text-lg font-semibold">{sync.total_found}</div>
+                  <div className="text-xs text-muted-foreground">Processed</div>
+                </div>
+                <div>
+                  <div className="text-lg font-semibold">{sync.imported}</div>
+                  <div className="text-xs text-muted-foreground">Enriched</div>
+                </div>
+                <div>
+                  <div className="text-lg font-semibold">{sync.skipped}</div>
+                  <div className="text-xs text-muted-foreground">Skipped</div>
+                </div>
+                <div>
+                  <div className="text-lg font-semibold">{sync.failed}</div>
+                  <div className="text-xs text-muted-foreground">Failed</div>
+                </div>
               </div>
-              <div>
-                <div className="text-lg font-semibold">{sync.imported}</div>
-                <div className="text-xs text-muted-foreground">Imported</div>
+            ) : (
+              <div className="grid grid-cols-3 md:grid-cols-6 gap-4 mb-4">
+                <div>
+                  <div className="text-lg font-semibold">{sync.total_found}</div>
+                  <div className="text-xs text-muted-foreground">Found</div>
+                </div>
+                <div>
+                  <div className="text-lg font-semibold">{sync.imported}</div>
+                  <div className="text-xs text-muted-foreground">Imported</div>
+                </div>
+                <div>
+                  <div className="text-lg font-semibold">{sync.updated}</div>
+                  <div className="text-xs text-muted-foreground">Updated</div>
+                </div>
+                <div>
+                  <div className="text-lg font-semibold">{sync.removed}</div>
+                  <div className="text-xs text-muted-foreground">Removed</div>
+                </div>
+                <div>
+                  <div className="text-lg font-semibold">{sync.skipped}</div>
+                  <div className="text-xs text-muted-foreground">Skipped</div>
+                </div>
+                <div>
+                  <div className="text-lg font-semibold">{sync.failed}</div>
+                  <div className="text-xs text-muted-foreground">Failed</div>
+                </div>
               </div>
-              <div>
-                <div className="text-lg font-semibold">{sync.updated}</div>
-                <div className="text-xs text-muted-foreground">Updated</div>
-              </div>
-              <div>
-                <div className="text-lg font-semibold">{sync.removed}</div>
-                <div className="text-xs text-muted-foreground">Removed</div>
-              </div>
-              <div>
-                <div className="text-lg font-semibold">{sync.skipped}</div>
-                <div className="text-xs text-muted-foreground">Skipped</div>
-              </div>
-              <div>
-                <div className="text-lg font-semibold">{sync.failed}</div>
-                <div className="text-xs text-muted-foreground">Failed</div>
-              </div>
-            </div>
+            )}
 
             {/* Summary Indicator */}
             {sync.status === 'completed' && (

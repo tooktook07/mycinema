@@ -205,6 +205,7 @@ export type Database = {
           skipped: number | null
           status: string | null
           sync_mode: boolean
+          sync_type: string
           total_found: number | null
           updated: number | null
           user_id: string
@@ -222,6 +223,7 @@ export type Database = {
           skipped?: number | null
           status?: string | null
           sync_mode?: boolean
+          sync_type?: string
           total_found?: number | null
           updated?: number | null
           user_id: string
@@ -239,6 +241,7 @@ export type Database = {
           skipped?: number | null
           status?: string | null
           sync_mode?: boolean
+          sync_type?: string
           total_found?: number | null
           updated?: number | null
           user_id?: string

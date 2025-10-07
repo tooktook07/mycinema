@@ -52,6 +52,32 @@ serve(async (req) => {
       logs.push(msg);
     };
 
+    // Create sync history record
+    const { data: syncRecord, error: syncCreateError } = await supabaseAdmin
+      .from("sync_history")
+      .insert({
+        user_id: user.id,
+        sync_mode: false,
+        sync_type: 'omdb_enrichment',
+        status: 'running',
+        filters: { batchSize, forceRefresh },
+        total_found: 0,
+        imported: 0,
+        updated: 0,
+        removed: 0,
+        skipped: 0,
+        failed: 0,
+        logs: []
+      })
+      .select()
+      .single();
+
+    if (syncCreateError || !syncRecord) {
+      logMsg(`⚠️ Failed to create sync history: ${syncCreateError?.message}`);
+    }
+
+    const syncId = syncRecord?.id;
+
     // Find movies to enrich
     let query = supabaseAdmin
       .from("movies")
@@ -75,6 +101,20 @@ serve(async (req) => {
     }
 
     if (!movies || movies.length === 0) {
+      logMsg("No movies to enrich");
+      
+      // Update sync history
+      if (syncId) {
+        await supabaseAdmin
+          .from("sync_history")
+          .update({
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            logs: ["No movies to enrich"]
+          })
+          .eq("id", syncId);
+      }
+
       return new Response(
         JSON.stringify({
           success: true,
@@ -197,6 +237,22 @@ serve(async (req) => {
     const message = `Enrichment complete: ${enriched} enriched, ${failed} failed, ${skipped} skipped. ${remainingCount || 0} movies remaining.`;
     logMsg(message);
 
+    // Update sync history with completion
+    if (syncId) {
+      await supabaseAdmin
+        .from("sync_history")
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          total_found: movies.length,
+          imported: enriched, // Using 'imported' to mean 'enriched'
+          skipped,
+          failed,
+          logs
+        })
+        .eq("id", syncId);
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -214,9 +270,45 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("Error in enrich-with-omdb function:", error);
+    
+    // Update sync history with error
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    
+    try {
+      const authHeader = req.headers.get('Authorization');
+      if (authHeader) {
+        const supabaseAdmin = createClient(
+          Deno.env.get("SUPABASE_URL") ?? "",
+          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+        );
+        
+        // Try to find the most recent running sync for this enrichment
+        const { data: runningSyncs } = await supabaseAdmin
+          .from("sync_history")
+          .select("id")
+          .eq("status", "running")
+          .eq("sync_type", "omdb_enrichment")
+          .order("created_at", { ascending: false })
+          .limit(1);
+
+        if (runningSyncs && runningSyncs.length > 0) {
+          await supabaseAdmin
+            .from("sync_history")
+            .update({
+              status: 'failed',
+              completed_at: new Date().toISOString(),
+              error_message: errorMessage
+            })
+            .eq("id", runningSyncs[0].id);
+        }
+      }
+    } catch (syncUpdateError) {
+      console.error("Failed to update sync history with error:", syncUpdateError);
+    }
+
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: errorMessage,
         success: false
       }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
