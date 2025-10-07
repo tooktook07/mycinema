@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Movie } from "@/data/types";
+import { useFilters } from "@/contexts/FilterContext";
 
 const Movies = () => {
   // Debug logging
@@ -26,26 +27,30 @@ const Movies = () => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [itemsPerPage, setItemsPerPage] = useState(100);
 
-  // Filter states
-  const [appliedGenres, setAppliedGenres] = useState<string[]>([]);
-  const [appliedRatingRange, setAppliedRatingRange] = useState<[number, number]>([0, 10]);
-  const [appliedYearRange, setAppliedYearRange] = useState<[number, number]>([1900, 2030]);
-  const [appliedLanguages, setAppliedLanguages] = useState<string[]>([]);
-  const [appliedSearchText, setAppliedSearchText] = useState<string>("");
+  // Filter states from context
+  const {
+    appliedGenres,
+    setAppliedGenres,
+    appliedRatingRange,
+    setAppliedRatingRange,
+    appliedYearRange,
+    setAppliedYearRange,
+    appliedLanguages,
+    setAppliedLanguages,
+    appliedSearchText,
+    setAppliedSearchText,
+    resetFilters
+  } = useFilters();
   const handleGenreToggle = (genre: string) => {
-    setAppliedGenres(prev => prev.includes(genre) ? prev.filter(g => g !== genre) : [...prev, genre]);
+    setAppliedGenres(appliedGenres.includes(genre) ? appliedGenres.filter(g => g !== genre) : [...appliedGenres, genre]);
     setCurrentPage(1);
   };
   const handleLanguageToggle = (language: string) => {
-    setAppliedLanguages(prev => prev.includes(language) ? prev.filter(l => l !== language) : [...prev, language]);
+    setAppliedLanguages(appliedLanguages.includes(language) ? appliedLanguages.filter(l => l !== language) : [...appliedLanguages, language]);
     setCurrentPage(1);
   };
   const handleResetFilters = () => {
-    setAppliedGenres([]);
-    setAppliedRatingRange([0, 10]);
-    setAppliedYearRange([1900, 2030]);
-    setAppliedLanguages([]);
-    setAppliedSearchText("");
+    resetFilters();
     setCurrentPage(1);
   };
   const handleYearClick = (year: number) => {
@@ -76,6 +81,7 @@ const Movies = () => {
     setAppliedSearchText(keyword);
     setCurrentPage(1);
   };
+
 
   // Fetch movies with filters, pagination, and sorting
   const {
@@ -312,7 +318,10 @@ const Movies = () => {
         }} yearRange={appliedYearRange} onYearRangeChange={range => {
           setAppliedYearRange(range);
           setCurrentPage(1);
-        }} selectedLanguages={appliedLanguages} onLanguageToggle={handleLanguageToggle} onReset={handleResetFilters} />
+        }} selectedLanguages={appliedLanguages} onLanguageToggle={handleLanguageToggle} searchText={appliedSearchText} onSearchTextChange={text => {
+          setAppliedSearchText(text);
+          setCurrentPage(1);
+        }} onReset={handleResetFilters} />
         </div>
 
         {/* Results */}
