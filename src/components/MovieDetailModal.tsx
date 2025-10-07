@@ -93,6 +93,29 @@ export const MovieDetailModal = () => {
 
   const watchProviders = movie ? parseWatchProviders(movie.watch_providers) : null;
 
+  // Conditional title rendering based on modal mode
+  const renderTitle = () => {
+    if (isModalMode) {
+      return (
+        <DialogHeader>
+          <DialogTitle className="text-4xl font-bold">{movie?.title}</DialogTitle>
+          {movie?.tagline && (
+            <p className="text-lg text-muted-foreground italic">"{movie.tagline}"</p>
+          )}
+        </DialogHeader>
+      );
+    }
+    
+    return (
+      <div className="space-y-1.5 text-center sm:text-left">
+        <h1 className="text-4xl font-bold">{movie?.title}</h1>
+        {movie?.tagline && (
+          <p className="text-lg text-muted-foreground italic">"{movie.tagline}"</p>
+        )}
+      </div>
+    );
+  };
+
   // Shared content rendering
   const renderContent = () => (
     <>
@@ -135,12 +158,7 @@ export const MovieDetailModal = () => {
                 
                 {/* Title & Quick Info */}
                 <div className="flex-1 space-y-3">
-                  <DialogHeader>
-                    <DialogTitle className="text-4xl font-bold">{movie.title}</DialogTitle>
-                    {movie.tagline && (
-                      <p className="text-lg text-muted-foreground italic">"{movie.tagline}"</p>
-                    )}
-                  </DialogHeader>
+                  {renderTitle()}
 
                   {/* Plot - Right after tagline */}
                   {movie.plot && (
