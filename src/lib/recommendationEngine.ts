@@ -241,6 +241,129 @@ async function getFallbackRecommendation(excludeIds: string[]): Promise<Recommen
   };
 }
 
+export async function getSimilarMovies(
+  movieId: string,
+  limit: number = 6
+): Promise<RecommendationMovie[]> {
+  try {
+    // Get the reference movie
+    const { data: referenceMovie } = await supabase
+      .from('movies')
+      .select('genres, director, actors, keywords, original_language')
+      .eq('id', movieId)
+      .single();
+
+    if (!referenceMovie) return [];
+
+    // Build preference counts from this single movie
+    const genreCounts: Record<string, number> = {};
+    const directorCounts: Record<string, number> = {};
+    const actorCounts: Record<string, number> = {};
+    const keywordCounts: Record<string, number> = {};
+    const languageCounts: Record<string, number> = {};
+
+    (referenceMovie.genres || []).forEach((genre: string) => {
+      genreCounts[genre] = 1;
+    });
+
+    if (referenceMovie.director) {
+      directorCounts[referenceMovie.director] = 1;
+    }
+
+    if (referenceMovie.actors) {
+      referenceMovie.actors.split(',').forEach((actor: string) => {
+        const cleanActor = actor.trim();
+        if (cleanActor) {
+          actorCounts[cleanActor] = 1;
+        }
+      });
+    }
+
+    (referenceMovie.keywords || []).forEach((keyword: string) => {
+      keywordCounts[keyword] = 1;
+    });
+
+    if (referenceMovie.original_language) {
+      languageCounts[referenceMovie.original_language] = 1;
+    }
+
+    // Fetch candidate movies
+    const { data: candidateMovies } = await supabase
+      .from('movies')
+      .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords')
+      .gte('rating', CANDIDATE_RATING_THRESHOLD)
+      .not('rating', 'is', null)
+      .neq('id', movieId)
+      .limit(200);
+
+    if (!candidateMovies || candidateMovies.length === 0) return [];
+
+    // Calculate similarity scores (using same weights as main algorithm)
+    const moviesWithScores = candidateMovies.map(movie => {
+      let score = 0;
+
+      // Genre similarity (40% weight)
+      const genreMatches = (movie.genres || []).filter((g: string) => genreCounts[g]).length;
+      const genreWeight = genreMatches / Math.max(Object.keys(genreCounts).length, 1);
+      score += genreWeight * 0.40;
+
+      // Director similarity (20% weight)
+      if (movie.director && directorCounts[movie.director]) {
+        score += 0.20;
+      }
+
+      // Actor similarity (25% weight)
+      let actorMatches = 0;
+      if (movie.actors) {
+        const movieActors = movie.actors.split(',').map((a: string) => a.trim());
+        actorMatches = movieActors.filter((a: string) => actorCounts[a]).length;
+      }
+      const actorWeight = Math.min(actorMatches / 3, 1);
+      score += actorWeight * 0.25;
+
+      // Keyword similarity (10% weight)
+      const keywordMatches = (movie.keywords || []).filter((k: string) => keywordCounts[k]).length;
+      const keywordWeight = Math.min(keywordMatches / 3, 1);
+      score += keywordWeight * 0.10;
+
+      // Language similarity (5% weight)
+      if (movie.original_language && languageCounts[movie.original_language]) {
+        score += 0.05;
+      }
+
+      return { ...movie, similarityScore: score };
+    });
+
+    // Sort by similarity and return top matches
+    const topMatches = moviesWithScores
+      .filter(m => m.similarityScore > 0) // Only return movies with some similarity
+      .sort((a, b) => b.similarityScore - a.similarityScore)
+      .slice(0, limit);
+
+    return topMatches.map(movie => ({
+      id: movie.id,
+      title: movie.title,
+      year: movie.year,
+      poster: movie.poster || '',
+      rating: movie.rating || 0,
+      plot: movie.plot || '',
+      imdbId: movie.imdb_id,
+      voteCount: movie.vote_count,
+      originalLanguage: movie.original_language,
+      genre: movie.genres || [],
+      actors: movie.actors || '',
+      director: movie.director || '',
+      runtime: movie.runtime || '',
+      writing: movie.writing || '',
+      sound: movie.sound || '',
+      keywords: movie.keywords || []
+    }));
+  } catch (error) {
+    console.error("Error getting similar movies:", error);
+    return [];
+  }
+}
+
 async function getNextRecommendationForGuest(
   guestRatings: { movieId: string; rating: number }[],
   excludeIds: string[] = []

@@ -6,10 +6,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Star, ExternalLink, Search, Users, Globe, Info, DollarSign, Calendar, Film, Languages } from "lucide-react";
+import { Star, ExternalLink, Search, Users, Globe, Info, DollarSign, Calendar, Film, Languages, Sparkles } from "lucide-react";
 import { getOptimizedImageProps } from "@/lib/imageUtils";
 import { MovieRating } from "@/components/MovieRating";
 import { MovieWatchlist } from "@/components/MovieWatchlist";
+import { getSimilarMovies } from "@/lib/recommendationEngine";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { Card } from "@/components/ui/card";
 export const MovieDetailModal = () => {
   const {
     id
@@ -18,6 +21,7 @@ export const MovieDetailModal = () => {
   }>();
   const navigate = useNavigate();
   const location = useLocation();
+  
   const {
     data: movie,
     isLoading,
@@ -32,6 +36,16 @@ export const MovieDetailModal = () => {
       if (error) throw error;
       if (!data) throw new Error('Movie not found');
       return data;
+    },
+    enabled: !!id
+  });
+
+  // Fetch similar movies
+  const { data: similarMovies, isLoading: loadingSimilar } = useQuery({
+    queryKey: ['similarMovies', id],
+    queryFn: async () => {
+      if (!id) return [];
+      return await getSimilarMovies(id, 6);
     },
     enabled: !!id
   });
@@ -343,6 +357,64 @@ export const MovieDetailModal = () => {
                         </Button>}
                     </div>}
                 </div>
+
+                {/* Similar Movies */}
+                {similarMovies && similarMovies.length > 0 && (
+                  <div className="rounded-lg border p-4">
+                    <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3 flex items-center gap-2">
+                      <Sparkles className="h-4 w-4" />
+                      Similar Movies You Might Like
+                    </h4>
+                    {loadingSimilar ? (
+                      <div className="flex gap-4 overflow-x-auto pb-2">
+                        {[...Array(6)].map((_, i) => (
+                          <Skeleton key={i} className="min-w-[120px] h-[180px] rounded-lg" />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <Carousel opts={{ align: "start", loop: false }} className="w-full">
+                          <CarouselContent className="-ml-2">
+                            {similarMovies.map((similar) => {
+                              const similarImageProps = getOptimizedImageProps(similar.poster);
+                              return (
+                                <CarouselItem key={similar.id} className="pl-2 basis-1/3 md:basis-1/4 lg:basis-1/6">
+                                  <Card 
+                                    className="overflow-hidden cursor-pointer hover:scale-105 transition-transform"
+                                    onClick={() => {
+                                      handleClose();
+                                      setTimeout(() => navigate(`/movie/${similar.id}`), 100);
+                                    }}
+                                  >
+                                    <div className="aspect-[2/3] relative">
+                                      <img
+                                        {...similarImageProps}
+                                        alt={similar.title}
+                                        className="w-full h-full object-cover"
+                                      />
+                                      <div className="absolute top-2 right-2">
+                                        <Badge variant="secondary" className="text-xs">
+                                          <Star className="h-3 w-3 mr-1" />
+                                          {similar.rating.toFixed(1)}
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                    <div className="p-2">
+                                      <p className="text-xs font-medium line-clamp-2">{similar.title}</p>
+                                      <p className="text-xs text-muted-foreground">{similar.year}</p>
+                                    </div>
+                                  </Card>
+                                </CarouselItem>
+                              );
+                            })}
+                          </CarouselContent>
+                          <CarouselPrevious className="left-0" />
+                          <CarouselNext className="right-0" />
+                        </Carousel>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </ScrollArea>
           </> : null}

@@ -75,6 +75,7 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+  const [excludedRecommendationIds, setExcludedRecommendationIds] = useState<string[]>([]);
   useEffect(() => {
     fetchStats();
     fetchRecommendations();
@@ -166,7 +167,7 @@ const Index = () => {
       setLoading(false);
     }
   };
-  const fetchRecommendations = async () => {
+  const fetchRecommendations = async (excludeIds: string[] = []) => {
     setLoadingRecommendations(true);
     try {
       // Fetch user's rated movies if logged in OR guest ratings from localStorage
@@ -258,13 +259,18 @@ const Index = () => {
         });
 
         // Fetch candidate movies (unrated, decent quality)
-        const { data: candidateMovies } = await supabase
+        const allExcludedIds = [...ratedMovieIds, ...excludeIds];
+        let candidateQuery = supabase
           .from('movies')
           .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords')
           .gte('rating', CANDIDATE_RATING_THRESHOLD)
-          .not('rating', 'is', null)
-          .not('id', 'in', `(${ratedMovieIds.join(',')})`)
-          .limit(500); // Get a large pool to calculate similarity
+          .not('rating', 'is', null);
+        
+        if (allExcludedIds.length > 0) {
+          candidateQuery = candidateQuery.not('id', 'in', `(${allExcludedIds.join(',')})`);
+        }
+        
+        const { data: candidateMovies } = await candidateQuery.limit(500);
 
         // Calculate similarity scores
         const moviesWithScores = (candidateMovies || []).map(movie => {
@@ -332,20 +338,23 @@ const Index = () => {
         setRecommendations(topRecommendations);
       } else {
         // Fallback: Show top-rated movies for users/guests with few/no ratings
-        const { data: topMovies, error } = await supabase
+        const allExcludedIds = [...ratedMovieIds, ...excludeIds];
+        let fallbackQuery = supabase
           .from('movies')
           .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords')
           .gte('rating', RATING_THRESHOLD)
           .not('rating', 'is', null)
-          .order('vote_count', { ascending: false })
-          .limit(200);
+          .order('vote_count', { ascending: false });
+        
+        if (allExcludedIds.length > 0) {
+          fallbackQuery = fallbackQuery.not('id', 'in', `(${allExcludedIds.join(',')})`);
+        }
+        
+        const { data: topMovies, error } = await fallbackQuery.limit(200);
 
         if (error) throw error;
 
-        // Filter out already rated movies for logged-in users and guests
-        const filteredMovies = ratedMovieIds.length > 0
-          ? (topMovies || []).filter(movie => !ratedMovieIds.includes(movie.id))
-          : topMovies || [];
+        const filteredMovies = topMovies || [];
 
         // Randomly select from top-rated
         const shuffled = filteredMovies.sort(() => Math.random() - 0.5);
@@ -376,6 +385,12 @@ const Index = () => {
     } finally {
       setLoadingRecommendations(false);
     }
+  };
+
+  const handleShowMoreRecommendations = async () => {
+    const currentIds = recommendations.map(r => r.id);
+    setExcludedRecommendationIds([...excludedRecommendationIds, ...currentIds]);
+    await fetchRecommendations([...excludedRecommendationIds, ...currentIds]);
   };
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">
@@ -458,6 +473,34 @@ const Index = () => {
           <LastSyncCard lastSync={stats?.lastSync || null} isAdmin={isAdmin} />
         </div>
 
+        {/* Wizard CTA for users with < 5 ratings */}
+        {stats && stats.userRatingsCount < 5 && (
+          <Card className="mb-8 bg-gradient-to-br from-primary/10 via-primary/5 to-background border-primary/20">
+            <CardContent className="pt-6">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex-1 text-center md:text-left">
+                  <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
+                    <Sparkles className="h-6 w-6 text-primary" />
+                    <h3 className="text-xl font-bold">Discover Your Perfect Movies</h3>
+                  </div>
+                  <p className="text-muted-foreground mb-1">
+                    Rate a few movies to get AI-powered personalized recommendations
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {stats.userRatingsCount > 0 
+                      ? `You've rated ${stats.userRatingsCount} movie${stats.userRatingsCount === 1 ? '' : 's'}. Rate ${5 - stats.userRatingsCount} more to unlock recommendations!`
+                      : "Start your journey with the Rating Wizard"}
+                  </p>
+                </div>
+                <Button size="lg" onClick={() => navigate("/movies")} className="min-w-[200px]">
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Start Rating Movies
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Quick Actions */}
         <div className="flex flex-wrap gap-3 mb-8">
           <Button onClick={() => navigate("/movies")} variant="outline">
@@ -512,9 +555,32 @@ const Index = () => {
                     <Film className="h-4 w-4 mr-2" />
                     Browse Movies
                   </Button>
-                </div> : <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                  {recommendations?.map(movie => <MovieCard key={movie.id} id={movie.id} title={movie.title} year={movie.year} rating={movie.rating} genre={movie.genre} poster={movie.poster} imdbId={movie.imdbId} plot={movie.plot} voteCount={movie.voteCount} originalLanguage={movie.originalLanguage} actors={movie.actors} director={movie.director} runtime={movie.runtime} writing={movie.writing} sound={movie.sound} keywords={movie.keywords} />)}
-                </div>}
+                </div> : <>
+                  <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                    {recommendations?.map(movie => <MovieCard key={movie.id} id={movie.id} title={movie.title} year={movie.year} rating={movie.rating} genre={movie.genre} poster={movie.poster} imdbId={movie.imdbId} plot={movie.plot} voteCount={movie.voteCount} originalLanguage={movie.originalLanguage} actors={movie.actors} director={movie.director} runtime={movie.runtime} writing={movie.writing} sound={movie.sound} keywords={movie.keywords} />)}
+                  </div>
+                  {recommendations.length > 0 && (
+                    <div className="flex justify-center mt-6">
+                      <Button 
+                        onClick={handleShowMoreRecommendations}
+                        variant="outline"
+                        disabled={loadingRecommendations}
+                      >
+                        {loadingRecommendations ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Loading...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="h-4 w-4 mr-2" />
+                            Show More Recommendations
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </>}
             </CardContent>
           </Card>
 
