@@ -176,7 +176,7 @@ export const MovieDetailModal = () => {
                             Google
                           </a>
                         </Button>
-                        <MovieWatchlist movieId={movie.id} movieTitle={movie.title} />
+                        <MovieWatchlist movieId={movie.id} movieTitle={movie.title} iconOnly={true} />
                         <MovieRating movieId={movie.id} movieTitle={movie.title} iconOnly={true} />
                       </div>
                     </div>
