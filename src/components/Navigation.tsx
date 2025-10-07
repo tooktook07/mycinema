@@ -1,4 +1,4 @@
-import { Film, Home, Settings, LogIn, LogOut, User, Sparkles } from "lucide-react";
+import { Film, Home, Settings, LogIn, LogOut, User, Sparkles, Bookmark } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -60,6 +60,23 @@ export const Navigation = () => {
               <Film className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Movies</span>
             </NavLink>
+
+            {user && (
+              <NavLink
+                to="/watchlist"
+                className={({ isActive }) =>
+                  cn(
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded text-sm transition-colors",
+                    isActive
+                      ? "bg-foreground text-background"
+                      : "text-muted-foreground hover:text-foreground"
+                  )
+                }
+              >
+                <Bookmark className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Watchlist</span>
+              </NavLink>
+            )}
 
             <Button
               variant="ghost"

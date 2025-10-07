@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Movie } from "@/data/types";
 import { MovieRating } from "@/components/MovieRating";
+import { MovieWatchlist } from "@/components/MovieWatchlist";
 import { getOptimizedImageProps } from "@/lib/imageUtils";
 import { useNavigate, useLocation } from "react-router-dom";
 interface MovieCardProps extends Movie {
@@ -130,16 +131,19 @@ export const MovieCard = ({
             </Tooltip>
           </div>
           
-          <Tooltip delayDuration={300}>
-            <TooltipTrigger asChild>
-              <div>
-                <MovieRating movieId={id} movieTitle={title} iconOnly />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent className="text-xs">
-              <p>Rate this movie</p>
-            </TooltipContent>
-          </Tooltip>
+          <div className="flex items-center gap-1">
+            <Tooltip delayDuration={300}>
+              <TooltipTrigger asChild>
+                <div>
+                  <MovieRating movieId={id} movieTitle={title} iconOnly />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="text-xs">
+                <p>Rate this movie</p>
+              </TooltipContent>
+            </Tooltip>
+            <MovieWatchlist movieId={id} movieTitle={title} iconOnly />
+          </div>
         </div>
       </CardContent>
     </Card>;

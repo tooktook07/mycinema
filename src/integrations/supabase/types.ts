@@ -111,6 +111,11 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          last_login_at: string | null
+          subscription_expires_at: string | null
+          subscription_started_at: string | null
+          subscription_status: string | null
+          subscription_tier: string | null
           theme: string | null
           updated_at: string | null
           user_id: string
@@ -118,6 +123,11 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
+          last_login_at?: string | null
+          subscription_expires_at?: string | null
+          subscription_started_at?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
           theme?: string | null
           updated_at?: string | null
           user_id: string
@@ -125,6 +135,11 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          last_login_at?: string | null
+          subscription_expires_at?: string | null
+          subscription_started_at?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
           theme?: string | null
           updated_at?: string | null
           user_id?: string
@@ -236,6 +251,44 @@ export type Database = {
         }
         Relationships: []
       }
+      user_activity_logs: {
+        Row: {
+          action_details: Json | null
+          action_type: string
+          created_at: string
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action_details?: Json | null
+          action_type: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action_details?: Json | null
+          action_type?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_activity_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       user_ratings: {
         Row: {
           created_at: string | null
@@ -303,6 +356,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_activity_summary: {
+        Args: { p_days?: number; p_user_id: string }
+        Returns: Json
+      }
+      get_user_stats: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
+      get_user_watchlist_count: {
+        Args: { p_user_id: string }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

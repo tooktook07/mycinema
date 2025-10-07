@@ -8,6 +8,7 @@ interface AuthContextType {
   session: Session | null;
   isAdmin: boolean;
   loading: boolean;
+  subscriptionTier: 'free' | 'pro' | null;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -19,6 +20,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [subscriptionTier, setSubscriptionTier] = useState<'free' | 'pro' | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -64,9 +66,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) throw error;
       setIsAdmin(!!data);
+      
+      // Fetch subscription tier
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('subscription_tier')
+        .eq('user_id', userId)
+        .single();
+      
+      setSubscriptionTier(profile?.subscription_tier as 'free' | 'pro' || 'free');
     } catch (error) {
       console.error('Error checking user role:', error);
       setIsAdmin(false);
+      setSubscriptionTier('free');
     }
   };
 
@@ -109,7 +121,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, isAdmin, subscriptionTier, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

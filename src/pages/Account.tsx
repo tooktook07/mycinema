@@ -6,6 +6,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { SyncMovies } from "./Account/SyncMovies";
 import { SyncHistoryTab } from "./Account/SyncHistoryTab";
 import { GeneralSettings } from "./Account/GeneralSettings";
+import { UserManagement } from "./Account/UserManagement";
+import { ActivityLogs } from "./Account/ActivityLogs";
+import { RoleManagement } from "./Account/RoleManagement";
+import { SubscriptionManagement } from "./Account/SubscriptionManagement";
 import { useEffectiveAuth } from "@/contexts/DevModeContext";
 
 const Account = () => {
@@ -134,10 +138,14 @@ const Account = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="sync-movies">Sync Movies</TabsTrigger>
             <TabsTrigger value="sync-history">Sync History</TabsTrigger>
-            <TabsTrigger value="general">General Settings</TabsTrigger>
+            <TabsTrigger value="general">General</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="activity">Activity</TabsTrigger>
+            <TabsTrigger value="roles">Roles</TabsTrigger>
+            <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
           </TabsList>
 
           <TabsContent value="sync-movies">
@@ -168,6 +176,22 @@ const Account = () => {
 
           <TabsContent value="general">
             <GeneralSettings />
+          </TabsContent>
+
+          <TabsContent value="users">
+            <UserManagement />
+          </TabsContent>
+
+          <TabsContent value="activity">
+            <ActivityLogs />
+          </TabsContent>
+
+          <TabsContent value="roles">
+            <RoleManagement />
+          </TabsContent>
+
+          <TabsContent value="subscriptions">
+            <SubscriptionManagement />
           </TabsContent>
         </Tabs>
       </div>
