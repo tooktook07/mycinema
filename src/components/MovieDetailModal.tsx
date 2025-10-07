@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +15,22 @@ export const MovieDetailModal = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isOpen, setIsOpen] = useState(false);
+
+  // Smooth mounting with delay to prevent blinking
+  useEffect(() => {
+    const timer = setTimeout(() => setIsOpen(true), 50);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('[MovieDetailModal] State check:', {
+      hasBackgroundLocation: !!location.state?.backgroundLocation,
+      backgroundPath: location.state?.backgroundLocation?.pathname,
+      currentPath: location.pathname
+    });
+  }, [location]);
 
   const { data: movie, isLoading, error } = useQuery({
     queryKey: ['movie', id],
@@ -33,10 +50,16 @@ export const MovieDetailModal = () => {
 
   const handleClose = () => {
     const backgroundLocation = location.state?.backgroundLocation;
+    
     if (backgroundLocation) {
-      navigate(backgroundLocation.pathname + backgroundLocation.search);
+      // Navigate to the exact background location with its search params
+      navigate(backgroundLocation.pathname + backgroundLocation.search, { replace: true });
+    } else if (window.history.length > 1 && window.history.state?.idx > 0) {
+      // Check if we can go back in history
+      navigate(-1);
     } else {
-      navigate('/movies');
+      // Fallback to /movies
+      navigate('/movies', { replace: true });
     }
   };
 
@@ -89,7 +112,7 @@ export const MovieDetailModal = () => {
   const watchProviders = movie ? parseWatchProviders(movie.watch_providers) : null;
 
   return (
-    <Dialog open={true} onOpenChange={handleClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-6xl max-h-[95vh] p-0 gap-0 overflow-hidden">
         {isLoading ? (
           <div className="p-6 space-y-4">
