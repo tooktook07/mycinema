@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Star, ExternalLink, Search, Users, Globe, Info, DollarSign, Calendar, Film, Languages } from "lucide-react";
 import { getOptimizedImageProps } from "@/lib/imageUtils";
 import { MovieRating } from "@/components/MovieRating";
+import { MovieWatchlist } from "@/components/MovieWatchlist";
 
 export const MovieDetailModal = () => {
   const { id } = useParams<{ id: string }>();
@@ -217,6 +218,7 @@ export const MovieDetailModal = () => {
                             Google
                           </a>
                         </Button>
+                        <MovieWatchlist movieId={movie.id} movieTitle={movie.title} />
                         <MovieRating movieId={movie.id} movieTitle={movie.title} iconOnly={true} />
                       </div>
                     </div>

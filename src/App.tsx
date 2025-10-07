@@ -16,6 +16,7 @@ import Account from "./pages/Account";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import Wizard from "./pages/Wizard";
+import Watchlist from "./pages/Watchlist";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const AppRoutes = () => {
         <Route path="/" element={<Index />} />
         <Route path="/movies" element={<Movies />} />
         <Route path="/wizard" element={<Wizard />} />
+        <Route path="/watchlist" element={<Watchlist />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/account" element={<Account />} />
         <Route path="/profile" element={<Profile />} />
