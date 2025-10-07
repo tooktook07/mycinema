@@ -2,10 +2,11 @@ import { Star, Heart, ThumbsUp, X, Info, ExternalLink, Search, Users, Globe, Ski
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useState } from "react";
 import { getOptimizedImageProps } from "@/lib/imageUtils";
 import { RecommendationMovie } from "@/lib/recommendationEngine";
-import { useNavigate, useLocation } from "react-router-dom";
 
 interface MovieWizardCardProps {
   movie: RecommendationMovie;
@@ -17,16 +18,11 @@ interface MovieWizardCardProps {
 }
 
 export const MovieWizardCard = ({ movie, onRate, onSkip, totalRated, isProcessing, processingAction }: MovieWizardCardProps) => {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const [open, setOpen] = useState(false);
   const imageProps = getOptimizedImageProps(movie.poster);
   const hasValidImdbId = movie.imdbId && movie.imdbId.startsWith('tt');
   const imdbUrl = `https://www.imdb.com/title/${movie.imdbId}/`;
   const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(movie.title)}+${movie.year}`;
-
-  const handleMoreInfo = () => {
-    navigate(`/movie/${movie.id}`, { state: { backgroundLocation: location } });
-  };
 
   return (
     <Card className="w-full max-w-6xl mx-auto overflow-hidden relative h-[calc(100vh-200px)]">
@@ -52,15 +48,160 @@ export const MovieWizardCard = ({ movie, onRate, onSkip, totalRated, isProcessin
           </div>
 
           {/* More Info Button */}
-          <Button 
-            size="sm" 
-            variant="secondary" 
-            className="absolute top-4 right-4 z-10"
-            onClick={handleMoreInfo}
-          >
-            <Info className="h-4 w-4 mr-1" />
-            More Info
-          </Button>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button 
+                size="sm" 
+                variant="secondary" 
+                className="absolute top-4 right-4 z-10"
+              >
+                <Info className="h-4 w-4 mr-1" />
+                More Info
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh]">
+              <DialogHeader>
+                <DialogTitle className="text-3xl font-bold">{movie.title}</DialogTitle>
+                <DialogDescription className="text-base">
+                  {movie.year} • {movie.runtime || "Runtime N/A"}
+                </DialogDescription>
+              </DialogHeader>
+              <ScrollArea className="max-h-[70vh] pr-4">
+                <div className="space-y-6">
+                  {/* Rating & Stats Card */}
+                  <div className="rounded-lg border bg-muted/50 p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <Star className="h-6 w-6 fill-primary text-primary" />
+                          <span className="text-2xl font-bold">{movie.rating}/10</span>
+                        </div>
+                        {movie.voteCount !== undefined && (
+                          <div className="flex items-center gap-2 text-muted-foreground border-l pl-3">
+                            <Users className="h-5 w-5" />
+                            <span className="text-lg">{movie.voteCount.toLocaleString()} votes</span>
+                          </div>
+                        )}
+                      </div>
+                      {movie.originalLanguage && (
+                        <Badge variant="outline" className="text-sm flex items-center gap-1.5">
+                          <Globe className="h-4 w-4" />
+                          {movie.originalLanguage.toUpperCase()}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Plot */}
+                  {movie.plot && (
+                    <div className="rounded-lg border p-4">
+                      <h4 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                        <Info className="h-5 w-5" />
+                        Plot Summary
+                      </h4>
+                      <p className="text-sm leading-relaxed">{movie.plot}</p>
+                    </div>
+                  )}
+
+                  {/* Crew Section */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {movie.director && (
+                      <div className="rounded-lg border p-4">
+                        <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Director</h4>
+                        <div className="flex flex-wrap gap-1.5">
+                          {movie.director.split(',').map(d => (
+                            <Badge key={d.trim()} variant="secondary">
+                              {d.trim()}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {movie.writing && (
+                      <div className="rounded-lg border p-4">
+                        <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Writers</h4>
+                        <div className="flex flex-wrap gap-1.5">
+                          {movie.writing.split(',').map(writer => (
+                            <Badge key={writer.trim()} variant="secondary">
+                              {writer.trim()}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Cast */}
+                  {movie.actors && (
+                    <div className="rounded-lg border p-4">
+                      <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Cast</h4>
+                      <div className="flex flex-wrap gap-1.5">
+                        {movie.actors.split(',').map(actor => (
+                          <Badge key={actor.trim()} variant="secondary">
+                            {actor.trim()}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Sound Department */}
+                  {movie.sound && (
+                    <div className="rounded-lg border p-4">
+                      <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Sound Department</h4>
+                      <p className="text-sm leading-relaxed">{movie.sound}</p>
+                    </div>
+                  )}
+
+                  {/* Genres & Keywords Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="rounded-lg border p-4">
+                      <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Genres</h4>
+                      <div className="flex flex-wrap gap-1.5">
+                        {movie.genre.map(g => (
+                          <Badge key={g} variant="secondary">
+                            {g}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+
+                    {movie.keywords && movie.keywords.length > 0 && (
+                      <div className="rounded-lg border p-4">
+                        <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">Keywords</h4>
+                        <div className="flex flex-wrap gap-1.5">
+                          {movie.keywords.map(keyword => (
+                            <Badge key={keyword} variant="outline" className="text-xs">
+                              {keyword}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 pt-2">
+                    {hasValidImdbId && (
+                      <Button variant="default" size="lg" className="flex-1" asChild>
+                        <a href={imdbUrl} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          View on IMDB
+                        </a>
+                      </Button>
+                    )}
+                    <Button variant="outline" size="lg" className="flex-1" asChild>
+                      <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer nofollow">
+                        <Search className="h-4 w-4 mr-2" />
+                        Google Search
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              </ScrollArea>
+            </DialogContent>
+          </Dialog>
 
           {/* Movie Poster */}
           <img 
