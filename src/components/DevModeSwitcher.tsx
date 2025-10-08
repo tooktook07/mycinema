@@ -44,20 +44,21 @@ export const DevModeSwitcher = () => {
   };
 
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className={cn(
-            "gap-2 border-dashed",
-            devMode !== 'off' && "border-primary bg-primary/5"
-          )}
-        >
-          <Icon className="h-4 w-4" />
-          <span className="hidden sm:inline">{currentMode.label}</span>
-        </Button>
-      </PopoverTrigger>
+    <div className="fixed bottom-4 right-4 z-[9999]">
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className={cn(
+              "gap-2 border-dashed shadow-lg",
+              devMode !== 'off' && "border-primary bg-primary/5"
+            )}
+          >
+            <Icon className="h-4 w-4" />
+            <span className="hidden sm:inline">{currentMode.label}</span>
+          </Button>
+        </PopoverTrigger>
       <PopoverContent className="w-80" align="end">
         <div className="space-y-4">
           {/* Dev Mode Section */}
@@ -140,5 +141,6 @@ export const DevModeSwitcher = () => {
         </div>
       </PopoverContent>
     </Popover>
+    </div>
   );
 };
