@@ -4,7 +4,6 @@ import { MovieCard } from "@/components/MovieCard";
 import { MovieDetailModal } from "@/components/MovieDetailModal";
 import { FilterPanel } from "@/components/FilterPanel";
 import { MoviesTable } from "@/components/MoviesTable";
-import { QuickFilterChips } from "@/components/QuickFilterChips";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from "@/components/ui/pagination";
@@ -431,21 +430,6 @@ const Movies = () => {
   return <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/10">
       {/* Main Content */}
       <div className="container mx-auto max-w-7xl px-4 py-8">
-        {/* Quick Filter Chips */}
-        <QuickFilterChips
-          onYearClick={(start, end) => {
-            setAppliedYearRange([start, end]);
-            setCurrentPage(1);
-          }}
-          onRatingClick={(min, max) => {
-            setAppliedRatingRange([min, max]);
-            setCurrentPage(1);
-          }}
-          onPopularityClick={handlePopularityClick}
-          onAwardClick={handleAwardClick}
-          onMixedClick={handleMixedClick}
-        />
-        
         {/* Filters */}
         <div className="mb-8">
           <FilterPanel selectedGenres={appliedGenres} onGenreToggle={handleGenreToggle} ratingRange={appliedRatingRange} onRatingRangeChange={range => {
