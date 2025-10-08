@@ -254,9 +254,9 @@ export const SyncMovies = ({
               onExcludedGenreToggle(''); // Clear by setting empty
               onStatusToggle('Released');
               onLanguageToggle(''); // Clear by setting empty
-              onRatingRangeChange([5.0, 10.0]);
-              onYearRangeChange([2005, 2025]);
-              onMinVoteCountChange(50);
+              onRatingRangeChange([6.0, 10.0]);
+              onYearRangeChange([2020, 2025]);
+              onMinVoteCountChange(1000);
               onMinPopularityChange(0);
             }}
             size="lg"

@@ -25,7 +25,7 @@ serve(async (req) => {
       minVoteCount = 100,
       minPopularity = 0,
       syncMode = false,
-      maxPages = 1000,
+      maxPages = 50, // Process up to 50 pages (1000 movies) per sync - prevents timeout
     } = await req.json();
     const TMDB_API_KEY = Deno.env.get("TMDB_API_KEY");
 
@@ -98,6 +98,7 @@ serve(async (req) => {
     const MAX_CONSECUTIVE_FAILURES = 5;
     const REQUEST_TIMEOUT = 30000; // 30 seconds
     const MAX_RETRIES = 3;
+    const SAFE_TIMEOUT = 160000; // 160 seconds (safe margin before 180s CPU limit)
     let consecutiveFailures = 0;
 
     let totalMovies = 0;
@@ -110,6 +111,7 @@ serve(async (req) => {
     let totalPages = 1;
     const logs: string[] = [];
     const processedImdbIds = new Set<string>();
+    const startTime = Date.now();
 
     const logMsg = (msg: string) => {
       console.log(msg);
@@ -214,6 +216,12 @@ serve(async (req) => {
       totalMovies = data.total_results;
 
       logMsg(`Processing page ${page} of ${Math.min(totalPages, maxPages)} (${totalPages} total), found ${data.results.length} movies`);
+
+      // Check if we're approaching CPU timeout - exit gracefully
+      if (Date.now() - startTime > SAFE_TIMEOUT) {
+        logMsg(`⚠️ Approaching CPU timeout limit, stopping gracefully at page ${page}`);
+        break;
+      }
 
       // Process each movie
       for (const movie of data.results) {
