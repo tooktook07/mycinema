@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { Movie } from "@/data/types";
 import { getOptimizedImageProps } from "@/lib/imageUtils";
-import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +24,7 @@ interface MovieCardProps extends Movie {
   moviesList?: Array<{ id: string; title: string }>;
   currentIndex?: number;
   pageContext?: string;
+  onOpenDetail?: (movieId: string) => void;
 }
 export const MovieCard = ({
   id,
@@ -60,10 +60,9 @@ export const MovieCard = ({
   onKeywordClick,
   moviesList,
   currentIndex,
-  pageContext
+  pageContext,
+  onOpenDetail
 }: MovieCardProps) => {
-  const navigate = useNavigate();
-  const location = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useEffectiveAuth();
@@ -151,14 +150,7 @@ export const MovieCard = ({
   };
 
   const handleMoreInfo = () => {
-    navigate(`/movie/${id}`, { 
-      state: { 
-        backgroundLocation: location,
-        moviesList: moviesList,
-        currentIndex: currentIndex,
-        pageContext: pageContext
-      } 
-    });
+    onOpenDetail?.(id);
   };
   
   return <TooltipProvider>

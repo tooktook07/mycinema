@@ -40,12 +40,6 @@ const AppRoutes = () => {
         <Route path="*" element={<NotFound />} />
       </Routes>
       
-      {/* Modal route - only renders when background exists */}
-      {background && (
-        <Routes>
-          <Route path="/movie/:id" element={<MovieDetailModal />} />
-        </Routes>
-      )}
       
       {/* DevMode Floating Button */}
       {import.meta.env.DEV && (

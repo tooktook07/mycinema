@@ -1,4 +1,3 @@
-import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -21,8 +20,6 @@ import {
   ThumbsDown,
   ThumbsUp,
   Heart,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import { getOptimizedImageProps } from "@/lib/imageUtils";
 import { MovieWatchlist } from "@/components/MovieWatchlist";
@@ -35,12 +32,14 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/comp
 import { getSimilarMovies } from "@/lib/recommendationEngine";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Card } from "@/components/ui/card";
-export const MovieDetailModal = () => {
-  const { id } = useParams<{
-    id: string;
-  }>();
-  const navigate = useNavigate();
-  const location = useLocation();
+
+interface MovieDetailModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  movieId: string | null;
+}
+
+export const MovieDetailModal = ({ isOpen, onClose, movieId }: MovieDetailModalProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useEffectiveAuth();
@@ -48,64 +47,67 @@ export const MovieDetailModal = () => {
   const [currentRating, setCurrentRating] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // Determine if opened as modal overlay or direct route
-  const isModalMode = !!location.state?.backgroundLocation;
-
   const {
     data: movie,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["movie", id],
+    queryKey: ["movie", movieId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("movies").select("*").eq("id", id).maybeSingle();
+      if (!movieId) return null;
+      const { data, error } = await supabase.from("movies").select("*").eq("id", movieId).maybeSingle();
       if (error) throw error;
       if (!data) throw new Error("Movie not found");
       return data;
     },
-    enabled: !!id,
+    enabled: !!movieId && isOpen,
   });
 
   // Fetch similar movies
   const { data: similarMovies, isLoading: loadingSimilar } = useQuery({
-    queryKey: ["similarMovies", id],
+    queryKey: ["similarMovies", movieId],
     queryFn: async () => {
-      if (!id) return [];
-      return await getSimilarMovies(id, 6);
+      if (!movieId) return [];
+      return await getSimilarMovies(movieId, 6);
     },
-    enabled: !!id,
+    enabled: !!movieId && isOpen,
   });
+  
   // Load user rating
   useEffect(() => {
     const loadRating = async () => {
-      if (!id) return;
+      if (!movieId || !isOpen) return;
       
       if (user) {
         const { data } = await supabase
           .from('user_ratings')
           .select('user_rating')
           .eq('user_id', user.id)
-          .eq('media_id', id)
+          .eq('media_id', movieId)
           .eq('media_type', 'movie')
           .maybeSingle();
         
         if (data?.user_rating) {
           setCurrentRating(data.user_rating);
+        } else {
+          setCurrentRating(null);
         }
       } else {
         const guestRatings = getGuestRatings();
-        const guestRating = guestRatings.find(r => r.movieId === id);
+        const guestRating = guestRatings.find(r => r.movieId === movieId);
         if (guestRating) {
           setCurrentRating(guestRating.rating);
+        } else {
+          setCurrentRating(null);
         }
       }
     };
     
     loadRating();
-  }, [id, user]);
+  }, [movieId, user, isOpen]);
 
   const handleRate = async (ratingValue: number) => {
-    if (!id || !movie) return;
+    if (!movieId || !movie) return;
     setSaving(true);
     
     try {
@@ -114,7 +116,7 @@ export const MovieDetailModal = () => {
           .from('user_ratings')
           .upsert({
             user_id: user.id,
-            media_id: id,
+            media_id: movieId,
             media_type: 'movie',
             user_rating: ratingValue,
           }, {
@@ -125,7 +127,7 @@ export const MovieDetailModal = () => {
         
         queryClient.invalidateQueries({ queryKey: ['userRatings'] });
       } else {
-        saveGuestRating(id, ratingValue);
+        saveGuestRating(movieId, ratingValue);
       }
       
       setCurrentRating(ratingValue);
@@ -149,48 +151,6 @@ export const MovieDetailModal = () => {
       setSaving(false);
     }
   };
-
-  const handleClose = () => {
-    if (isModalMode && location.state?.backgroundLocation) {
-      const bg = location.state.backgroundLocation;
-      const targetPath = `${bg.pathname}${bg.search || ''}`;
-      navigate(targetPath, { replace: true });
-    } else {
-      navigate("/", { replace: true });
-    }
-  };
-
-  const handlePrevious = () => {
-    const moviesList = location.state?.moviesList;
-    const currentIndex = location.state?.currentIndex;
-    
-    if (moviesList && currentIndex !== undefined && currentIndex > 0) {
-      const prevMovie = moviesList[currentIndex - 1];
-      navigate(`/movie/${prevMovie.id}`, {
-        state: {
-          ...location.state,
-          currentIndex: currentIndex - 1
-        },
-        replace: true
-      });
-    }
-  };
-
-  const handleNext = () => {
-    const moviesList = location.state?.moviesList;
-    const currentIndex = location.state?.currentIndex;
-    
-    if (moviesList && currentIndex !== undefined && currentIndex < moviesList.length - 1) {
-      const nextMovie = moviesList[currentIndex + 1];
-      navigate(`/movie/${nextMovie.id}`, {
-        state: {
-          ...location.state,
-          currentIndex: currentIndex + 1
-        },
-        replace: true
-      });
-    }
-  };
   const imageProps = movie ? getOptimizedImageProps(movie.poster) : null;
   const hasValidImdbId = movie?.imdb_id && movie.imdb_id.startsWith("tt");
   const imdbUrl = hasValidImdbId ? `https://www.imdb.com/title/${movie.imdb_id}/` : "";
@@ -204,28 +164,6 @@ export const MovieDetailModal = () => {
       currency: "USD",
       maximumFractionDigits: 0,
     }).format(amount);
-  };
-
-  // Navigation handlers for internal linking
-  const handleFieldClick = (filterType: "year" | "genre" | "language" | "search", value: string | number) => {
-    const params = new URLSearchParams();
-    if (filterType === "year" && typeof value === "number") {
-      params.set("year", `${value}-${value}`);
-    } else if (filterType === "genre" && typeof value === "string") {
-      params.set("genres", value);
-    } else if (filterType === "language" && typeof value === "string") {
-      params.set("languages", value);
-    } else if (filterType === "search" && typeof value === "string") {
-      params.set("search", value);
-    }
-
-    // Navigate to movies page with filter params
-    navigate(`/movies?${params.toString()}`);
-
-    // Close modal after a short delay
-    setTimeout(() => {
-      handleClose();
-    }, 50);
   };
 
   // Parse watch providers
@@ -245,8 +183,9 @@ export const MovieDetailModal = () => {
     };
   };
   const watchProviders = movie ? parseWatchProviders(movie.watch_providers) : null;
+  
   return (
-    <Dialog open={true} onOpenChange={handleClose}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[95vh] p-0 gap-0 overflow-hidden">
         {isLoading ? (
           <div className="p-6 space-y-4">
@@ -298,8 +237,7 @@ export const MovieDetailModal = () => {
                     <div className="flex flex-wrap items-center gap-3">
                       <Badge
                         variant="secondary"
-                        className="text-sm cursor-pointer hover:scale-105 transition-transform"
-                        onClick={() => handleFieldClick("year", movie.year)}
+                        className="text-sm"
                       >
                         <Calendar className="h-3 w-3 mr-1" />
                         {movie.year}
@@ -313,8 +251,7 @@ export const MovieDetailModal = () => {
                       {movie.original_language && (
                         <Badge
                           variant="secondary"
-                          className="text-sm cursor-pointer hover:scale-105 transition-transform"
-                          onClick={() => handleFieldClick("language", movie.original_language)}
+                          className="text-sm"
                         >
                           <Globe className="h-3 w-3 mr-1" />
                           {movie.original_language.toUpperCase()}
@@ -425,40 +362,6 @@ export const MovieDetailModal = () => {
               </div>
             </div>
 
-            {/* Previous/Next Navigation Bar */}
-            {(() => {
-              const hasMoviesList = location.state?.moviesList && Array.isArray(location.state.moviesList) && location.state.moviesList.length > 0;
-              const hasCurrentIndex = location.state?.currentIndex !== undefined && location.state?.currentIndex !== null;
-              
-              return isModalMode && hasMoviesList && hasCurrentIndex ? (
-                <div className="flex items-center justify-between px-8 py-3 border-b bg-muted/30">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handlePrevious}
-                    disabled={location.state.currentIndex === 0}
-                  >
-                    <ChevronLeft className="h-4 w-4 mr-1" />
-                    Previous
-                  </Button>
-                  
-                  <span className="text-xs text-muted-foreground">
-                    {location.state.currentIndex + 1} of {location.state.moviesList.length}
-                  </span>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleNext}
-                    disabled={location.state.currentIndex === location.state.moviesList.length - 1}
-                  >
-                    Next
-                    <ChevronRight className="h-4 w-4 ml-1" />
-                  </Button>
-                </div>
-              ) : null;
-            })()}
-
             {/* Content Section */}
             <ScrollArea className="max-h-[400px] p-8 pt-6">
               <div className="space-y-6">
@@ -517,8 +420,6 @@ export const MovieDetailModal = () => {
                           <Badge
                             key={d.trim()}
                             variant="secondary"
-                            className="cursor-pointer hover:scale-105 transition-transform"
-                            onClick={() => handleFieldClick("search", d.trim())}
                           >
                             {d.trim()}
                           </Badge>
@@ -537,8 +438,6 @@ export const MovieDetailModal = () => {
                           <Badge
                             key={writer.trim()}
                             variant="secondary"
-                            className="cursor-pointer hover:scale-105 transition-transform"
-                            onClick={() => handleFieldClick("search", writer.trim())}
                           >
                             {writer.trim()}
                           </Badge>
@@ -560,8 +459,6 @@ export const MovieDetailModal = () => {
                           <Badge
                             key={actor.trim()}
                             variant="secondary"
-                            className="cursor-pointer hover:scale-105 transition-transform"
-                            onClick={() => handleFieldClick("search", actor.trim())}
                           >
                             {actor.trim()}
                           </Badge>
@@ -584,8 +481,6 @@ export const MovieDetailModal = () => {
                           <Badge
                             key={person.trim()}
                             variant="outline"
-                            className="cursor-pointer hover:scale-105 transition-transform"
-                            onClick={() => handleFieldClick("search", person.trim())}
                           >
                             {person.trim()}
                           </Badge>
@@ -606,8 +501,6 @@ export const MovieDetailModal = () => {
                           <Badge
                             key={g}
                             variant="secondary"
-                            className="cursor-pointer hover:scale-105 transition-transform"
-                            onClick={() => handleFieldClick("genre", g)}
                           >
                             {g}
                           </Badge>
@@ -626,8 +519,7 @@ export const MovieDetailModal = () => {
                           <Badge
                             key={keyword}
                             variant="outline"
-                            className="text-xs cursor-pointer hover:scale-105 transition-transform"
-                            onClick={() => handleFieldClick("search", keyword)}
+                            className="text-xs"
                           >
                             {keyword}
                           </Badge>
@@ -650,8 +542,6 @@ export const MovieDetailModal = () => {
                           <Badge
                             key={idx}
                             variant="outline"
-                            className="cursor-pointer hover:scale-105 transition-transform"
-                            onClick={() => handleFieldClick("search", company.name || company)}
                           >
                             {company.name || company}
                           </Badge>
@@ -674,8 +564,6 @@ export const MovieDetailModal = () => {
                             <Badge
                               key={idx}
                               variant="outline"
-                              className="cursor-pointer hover:scale-105 transition-transform"
-                              onClick={() => handleFieldClick("search", country.name || country)}
                             >
                               {country.name || country}
                             </Badge>
@@ -697,8 +585,6 @@ export const MovieDetailModal = () => {
                             <Badge
                               key={idx}
                               variant="outline"
-                              className="cursor-pointer hover:scale-105 transition-transform"
-                              onClick={() => lang.iso_639_1 && handleFieldClick("language", lang.iso_639_1)}
                             >
                               {lang.english_name || lang.name || lang}
                             </Badge>
@@ -811,10 +697,7 @@ export const MovieDetailModal = () => {
                                 <CarouselItem key={similar.id} className="pl-2 basis-1/3 md:basis-1/4 lg:basis-1/6">
                                   <Card
                                     className="overflow-hidden cursor-pointer hover:scale-105 transition-transform"
-                                    onClick={() => {
-                                      handleClose();
-                                      setTimeout(() => navigate(`/movie/${similar.id}`), 100);
-                                    }}
+                                    onClick={() => onClose()}
                                   >
                                     <div className="aspect-[2/3] relative">
                                       <img

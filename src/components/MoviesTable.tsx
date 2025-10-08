@@ -1,6 +1,5 @@
 import { useState, useMemo } from "react";
 import { Star, ExternalLink, Search, Info } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -18,12 +17,11 @@ import { getOptimizedImageProps } from "@/lib/imageUtils";
 interface MoviesTableProps {
   movies: Movie[];
   title: string;
+  onOpenDetail?: (movieId: string) => void;
 }
 
-export const MoviesTable = ({ movies, title }: MoviesTableProps) => {
+export const MoviesTable = ({ movies, title, onOpenDetail }: MoviesTableProps) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const navigate = useNavigate();
-  const location = useLocation();
 
   const filteredMovies = useMemo(() => {
     return movies.filter((movie) =>
@@ -79,17 +77,7 @@ export const MoviesTable = ({ movies, title }: MoviesTableProps) => {
                 const imageProps = getOptimizedImageProps(movie.poster);
                 
                 const handleOpenDetail = () => {
-                  // Find the index in the original movies array
-                  const originalIndex = movies.findIndex(m => m.id === movie.id);
-                  
-                  navigate(`/movie/${movie.id}`, {
-                    state: {
-                      backgroundLocation: location,
-                      moviesList: movies.map(m => ({ id: m.id, title: m.title })),
-                      currentIndex: originalIndex,
-                      pageContext: 'movies-table'
-                    }
-                  });
+                  onOpenDetail?.(movie.id);
                 };
                 
                 return (
