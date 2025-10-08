@@ -6,10 +6,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Bookmark, Film } from "lucide-react";
+import { useLocation } from "react-router-dom";
 
 const Watchlist = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const { data: movies, isLoading } = useQuery({
     queryKey: ['watchlist', user?.id],
@@ -82,8 +84,14 @@ const Watchlist = () => {
           </div>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {movies?.map((movie) => (
-              <MovieCard key={movie.id} {...movie} />
+            {movies?.map((movie, index) => (
+              <MovieCard 
+                key={movie.id}
+                {...movie}
+                moviesList={movies.map(m => ({ id: m.id, title: m.title }))}
+                currentIndex={index}
+                pageContext="watchlist"
+              />
             ))}
           </div>
         )}

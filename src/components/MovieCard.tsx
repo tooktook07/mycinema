@@ -22,6 +22,9 @@ interface MovieCardProps extends Movie {
   onDirectorClick?: (director: string) => void;
   onWriterClick?: (writer: string) => void;
   onKeywordClick?: (keyword: string) => void;
+  moviesList?: Array<{ id: string; title: string }>;
+  currentIndex?: number;
+  pageContext?: string;
 }
 export const MovieCard = ({
   id,
@@ -54,7 +57,10 @@ export const MovieCard = ({
   onActorClick,
   onDirectorClick,
   onWriterClick,
-  onKeywordClick
+  onKeywordClick,
+  moviesList,
+  currentIndex,
+  pageContext
 }: MovieCardProps) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -145,7 +151,17 @@ export const MovieCard = ({
   };
 
   const handleMoreInfo = () => {
-    navigate(`/movie/${id}`, { state: { backgroundLocation: location } });
+    navigate(`/movie/${id}`, { 
+      state: { 
+        backgroundLocation: {
+          pathname: location.pathname,
+          search: location.search
+        },
+        moviesList: moviesList,
+        currentIndex: currentIndex,
+        pageContext: pageContext
+      } 
+    });
   };
   
   return <TooltipProvider>

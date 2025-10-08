@@ -18,10 +18,20 @@ import {
   Film,
   Languages,
   Sparkles,
+  ThumbsDown,
+  ThumbsUp,
+  Heart,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { getOptimizedImageProps } from "@/lib/imageUtils";
-import { MovieRating } from "@/components/MovieRating";
 import { MovieWatchlist } from "@/components/MovieWatchlist";
+import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffectiveAuth } from "@/contexts/DevModeContext";
+import { saveGuestRating, getGuestRatings } from "@/lib/guestRatings";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { getSimilarMovies } from "@/lib/recommendationEngine";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Card } from "@/components/ui/card";
@@ -31,6 +41,12 @@ export const MovieDetailModal = () => {
   }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { user } = useEffectiveAuth();
+  
+  const [currentRating, setCurrentRating] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const {
     data: movie,
@@ -56,11 +72,119 @@ export const MovieDetailModal = () => {
     },
     enabled: !!id,
   });
+  // Load user rating
+  useEffect(() => {
+    const loadRating = async () => {
+      if (!id) return;
+      
+      if (user) {
+        const { data } = await supabase
+          .from('user_ratings')
+          .select('user_rating')
+          .eq('user_id', user.id)
+          .eq('media_id', id)
+          .eq('media_type', 'movie')
+          .maybeSingle();
+        
+        if (data?.user_rating) {
+          setCurrentRating(data.user_rating);
+        }
+      } else {
+        const guestRatings = getGuestRatings();
+        const guestRating = guestRatings.find(r => r.movieId === id);
+        if (guestRating) {
+          setCurrentRating(guestRating.rating);
+        }
+      }
+    };
+    
+    loadRating();
+  }, [id, user]);
+
+  const handleRate = async (ratingValue: number) => {
+    if (!id || !movie) return;
+    setSaving(true);
+    
+    try {
+      if (user) {
+        const { error } = await supabase
+          .from('user_ratings')
+          .upsert({
+            user_id: user.id,
+            media_id: id,
+            media_type: 'movie',
+            user_rating: ratingValue,
+          }, {
+            onConflict: 'user_id,media_id,media_type'
+          });
+
+        if (error) throw error;
+        
+        queryClient.invalidateQueries({ queryKey: ['userRatings'] });
+      } else {
+        saveGuestRating(id, ratingValue);
+      }
+      
+      setCurrentRating(ratingValue);
+      
+      const messages = {
+        1: "Marked as not for me",
+        5: "👍 I liked this!",
+        10: "❤️ Love this!"
+      };
+      
+      toast({
+        title: messages[ratingValue as keyof typeof messages],
+      });
+    } catch (error) {
+      console.error('Error saving rating:', error);
+      toast({
+        title: "Error saving rating",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleClose = () => {
     if (location.state?.backgroundLocation) {
-      navigate(-1);
+      const bg = location.state.backgroundLocation;
+      navigate(`${bg.pathname}${bg.search || ''}`, { replace: true });
     } else {
       navigate("/");
+    }
+  };
+
+  const handlePrevious = () => {
+    const moviesList = location.state?.moviesList;
+    const currentIndex = location.state?.currentIndex;
+    
+    if (moviesList && currentIndex > 0) {
+      const prevMovie = moviesList[currentIndex - 1];
+      navigate(`/movie/${prevMovie.id}`, {
+        state: {
+          ...location.state,
+          currentIndex: currentIndex - 1
+        },
+        replace: true
+      });
+    }
+  };
+
+  const handleNext = () => {
+    const moviesList = location.state?.moviesList;
+    const currentIndex = location.state?.currentIndex;
+    
+    if (moviesList && currentIndex < moviesList.length - 1) {
+      const nextMovie = moviesList[currentIndex + 1];
+      navigate(`/movie/${nextMovie.id}`, {
+        state: {
+          ...location.state,
+          currentIndex: currentIndex + 1
+        },
+        replace: true
+      });
     }
   };
   const imageProps = movie ? getOptimizedImageProps(movie.poster) : null;
@@ -242,13 +366,89 @@ export const MovieDetailModal = () => {
                           </a>
                         </Button>
                         <MovieWatchlist movieId={movie.id} movieTitle={movie.title} iconOnly={true} />
-                        <MovieRating movieId={movie.id} movieTitle={movie.title} iconOnly={true} />
+                        
+                        {/* Inline Rating Buttons */}
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                size="icon" 
+                                variant={currentRating === 1 ? "default" : "outline"}
+                                onClick={() => handleRate(1)}
+                                disabled={saving}
+                                className="h-9 w-9"
+                              >
+                                <ThumbsDown className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Not for me</TooltipContent>
+                          </Tooltip>
+                          
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                size="icon" 
+                                variant={currentRating === 5 ? "default" : "outline"}
+                                onClick={() => handleRate(5)}
+                                disabled={saving}
+                                className="h-9 w-9"
+                              >
+                                <ThumbsUp className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>I liked this</TooltipContent>
+                          </Tooltip>
+                          
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                size="icon" 
+                                variant={currentRating === 10 ? "default" : "outline"}
+                                onClick={() => handleRate(10)}
+                                disabled={saving}
+                                className="h-9 w-9"
+                              >
+                                <Heart className="h-4 w-4 fill-current" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Love this!</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
+
+            {/* Previous/Next Navigation Bar */}
+            {location.state?.moviesList && location.state?.currentIndex !== undefined && (
+              <div className="flex items-center justify-between px-8 py-3 border-b bg-muted/30">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrevious}
+                  disabled={location.state.currentIndex === 0}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Previous
+                </Button>
+                
+                <span className="text-xs text-muted-foreground">
+                  {location.state.currentIndex + 1} of {location.state.moviesList.length}
+                </span>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNext}
+                  disabled={location.state.currentIndex === location.state.moviesList.length - 1}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            )}
 
             {/* Content Section */}
             <ScrollArea className="max-h-[400px] p-8 pt-6">

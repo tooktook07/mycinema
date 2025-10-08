@@ -13,9 +13,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Movie } from "@/data/types";
 import { useFilters } from "@/contexts/FilterContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const Movies = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // Debug logging
   useEffect(() => {
@@ -466,7 +469,22 @@ const Movies = () => {
               </p>
             </div> : viewMode === "grid" ? <>
               <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                {movies.map(movie => <MovieCard key={movie.id} {...movie} onYearClick={handleYearClick} onGenreClick={handleGenreClick} onLanguageClick={handleLanguageClick} onActorClick={handleActorClick} onDirectorClick={handleDirectorClick} onWriterClick={handleWriterClick} onKeywordClick={handleKeywordClick} />)}
+                {movies.map((movie, index) => (
+                  <MovieCard 
+                    key={movie.id}
+                    {...movie} 
+                    onYearClick={handleYearClick} 
+                    onGenreClick={handleGenreClick} 
+                    onLanguageClick={handleLanguageClick} 
+                    onActorClick={handleActorClick} 
+                    onDirectorClick={handleDirectorClick} 
+                    onWriterClick={handleWriterClick} 
+                    onKeywordClick={handleKeywordClick}
+                    moviesList={movies.map(m => ({ id: m.id, title: m.title }))}
+                    currentIndex={index}
+                    pageContext="movies"
+                  />
+                ))}
               </div>
               {renderPagination()}
             </> : <>

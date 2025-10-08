@@ -571,7 +571,33 @@ const Index = () => {
                   </Button>
                 </div> : <>
                   <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                    {recommendations?.map(movie => <MovieCard key={movie.id} id={movie.id} title={movie.title} year={movie.year} rating={movie.rating} genre={movie.genre} poster={movie.poster} imdbId={movie.imdbId} imdbRating={movie.imdbRating} imdbVotes={movie.imdbVotes} metascore={movie.metascore} plot={movie.plot} voteCount={movie.voteCount} originalLanguage={movie.originalLanguage} actors={movie.actors} director={movie.director} runtime={movie.runtime} writing={movie.writing} sound={movie.sound} keywords={movie.keywords} />)}
+                    {recommendations?.map((movie, index) => (
+                      <MovieCard 
+                        key={movie.id}
+                        id={movie.id} 
+                        title={movie.title} 
+                        year={movie.year} 
+                        rating={movie.rating} 
+                        genre={movie.genre} 
+                        poster={movie.poster} 
+                        imdbId={movie.imdbId} 
+                        imdbRating={movie.imdbRating} 
+                        imdbVotes={movie.imdbVotes} 
+                        metascore={movie.metascore} 
+                        plot={movie.plot} 
+                        voteCount={movie.voteCount} 
+                        originalLanguage={movie.originalLanguage} 
+                        actors={movie.actors} 
+                        director={movie.director} 
+                        runtime={movie.runtime} 
+                        writing={movie.writing} 
+                        sound={movie.sound} 
+                        keywords={movie.keywords}
+                        moviesList={recommendations.map(m => ({ id: m.id, title: m.title }))}
+                        currentIndex={index}
+                        pageContext="home"
+                      />
+                    ))}
                   </div>
                   {recommendations.length > 0 && (
                     <div className="flex justify-center mt-6">
