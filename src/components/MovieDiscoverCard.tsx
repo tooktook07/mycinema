@@ -7,7 +7,7 @@ import { getOptimizedImageProps } from "@/lib/imageUtils";
 import { RecommendationMovie } from "@/lib/recommendationEngine";
 import { useViewportTracking } from "@/hooks/useViewportTracking";
 
-interface MovieWizardCardProps {
+interface MovieDiscoverCardProps {
   movie: RecommendationMovie;
   onRate: (rating: number) => void;
   onSkip: () => void;
@@ -17,7 +17,7 @@ interface MovieWizardCardProps {
   enableViewportTracking?: boolean;
 }
 
-export const MovieWizardCard = ({ movie, onRate, onSkip, totalRated, isProcessing, processingAction, enableViewportTracking = false }: MovieWizardCardProps) => {
+export const MovieDiscoverCard = ({ movie, onRate, onSkip, totalRated, isProcessing, processingAction, enableViewportTracking = false }: MovieDiscoverCardProps) => {
   const imageProps = getOptimizedImageProps(movie.poster);
   const hasValidImdbId = movie.imdbId && movie.imdbId.startsWith('tt');
   const imdbUrl = `https://www.imdb.com/title/${movie.imdbId}/`;

@@ -256,7 +256,7 @@ export default function Profile() {
               <>
                 {guestRatings.length === 0 ? (
                   <p className="text-muted-foreground text-center py-8">
-                    You haven't rated any movies yet. Try the Movie Wizard to get started!
+                    You haven't rated any movies yet. Try Discover Mode to get started!
                   </p>
                 ) : (
                   <RatedItemsList items={guestRatings} />

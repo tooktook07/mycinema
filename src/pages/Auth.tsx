@@ -75,7 +75,7 @@ const Auth = () => {
               description: `Your ${result.count} guest ratings have been saved to your account.`,
             });
           }
-          navigate("/wizard");
+          navigate("/discover");
         }, 500);
       } else {
         toast({
@@ -139,7 +139,7 @@ const Auth = () => {
               description: `Your ${result.count} guest ratings have been saved to your account.`,
             });
           }
-          navigate("/wizard");
+          navigate("/discover");
         }, 500);
       } else {
         toast({
@@ -198,7 +198,7 @@ const Auth = () => {
                     <Sparkles className="h-5 w-5 text-foreground" />
                   </div>
                   <div>
-                    <h3 className="text-base mb-1">Movie Wizard</h3>
+                    <h3 className="text-base mb-1">Discover Mode</h3>
                     <p className="text-sm text-muted-foreground">Discover your perfect matches with our quick rating flow</p>
                   </div>
                 </div>

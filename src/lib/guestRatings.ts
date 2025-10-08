@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
-const GUEST_RATINGS_KEY = "movie_wizard_guest_ratings";
-const GUEST_SKIPPED_KEY = "movie_wizard_skipped";
+const GUEST_RATINGS_KEY = "discover_mode_guest_ratings";
+const GUEST_SKIPPED_KEY = "discover_mode_skipped";
 
 export interface GuestRating {
   movieId: string;

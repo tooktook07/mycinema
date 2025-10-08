@@ -13,12 +13,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { WizardModal } from "@/components/WizardModal";
+import { DiscoverModeModal } from "@/components/DiscoverModeModal";
 
 export const Navigation = () => {
   const { user, isAdmin, signOut } = useEffectiveAuth();
   const navigate = useNavigate();
-  const [wizardOpen, setWizardOpen] = useState(false);
+  const [discoverModeOpen, setDiscoverModeOpen] = useState(false);
 
   return (
     <nav className="border-b bg-background sticky top-0 z-50">
@@ -81,11 +81,11 @@ export const Navigation = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setWizardOpen(true)}
+              onClick={() => setDiscoverModeOpen(true)}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-sm text-muted-foreground hover:text-foreground"
             >
               <Sparkles className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Wizard</span>
+              <span className="hidden sm:inline">Discover</span>
             </Button>
             
             {isAdmin && (
@@ -161,7 +161,7 @@ export const Navigation = () => {
           </div>
         </div>
       </div>
-      <WizardModal open={wizardOpen} onOpenChange={setWizardOpen} />
+      <DiscoverModeModal open={discoverModeOpen} onOpenChange={setDiscoverModeOpen} />
     </nav>
   );
 };

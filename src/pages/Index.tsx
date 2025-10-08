@@ -93,8 +93,8 @@ const Index = () => {
   const [isHeroBannerDismissed, setIsHeroBannerDismissed] = useState(() => {
     return localStorage.getItem('hero_banner_dismissed') === 'true';
   });
-  const [isWizardCtaDismissed, setIsWizardCtaDismissed] = useState(() => {
-    return localStorage.getItem('wizard_cta_dismissed') === 'true';
+  const [isDiscoverCtaDismissed, setIsDiscoverCtaDismissed] = useState(() => {
+    return localStorage.getItem('discover_cta_dismissed') === 'true';
   });
   const [guestRatingCount, setGuestRatingCount] = useState(0);
   // Modal state
@@ -116,8 +116,8 @@ const Index = () => {
     if (user) {
       localStorage.removeItem('guest_banner_dismissed');
       setIsGuestBannerDismissed(false);
-      localStorage.removeItem('wizard_cta_dismissed');
-      setIsWizardCtaDismissed(false);
+      localStorage.removeItem('discover_cta_dismissed');
+      setIsDiscoverCtaDismissed(false);
     }
   }, [user]);
 
@@ -131,9 +131,9 @@ const Index = () => {
     setIsHeroBannerDismissed(true);
   };
 
-  const handleDismissWizardCta = () => {
-    localStorage.setItem('wizard_cta_dismissed', 'true');
-    setIsWizardCtaDismissed(true);
+  const handleDismissDiscoverCta = () => {
+    localStorage.setItem('discover_cta_dismissed', 'true');
+    setIsDiscoverCtaDismissed(true);
   };
   const fetchStats = async () => {
     try {
@@ -697,13 +697,13 @@ const Index = () => {
 
       <div className="container mx-auto max-w-7xl px-4 py-8">
 
-        {/* Wizard CTA for logged-in users with < 5 ratings */}
-        {user && stats && stats.userRatingsCount < 5 && !isWizardCtaDismissed && (
+        {/* Discover Mode CTA for logged-in users with < 5 ratings */}
+        {user && stats && stats.userRatingsCount < 5 && !isDiscoverCtaDismissed && (
           <Card className="mb-8 bg-gradient-to-br from-primary/10 via-primary/5 to-background border-primary/20 relative">
             <Button 
               variant="ghost" 
               size="icon" 
-              onClick={handleDismissWizardCta}
+              onClick={handleDismissDiscoverCta}
               className="absolute top-4 right-4 hover:bg-background/80 z-10"
             >
               <X className="h-4 w-4" />
@@ -721,7 +721,7 @@ const Index = () => {
                   <p className="text-sm text-muted-foreground">
                     {stats.userRatingsCount > 0 
                       ? `You've rated ${stats.userRatingsCount} movie${stats.userRatingsCount === 1 ? '' : 's'}. Rate ${5 - stats.userRatingsCount} more to unlock recommendations!`
-                      : "Start your journey with the Rating Wizard"}
+                      : "Start your journey with Discover Mode"}
                   </p>
                 </div>
                 <Button size="lg" onClick={() => navigate("/movies")} className="min-w-[200px]">

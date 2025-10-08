@@ -347,10 +347,10 @@ export async function getNextRecommendation(
       });
 
       // Select randomly from top matches for variety
-      const TOP_MATCHES_FOR_WIZARD = 20;
+      const TOP_MATCHES_FOR_DISCOVER = 20;
       const topMatches = moviesWithScores
         .sort((a, b) => b.similarityScore - a.similarityScore)
-        .slice(0, TOP_MATCHES_FOR_WIZARD);
+        .slice(0, TOP_MATCHES_FOR_DISCOVER);
 
       if (!topMatches || topMatches.length === 0) return null;
 

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Loader2, Sparkles, CheckCircle2, RefreshCw } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { MovieWizardCard } from "@/components/MovieWizardCard";
+import { MovieDiscoverCard } from "@/components/MovieDiscoverCard";
 import { getNextRecommendation, RecommendationMovie } from "@/lib/recommendationEngine";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,12 +12,12 @@ import { toast } from "sonner";
 import { saveGuestRating, getGuestRatings, getGuestRatedCount, saveGuestSkipped, getGuestSkipped } from "@/lib/guestRatings";
 import { clearOldestHalfOfTracking, canClearOlderEntries, clearRecentlyShown, getRecentlyShownStats } from "@/lib/recentlyShownTracker";
 
-interface WizardProps {
+interface DiscoverModeProps {
   isModal?: boolean;
   onClose?: () => void;
 }
 
-const Wizard = ({ isModal = false, onClose }: WizardProps = {}) => {
+const DiscoverMode = ({ isModal = false, onClose }: DiscoverModeProps = {}) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [currentMovie, setCurrentMovie] = useState<RecommendationMovie | null>(null);
@@ -201,7 +201,7 @@ const Wizard = ({ isModal = false, onClose }: WizardProps = {}) => {
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
               <Sparkles className="h-5 w-5 text-primary" />
-              <h1 className="text-xl md:text-2xl font-bold">Movie Wizard</h1>
+              <h1 className="text-xl md:text-2xl font-bold">Discover Mode</h1>
               {isGuest && (
                 <Badge variant="secondary" className="text-xs">
                   🎭 Guest
@@ -241,7 +241,7 @@ const Wizard = ({ isModal = false, onClose }: WizardProps = {}) => {
         {/* Movie Card */}
         {currentMovie ? (
           <div className="flex justify-center flex-1 mb-6">
-            <MovieWizardCard
+            <MovieDiscoverCard
               movie={currentMovie}
               onRate={handleRate}
               onSkip={handleSkip}
@@ -297,4 +297,4 @@ const Wizard = ({ isModal = false, onClose }: WizardProps = {}) => {
   );
 };
 
-export default Wizard;
+export default DiscoverMode;

@@ -14,7 +14,7 @@ import Movies from "./pages/Movies";
 import Account from "./pages/Account";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
-import Wizard from "./pages/Wizard";
+import DiscoverMode from "./pages/DiscoverMode";
 import Watchlist from "./pages/Watchlist";
 import NotFound from "./pages/NotFound";
 
@@ -27,7 +27,7 @@ const AppRoutes = () => {
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/movies" element={<Movies />} />
-        <Route path="/wizard" element={<Wizard />} />
+        <Route path="/discover" element={<DiscoverMode />} />
         <Route path="/watchlist" element={<Watchlist />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/account" element={<Account />} />
