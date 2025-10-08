@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { MovieDiscoverCard } from "@/components/MovieDiscoverCard";
-import { MovieDetailModal } from "@/components/MovieDetailModal";
 import { MovieWatchlist } from "@/components/MovieWatchlist";
 import { getNextRecommendation, RecommendationMovie } from "@/lib/recommendationEngine";
 import { Button } from "@/components/ui/button";
@@ -24,7 +23,6 @@ const DiscoverMode = () => {
   const [totalRated, setTotalRated] = useState(0);
   const [sessionRatings, setSessionRatings] = useState(0);
   const [skippedIds, setSkippedIds] = useState<string[]>([]);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
 
@@ -188,16 +186,6 @@ const DiscoverMode = () => {
     await loadNextMovie();
   };
 
-  const handleNavigateToSimilarMovie = (movieId: string) => {
-    if (currentMovie) {
-      markMoviesAsShown([currentMovie.id]);
-    }
-    // In a full implementation, you'd load the specific movie here
-    // For now, just load next recommendation
-    loadNextMovie();
-    setIsDetailModalOpen(false);
-  };
-
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart(e.targetTouches[0].clientY);
   };
@@ -249,7 +237,6 @@ const DiscoverMode = () => {
                 totalRated={totalRated}
                 sessionRatings={sessionRatings}
                 recentStats={recentStats}
-                onReadMore={() => setIsDetailModalOpen(true)}
                 enableViewportTracking={false}
               />
             </motion.div>
@@ -354,13 +341,6 @@ const DiscoverMode = () => {
           </div>
         </div>
       )}
-
-      <MovieDetailModal
-        isOpen={isDetailModalOpen}
-        onClose={() => setIsDetailModalOpen(false)}
-        movieId={currentMovie?.id || null}
-        onNavigateToMovie={handleNavigateToSimilarMovie}
-      />
       </div>
     </div>
   );

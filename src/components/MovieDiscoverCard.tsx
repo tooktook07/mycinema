@@ -76,19 +76,9 @@ export const MovieDiscoverCard = ({ movie, totalRated, sessionRatings, recentSta
 
         {/* Plot Preview */}
         {movie.plot && (
-          <div>
-            <p className="text-xs md:text-sm text-white/90 line-clamp-3 mb-2 drop-shadow-lg leading-relaxed">
-              {movie.plot}
-            </p>
-            {onReadMore && (
-              <button
-                onClick={onReadMore}
-                className="text-white hover:text-white/80 underline underline-offset-2 backdrop-blur-md inline-block text-sm transition-colors"
-              >
-                Read More
-              </button>
-            )}
-          </div>
+          <p className="text-xs md:text-sm text-white/90 line-clamp-3 mb-2 drop-shadow-lg leading-relaxed">
+            {movie.plot}
+          </p>
         )}
       </div>
     </div>
