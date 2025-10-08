@@ -223,7 +223,7 @@ export const SyncMovies = ({
           <Label htmlFor="enrich-omdb" className="cursor-pointer">
             <div className="font-medium">Enrich with IMDb data</div>
             <div className="text-xs text-muted-foreground">
-              Adds IMDb ratings, Metascores, awards, and box office data (limited to 50 movies per sync)
+              Adds IMDb ratings, Metascores, awards, and box office data (processes 50 movies per sync - run multiple times to enrich all movies)
             </div>
           </Label>
         </div>
@@ -254,9 +254,9 @@ export const SyncMovies = ({
               onExcludedGenreToggle(''); // Clear by setting empty
               onStatusToggle('Released');
               onLanguageToggle(''); // Clear by setting empty
-              onRatingRangeChange([6.9, 9.5]);
-              onYearRangeChange([2025, 2025]);
-              onMinVoteCountChange(1000);
+              onRatingRangeChange([5.0, 10.0]);
+              onYearRangeChange([2005, 2025]);
+              onMinVoteCountChange(50);
               onMinPopularityChange(0);
             }}
             size="lg"

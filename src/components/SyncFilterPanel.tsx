@@ -85,9 +85,9 @@ export const SyncFilterPanel = ({
     excludedGenres.length +
     selectedStatuses.length +
     selectedLanguages.length +
-    (ratingRange[0] > 0 || ratingRange[1] < 10 ? 1 : 0) + 
-    (yearRange[0] !== 2025 || yearRange[1] !== 2025 ? 1 : 0) +
-    (minVoteCount > 100 ? 1 : 0) +
+    (ratingRange[0] > 5.0 || ratingRange[1] < 10 ? 1 : 0) + 
+    (yearRange[0] !== 2005 || yearRange[1] !== 2025 ? 1 : 0) +
+    (minVoteCount > 50 ? 1 : 0) +
     (minPopularity > 0 ? 1 : 0);
 
   return (
