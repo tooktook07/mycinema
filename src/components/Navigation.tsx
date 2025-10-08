@@ -1,6 +1,5 @@
 import { Film, Home, Settings, LogIn, LogOut, User, Sparkles, Bookmark } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useEffectiveAuth } from "@/contexts/DevModeContext";
@@ -13,12 +12,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DiscoverModeModal } from "@/components/DiscoverModeModal";
-
 export const Navigation = () => {
   const { user, isAdmin, signOut } = useEffectiveAuth();
   const navigate = useNavigate();
-  const [discoverModeOpen, setDiscoverModeOpen] = useState(false);
 
   return (
     <nav className="border-b bg-background sticky top-0 z-50">
@@ -81,7 +77,7 @@ export const Navigation = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setDiscoverModeOpen(true)}
+              onClick={() => navigate("/discover")}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-sm text-muted-foreground hover:text-foreground"
             >
               <Sparkles className="h-3.5 w-3.5" />
@@ -161,7 +157,6 @@ export const Navigation = () => {
           </div>
         </div>
       </div>
-      <DiscoverModeModal open={discoverModeOpen} onOpenChange={setDiscoverModeOpen} />
     </nav>
   );
 };

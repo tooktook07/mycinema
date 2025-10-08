@@ -12,12 +12,7 @@ import { toast } from "sonner";
 import { saveGuestRating, getGuestRatings, getGuestRatedCount, saveGuestSkipped, getGuestSkipped } from "@/lib/guestRatings";
 import { clearOldestHalfOfTracking, canClearOlderEntries, clearRecentlyShown, getRecentlyShownStats } from "@/lib/recentlyShownTracker";
 
-interface DiscoverModeProps {
-  isModal?: boolean;
-  onClose?: () => void;
-}
-
-const DiscoverMode = ({ isModal = false, onClose }: DiscoverModeProps = {}) => {
+const DiscoverMode = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [currentMovie, setCurrentMovie] = useState<RecommendationMovie | null>(null);
@@ -186,14 +181,14 @@ const DiscoverMode = ({ isModal = false, onClose }: DiscoverModeProps = {}) => {
 
   if (loading && !currentMovie) {
     return (
-      <div className={isModal ? "h-full flex items-center justify-center" : "min-h-screen flex items-center justify-center"}>
+      <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className={isModal ? "h-full py-6 px-4" : "min-h-screen py-8 px-4"}>
+    <div className="min-h-screen py-8 px-4">
       <div className="container mx-auto max-w-7xl">
         {/* Compact Header with Stats */}
         <div className="flex items-center justify-between mb-6 px-4">
@@ -262,10 +257,7 @@ const DiscoverMode = ({ isModal = false, onClose }: DiscoverModeProps = {}) => {
             <CardContent>
               <div className="flex flex-col gap-2">
                 <Button 
-                  onClick={() => {
-                    if (isModal && onClose) onClose();
-                    navigate("/movies");
-                  }}
+                  onClick={() => navigate("/movies")}
                   className="w-full"
                   variant="outline"
                 >
