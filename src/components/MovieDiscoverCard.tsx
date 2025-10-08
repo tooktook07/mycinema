@@ -77,7 +77,7 @@ export const MovieDiscoverCard = ({ movie, totalRated, sessionRatings, recentSta
         {/* Plot Preview */}
         {movie.plot && (
           <div>
-            <p className="text-sm md:text-base text-white/90 line-clamp-3 mb-2 drop-shadow-lg leading-relaxed">
+            <p className="text-xs md:text-sm text-white/90 line-clamp-3 mb-2 drop-shadow-lg leading-relaxed">
               {movie.plot}
             </p>
             {onReadMore && (
