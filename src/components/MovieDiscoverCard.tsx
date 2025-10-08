@@ -81,15 +81,13 @@ export const MovieDiscoverCard = ({ movie, totalRated, sessionRatings, recentSta
               {movie.plot}
             </p>
             {onReadMore && (
-              <Button
-                variant="ghost"
-                size="sm"
+              <button
                 onClick={onReadMore}
-                className="text-white hover:bg-white/20 backdrop-blur-md"
+                className="text-white hover:text-white/80 underline underline-offset-2 backdrop-blur-md inline-flex items-center text-sm transition-colors"
               >
                 <Info className="h-4 w-4 mr-1" />
                 Read More
-              </Button>
+              </button>
             )}
           </div>
         )}
