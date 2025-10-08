@@ -51,6 +51,14 @@ export const MovieDetailModal = () => {
   // Determine if opened as modal overlay or direct route
   const isModalMode = !!location.state?.backgroundLocation;
 
+  // Redirect to home if opened without backgroundLocation (direct URL access)
+  useEffect(() => {
+    if (!isModalMode) {
+      console.log('[MovieDetailModal] Direct URL access detected, redirecting to home');
+      navigate('/', { replace: true });
+    }
+  }, [isModalMode, navigate]);
+
   const {
     data: movie,
     isLoading,
