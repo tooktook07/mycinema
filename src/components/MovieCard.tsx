@@ -33,6 +33,7 @@ export const MovieCard = ({
   year,
   genre,
   poster,
+  local_poster_url,
   imdbId,
   voteCount,
   originalLanguage,
@@ -73,7 +74,7 @@ export const MovieCard = ({
   const hasValidImdbId = imdbId && imdbId.startsWith('tt');
   const imdbUrl = `https://www.imdb.com/title/${imdbId}/`;
   const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(sanitizedTitle)}+${sanitizedYear}`;
-  const imageProps = getOptimizedImageProps(poster);
+  const imageProps = getOptimizedImageProps(poster, local_poster_url);
 
   useEffect(() => {
     const loadRating = async () => {

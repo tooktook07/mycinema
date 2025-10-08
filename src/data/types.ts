@@ -5,6 +5,7 @@ export interface Movie {
   year: number;
   genre: string[];
   poster: string;
+  local_poster_url?: string | null;
   imdbId: string;
   plot?: string;
   director?: string;

@@ -17,7 +17,7 @@ interface MovieDiscoverCardProps {
 }
 
 export const MovieDiscoverCard = ({ movie, totalRated, sessionRatings, recentStats, onReadMore, enableViewportTracking = false }: MovieDiscoverCardProps) => {
-  const imageProps = getOptimizedImageProps(movie.poster);
+  const imageProps = getOptimizedImageProps(movie.poster, movie.local_poster_url);
   const cardRef = useViewportTracking(movie.id, enableViewportTracking);
 
   return (

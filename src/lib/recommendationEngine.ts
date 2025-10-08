@@ -7,6 +7,7 @@ export interface RecommendationMovie {
   year: number;
   genre: string[];
   poster: string;
+  local_poster_url?: string | null;
   rating: number;
   plot: string;
   imdbId: string;

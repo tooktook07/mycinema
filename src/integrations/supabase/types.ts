@@ -30,6 +30,7 @@ export type Database = {
           imdb_votes: number | null
           keywords: string[] | null
           last_omdb_fetch: string | null
+          local_poster_url: string | null
           metascore: number | null
           original_language: string | null
           plot: string | null
@@ -67,6 +68,7 @@ export type Database = {
           imdb_votes?: number | null
           keywords?: string[] | null
           last_omdb_fetch?: string | null
+          local_poster_url?: string | null
           metascore?: number | null
           original_language?: string | null
           plot?: string | null
@@ -104,6 +106,7 @@ export type Database = {
           imdb_votes?: number | null
           keywords?: string[] | null
           last_omdb_fetch?: string | null
+          local_poster_url?: string | null
           metascore?: number | null
           original_language?: string | null
           plot?: string | null

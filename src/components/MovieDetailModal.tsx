@@ -384,7 +384,7 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
 
   const canGoBack = movieHistory.length > 1;
 
-  const imageProps = movie ? getOptimizedImageProps(movie.poster) : null;
+  const imageProps = movie ? getOptimizedImageProps(movie.poster, movie.local_poster_url) : null;
   const hasValidImdbId = movie?.imdb_id && movie.imdb_id.startsWith("tt");
   const imdbUrl = hasValidImdbId ? `https://www.imdb.com/title/${movie.imdb_id}/` : "";
   const googleSearchUrl = movie
@@ -987,7 +987,7 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                         <Carousel opts={{ align: "start", loop: false }} className="w-full">
                           <CarouselContent className="-ml-2">
                             {similarMovies.slice(0, 6).map((similar) => {
-                              const similarImageProps = getOptimizedImageProps(similar.poster);
+                              const similarImageProps = getOptimizedImageProps(similar.poster, (similar as any).local_poster_url);
                               return (
                                 <CarouselItem key={similar.id} className="pl-2 basis-1/3 md:basis-1/4 lg:basis-1/6">
                                   <Card

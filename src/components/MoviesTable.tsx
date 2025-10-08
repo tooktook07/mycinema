@@ -74,7 +74,7 @@ export const MoviesTable = ({ movies, title, onOpenDetail }: MoviesTableProps) =
               </TableRow>
             ) : (
               filteredMovies.map((movie, index) => {
-                const imageProps = getOptimizedImageProps(movie.poster);
+                const imageProps = getOptimizedImageProps(movie.poster, movie.local_poster_url);
                 
                 const handleOpenDetail = () => {
                   onOpenDetail?.(movie.id);

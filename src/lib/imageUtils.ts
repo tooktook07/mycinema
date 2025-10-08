@@ -3,16 +3,20 @@
  */
 
 /**
- * Generates optimized TMDB image attributes with responsive srcset
- * Changes w500 to w342 for better match with display size (~280px)
- * @param posterUrl - The original poster URL from TMDB
+ * Generates optimized image attributes with responsive srcset
+ * Prefers local storage over TMDB CDN when available
+ * @param posterUrl - The poster URL (local or TMDB)
+ * @param localPosterUrl - Optional local storage URL to prefer
  * @returns Object with src and srcSet for responsive images
  */
-export const getOptimizedImageProps = (posterUrl: string) => {
+export const getOptimizedImageProps = (posterUrl: string, localPosterUrl?: string | null) => {
+  // Prefer local storage if available
+  const imageUrl = localPosterUrl || posterUrl;
+  
   // If it's a TMDB URL with w500, optimize it
-  if (posterUrl && posterUrl.includes('image.tmdb.org/t/p/w500/')) {
-    const optimizedSrc = posterUrl.replace('/w500/', '/w342/');
-    const srcSet = `${optimizedSrc} 1x, ${posterUrl} 2x`;
+  if (imageUrl && imageUrl.includes('image.tmdb.org/t/p/w500/')) {
+    const optimizedSrc = imageUrl.replace('/w500/', '/w342/');
+    const srcSet = `${optimizedSrc} 1x, ${imageUrl} 2x`;
     return {
       src: optimizedSrc,
       srcSet: srcSet,
@@ -21,9 +25,9 @@ export const getOptimizedImageProps = (posterUrl: string) => {
     };
   }
   
-  // For non-TMDB images or different sizes, return as-is with lazy loading
+  // For local storage or non-TMDB images, return as-is with lazy loading
   return {
-    src: posterUrl,
+    src: imageUrl,
     loading: 'lazy' as const,
     decoding: 'async' as const
   };

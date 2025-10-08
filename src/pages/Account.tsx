@@ -11,6 +11,7 @@ import { ActivityLogs } from "./Account/ActivityLogs";
 import { RoleManagement } from "./Account/RoleManagement";
 import { SubscriptionManagement } from "./Account/SubscriptionManagement";
 import { OMDbEnrichment } from "./Account/OMDbEnrichment";
+import { PosterStorage } from "./Account/PosterStorage";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Account = () => {
@@ -139,9 +140,10 @@ const Account = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-8">
+          <TabsList className="grid w-full grid-cols-9">
             <TabsTrigger value="sync-movies">Sync Movies</TabsTrigger>
             <TabsTrigger value="omdb-enrichment">OMDb Enrichment</TabsTrigger>
+            <TabsTrigger value="poster-storage">Poster Storage</TabsTrigger>
             <TabsTrigger value="sync-history">Sync History</TabsTrigger>
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
@@ -174,6 +176,10 @@ const Account = () => {
 
           <TabsContent value="omdb-enrichment">
             <OMDbEnrichment />
+          </TabsContent>
+
+          <TabsContent value="poster-storage">
+            <PosterStorage />
           </TabsContent>
 
           <TabsContent value="sync-history">
