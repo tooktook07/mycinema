@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -5,19 +6,115 @@ import { Badge } from "@/components/ui/badge";
 import { Film, Heart, ThumbsUp, ThumbsDown, Bookmark, Sparkles, User, HelpCircle, RefreshCw } from "lucide-react";
 
 const Help = () => {
+  useEffect(() => {
+    // Set page title
+    document.title = "Help Center - MyCinema Movie Discovery Guide";
+    
+    // Set meta description
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute("content", "Complete guide to using MyCinema. Learn how to browse movies, use AI recommendations, rate films, manage your watchlist, and discover your next favorite movie.");
+    }
+    
+    // Set canonical URL
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute('href', window.location.origin + '/help');
+    
+    // Add structured data for FAQ
+    const structuredData = {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "How many movies should I rate to get good recommendations?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "At least 5 movies to start, but 20+ ratings will give you much better recommendations."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Why am I seeing movies I already rated?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "You might be seeing them in Browse mode - Discover Mode won't show rated movies. If you're in Discover Mode, try refreshing recommendations."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What's the difference between watchlist and ratings?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Watchlist contains movies you want to watch (saved for later), while Ratings are for movies you've seen and rated (which trains your AI recommendations)."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Do I need an account?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No, but guests can only store ratings in their browser. Creating an account syncs everything to the cloud."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I change a rating after I've given it?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes! Just click a different rating button on the same movie."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is my data private?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, your ratings and watchlist are private to your account only."
+          }
+        }
+      ]
+    };
+    
+    let script = document.querySelector('script[type="application/ld+json"]');
+    if (!script) {
+      script = document.createElement('script');
+      script.setAttribute('type', 'application/ld+json');
+      document.head.appendChild(script);
+    }
+    script.textContent = JSON.stringify(structuredData);
+    
+    // Cleanup function
+    return () => {
+      document.title = "MyCinema - AI-Powered Movie Recommendations";
+      const metaDesc = document.querySelector('meta[name="description"]');
+      if (metaDesc) {
+        metaDesc.setAttribute("content", "Discover movies you'll love with MyCinema's smart similarity algorithm. Get personalized recommendations based on your ratings, favorite genres, directors, and actors.");
+      }
+      const structuredScript = document.querySelector('script[type="application/ld+json"]');
+      if (structuredScript) {
+        structuredScript.remove();
+      }
+    };
+  }, []);
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container max-w-5xl mx-auto px-4 py-8 md:py-12">
+    <main className="min-h-screen bg-background">
+      <article className="container max-w-5xl mx-auto px-4 py-8 md:py-12">
         {/* Header */}
-        <div className="mb-8 md:mb-12 text-center space-y-4">
+        <header className="mb-8 md:mb-12 text-center space-y-4">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <Film className="h-10 w-10 text-primary" />
+            <Film className="h-10 w-10 text-primary" aria-hidden="true" />
             <h1 className="text-4xl md:text-5xl font-bold">Help Center</h1>
           </div>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Your personalized movie discovery companion. Browse thousands of movies and get AI-powered recommendations based on your taste.
           </p>
-        </div>
+        </header>
 
         {/* Quick Start Alert */}
         <Alert className="mb-8 border-primary/50 bg-primary/5">
@@ -527,11 +624,11 @@ const Help = () => {
         </Card>
 
         {/* Footer */}
-        <div className="text-center text-muted-foreground">
+        <footer className="text-center text-muted-foreground">
           <p>Need more help? Contact our support team.</p>
-        </div>
-      </div>
-    </div>
+        </footer>
+      </article>
+    </main>
   );
 };
 
