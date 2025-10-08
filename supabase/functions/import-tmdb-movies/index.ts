@@ -166,6 +166,44 @@ serve(async (req) => {
       throw new Error("Max retries exceeded");
     };
 
+    // Helper function to download and store poster
+    const downloadAndStorePoster = async (posterUrl: string, movieId: string, movieTitle: string): Promise<string | null> => {
+      try {
+        // Download poster from TMDB
+        const posterResponse = await fetchWithTimeout(posterUrl, REQUEST_TIMEOUT);
+        if (!posterResponse.ok) {
+          logMsg(`  ⚠️ Failed to download poster for "${movieTitle}"`);
+          return null;
+        }
+
+        const posterBlob = await posterResponse.arrayBuffer();
+        const fileName = `${movieId}.jpg`;
+
+        // Upload to Supabase storage
+        const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+          .from('movie-posters')
+          .upload(fileName, posterBlob, {
+            contentType: 'image/jpeg',
+            upsert: true
+          });
+
+        if (uploadError) {
+          logMsg(`  ⚠️ Failed to upload poster for "${movieTitle}": ${uploadError.message}`);
+          return null;
+        }
+
+        // Get public URL
+        const { data: publicUrlData } = supabaseAdmin.storage
+          .from('movie-posters')
+          .getPublicUrl(fileName);
+
+        return publicUrlData.publicUrl;
+      } catch (error: any) {
+        logMsg(`  ⚠️ Error storing poster for "${movieTitle}": ${error.message}`);
+        return null;
+      }
+    };
+
     logMsg(
       `Starting ${syncMode ? "sync" : "import"} with filters: ratingRange=${minRating}-${maxRating}, yearRange=${yearRange.join("-")}, genres=${genres?.join(",") || "all"}, excludedGenres=${excludedGenres?.join(",") || "none"}, languages=${languages?.join(",") || "all"}, statuses=${statuses?.join(",") || "all"}, minVoteCount=${minVoteCount}+, minPopularity=${minPopularity}`,
     );
@@ -340,6 +378,14 @@ serve(async (req) => {
           // Track this IMDB ID as processed
           processedImdbIds.add(actualImdbId);
 
+          // Download and store poster if available
+          const posterUrl = details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : null;
+          let localPosterUrl = null;
+          
+          if (posterUrl) {
+            localPosterUrl = await downloadAndStorePoster(posterUrl, actualImdbId, details.title);
+          }
+
           const movieData = {
             imdb_id: actualImdbId,
             title: details.title,
@@ -347,7 +393,8 @@ serve(async (req) => {
             rating: details.vote_average || null,
             vote_count: details.vote_count || null,
             popularity: details.popularity || null,
-            poster: details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : null,
+            poster: posterUrl,
+            local_poster_url: localPosterUrl,
             genres: movieGenres,
             plot: details.overview || null,
             director,
