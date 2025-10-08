@@ -151,16 +151,6 @@ export const MovieCard = ({
   };
 
   const handleMoreInfo = () => {
-    console.log('[MovieCard] Navigating with state:', {
-      backgroundLocation: {
-        pathname: location.pathname,
-        search: location.search
-      },
-      moviesList: moviesList,
-      currentIndex: currentIndex,
-      pageContext: pageContext
-    });
-    
     navigate(`/movie/${id}`, { 
       state: { 
         backgroundLocation: {

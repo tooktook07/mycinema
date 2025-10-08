@@ -45,11 +45,16 @@ export const MovieDetailModal = () => {
   const queryClient = useQueryClient();
   const { user } = useEffectiveAuth();
   
-  // Debug: Log location state
-  console.log('[MovieDetailModal] Mounted with location.state:', location.state);
-  
   const [currentRating, setCurrentRating] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Fallback: If modal opened without backgroundLocation, redirect to home
+  useEffect(() => {
+    if (!location.state?.backgroundLocation) {
+      console.log('[MovieDetailModal] No backgroundLocation found, redirecting to home');
+      navigate('/', { replace: true });
+    }
+  }, [location.state, navigate]);
 
   const {
     data: movie,
@@ -151,15 +156,11 @@ export const MovieDetailModal = () => {
   };
 
   const handleClose = () => {
-    console.log('[MovieDetailModal] Close clicked, location.state:', location.state);
-    
     if (location.state?.backgroundLocation) {
       const bg = location.state.backgroundLocation;
       const targetPath = `${bg.pathname}${bg.search || ''}`;
-      console.log('[MovieDetailModal] Navigating to:', targetPath);
       navigate(targetPath, { replace: true });
     } else {
-      console.log('[MovieDetailModal] No backgroundLocation, going home');
       navigate("/");
     }
   };
@@ -167,8 +168,6 @@ export const MovieDetailModal = () => {
   const handlePrevious = () => {
     const moviesList = location.state?.moviesList;
     const currentIndex = location.state?.currentIndex;
-    
-    console.log('[MovieDetailModal] Previous clicked, state:', { moviesList, currentIndex });
     
     if (moviesList && currentIndex !== undefined && currentIndex > 0) {
       const prevMovie = moviesList[currentIndex - 1];
@@ -185,8 +184,6 @@ export const MovieDetailModal = () => {
   const handleNext = () => {
     const moviesList = location.state?.moviesList;
     const currentIndex = location.state?.currentIndex;
-    
-    console.log('[MovieDetailModal] Next clicked, state:', { moviesList, currentIndex });
     
     if (moviesList && currentIndex !== undefined && currentIndex < moviesList.length - 1) {
       const nextMovie = moviesList[currentIndex + 1];
@@ -437,14 +434,6 @@ export const MovieDetailModal = () => {
             {(() => {
               const hasMoviesList = location.state?.moviesList && Array.isArray(location.state.moviesList) && location.state.moviesList.length > 0;
               const hasCurrentIndex = location.state?.currentIndex !== undefined && location.state?.currentIndex !== null;
-              
-              console.log('[MovieDetailModal] Nav bar check:', { 
-                hasMoviesList, 
-                hasCurrentIndex,
-                moviesListLength: location.state?.moviesList?.length,
-                currentIndex: location.state?.currentIndex,
-                fullState: location.state
-              });
               
               return hasMoviesList && hasCurrentIndex ? (
                 <div className="flex items-center justify-between px-8 py-3 border-b bg-muted/30">
