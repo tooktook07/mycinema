@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { MovieCard } from "@/components/MovieCard";
 import { LastSyncCard } from "@/components/LastSyncCard";
+import { getRecentlyShownMovieIds, markMoviesAsShown } from "@/lib/recentlyShownTracker";
 interface Stats {
   totalMovies: number;
   avgMovieRating: number;
@@ -170,6 +171,9 @@ const Index = () => {
   const fetchRecommendations = async (excludeIds: string[] = []) => {
     setLoadingRecommendations(true);
     try {
+      // Get recently shown movies to exclude
+      const recentlyShownIds = getRecentlyShownMovieIds();
+      
       // Fetch user's rated movies if logged in OR guest ratings from localStorage
       let userLikedMovies: any[] = [];
       let ratedMovieIds: string[] = [];
@@ -259,7 +263,8 @@ const Index = () => {
         });
 
         // Fetch candidate movies (unrated, decent quality) - prioritize IMDb ratings
-        const allExcludedIds = [...ratedMovieIds, ...excludeIds];
+        // Include recently shown movies in exclusion list
+        const allExcludedIds = [...ratedMovieIds, ...excludeIds, ...recentlyShownIds];
         let candidateQuery = supabase
           .from('movies')
           .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes')
@@ -346,10 +351,14 @@ const Index = () => {
             keywords: movie.keywords || []
           }));
 
+        // Mark these recommendations as shown
+        markMoviesAsShown(topRecommendations.map(r => r.id));
+        
         setRecommendations(topRecommendations);
       } else {
         // Fallback: Show top-rated movies for users/guests with few/no ratings
-        const allExcludedIds = [...ratedMovieIds, ...excludeIds];
+        // Include recently shown movies in exclusion list
+        const allExcludedIds = [...ratedMovieIds, ...excludeIds, ...recentlyShownIds];
         let fallbackQuery = supabase
           .from('movies')
           .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes')
@@ -389,6 +398,9 @@ const Index = () => {
           keywords: movie.keywords || []
         }));
 
+        // Mark these recommendations as shown
+        markMoviesAsShown(selected.map(r => r.id));
+        
         setRecommendations(selected);
       }
     } catch (error) {

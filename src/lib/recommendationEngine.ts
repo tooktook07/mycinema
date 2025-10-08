@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getRecentlyShownMovieIds, markMoviesAsShown } from "./recentlyShownTracker";
 
 export interface RecommendationMovie {
   id: string;
@@ -62,6 +63,9 @@ export async function getNextRecommendation(
     return getFallbackRecommendation(excludeIds);
   }
   try {
+    // Get recently shown movies to exclude
+    const recentlyShownIds = getRecentlyShownMovieIds();
+    
     // Phase 1 & 3: Fetch user's rated movies WITH timestamps for temporal decay
     const { data: userRatings } = await supabase
       .from('user_ratings')
@@ -71,7 +75,7 @@ export async function getNextRecommendation(
       .not('user_rating', 'is', null);
     
     const ratedMovieIds = (userRatings || []).map(r => r.media_id).filter(Boolean) as string[];
-    const allExcludedIds = [...ratedMovieIds, ...excludeIds];
+    const allExcludedIds = [...ratedMovieIds, ...excludeIds, ...recentlyShownIds];
     
     // Filter ratings that matter (likes and dislikes, exclude neutral)
     const meaningfulRatings = (userRatings || []).filter(r => 
@@ -305,6 +309,9 @@ export async function getNextRecommendation(
       const randomIndex = Math.floor(Math.random() * topMatches.length);
       const bestMatch = topMatches[randomIndex];
 
+      // Mark this recommendation as shown
+      markMoviesAsShown([bestMatch.id]);
+
       return {
         id: bestMatch.id,
         title: bestMatch.title,
@@ -336,6 +343,10 @@ export async function getNextRecommendation(
 }
 
 async function getFallbackRecommendation(excludeIds: string[]): Promise<RecommendationMovie | null> {
+  // Get recently shown movies to exclude
+  const recentlyShownIds = getRecentlyShownMovieIds();
+  const allExcludedIds = [...excludeIds, ...recentlyShownIds];
+  
   let query = supabase
     .from('movies')
     .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes')
@@ -346,8 +357,8 @@ async function getFallbackRecommendation(excludeIds: string[]): Promise<Recommen
   query = query.order('imdb_rating', { ascending: false, nullsFirst: false });
   query = query.order('vote_count', { ascending: false });
 
-  if (excludeIds.length > 0) {
-    query = query.not('id', 'in', `(${excludeIds.join(',')})`);
+  if (allExcludedIds.length > 0) {
+    query = query.not('id', 'in', `(${allExcludedIds.join(',')})`);
   }
 
   const { data: movies } = await query.limit(50);
@@ -357,6 +368,9 @@ async function getFallbackRecommendation(excludeIds: string[]): Promise<Recommen
   // Randomly select from top-rated
   const randomIndex = Math.floor(Math.random() * movies.length);
   const movie = movies[randomIndex];
+
+  // Mark this recommendation as shown
+  markMoviesAsShown([movie.id]);
 
   return {
     id: movie.id,
