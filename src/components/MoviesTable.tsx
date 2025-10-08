@@ -84,10 +84,7 @@ export const MoviesTable = ({ movies, title }: MoviesTableProps) => {
                   
                   navigate(`/movie/${movie.id}`, {
                     state: {
-                      backgroundLocation: {
-                        pathname: location.pathname,
-                        search: location.search
-                      },
+                      backgroundLocation: location,
                       moviesList: movies.map(m => ({ id: m.id, title: m.title })),
                       currentIndex: originalIndex,
                       pageContext: 'movies-table'

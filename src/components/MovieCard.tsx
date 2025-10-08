@@ -153,10 +153,7 @@ export const MovieCard = ({
   const handleMoreInfo = () => {
     navigate(`/movie/${id}`, { 
       state: { 
-        backgroundLocation: {
-          pathname: location.pathname,
-          search: location.search
-        },
+        backgroundLocation: location,
         moviesList: moviesList,
         currentIndex: currentIndex,
         pageContext: pageContext
