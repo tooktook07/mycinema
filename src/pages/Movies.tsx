@@ -56,18 +56,12 @@ const Movies = () => {
     setAppliedRatingRange,
     appliedYearRange,
     setAppliedYearRange,
-    appliedLanguages,
-    setAppliedLanguages,
     appliedSearchText,
     setAppliedSearchText,
     resetFilters
   } = useFilters();
   const handleGenreToggle = (genre: string) => {
     setAppliedGenres(appliedGenres.includes(genre) ? appliedGenres.filter(g => g !== genre) : [...appliedGenres, genre]);
-    setCurrentPage(1);
-  };
-  const handleLanguageToggle = (language: string) => {
-    setAppliedLanguages(appliedLanguages.includes(language) ? appliedLanguages.filter(l => l !== language) : [...appliedLanguages, language]);
     setCurrentPage(1);
   };
   const handleResetFilters = () => {
@@ -80,10 +74,6 @@ const Movies = () => {
   };
   const handleGenreClick = (genre: string) => {
     setAppliedGenres([genre]);
-    setCurrentPage(1);
-  };
-  const handleLanguageClick = (language: string) => {
-    setAppliedLanguages([language]);
     setCurrentPage(1);
   };
   const handleActorClick = (actor: string) => {
@@ -125,13 +115,12 @@ const Movies = () => {
     error,
     isError
   } = useQuery({
-    queryKey: ["movies", appliedGenres, appliedRatingRange, appliedYearRange, appliedLanguages, appliedSearchText, currentPage, sortBy, sortOrder, itemsPerPage],
+    queryKey: ["movies", appliedGenres, appliedRatingRange, appliedYearRange, appliedSearchText, currentPage, sortBy, sortOrder, itemsPerPage],
     queryFn: async () => {
       console.log("[Movies Query] Starting fetch with filters:", {
         genres: appliedGenres,
         rating: appliedRatingRange,
         year: appliedYearRange,
-        languages: appliedLanguages,
         search: appliedSearchText,
         page: currentPage,
         sortBy,
@@ -164,9 +153,6 @@ const Movies = () => {
         query = query.or(`imdb_rating.lte.${max},and(imdb_rating.is.null,rating.lte.${max})`);
       }
         query = query.gte("year", appliedYearRange[0]).lte("year", appliedYearRange[1]);
-        if (appliedLanguages.length > 0) {
-          query = query.in("original_language", appliedLanguages);
-        }
 
         // Apply text search across multiple fields
         if (appliedSearchText) {
@@ -237,9 +223,6 @@ const Movies = () => {
         query = query.or(`imdb_rating.lte.${max},and(imdb_rating.is.null,rating.lte.${max})`);
       }
       query = query.gte("year", appliedYearRange[0]).lte("year", appliedYearRange[1]);
-      if (appliedLanguages.length > 0) {
-        query = query.in("original_language", appliedLanguages);
-      }
 
       // Apply text search across multiple fields
       if (appliedSearchText) {
@@ -431,7 +414,7 @@ const Movies = () => {
         }} yearRange={appliedYearRange} onYearRangeChange={range => {
           setAppliedYearRange(range);
           setCurrentPage(1);
-        }} selectedLanguages={appliedLanguages} onLanguageToggle={handleLanguageToggle} searchText={appliedSearchText} onSearchTextChange={text => {
+        }} searchText={appliedSearchText} onSearchTextChange={text => {
           setAppliedSearchText(text);
           setCurrentPage(1);
         }} onReset={handleResetFilters} />
@@ -528,7 +511,6 @@ const Movies = () => {
                       preloadedInWatchlist={userData?.inWatchlist}
                       onYearClick={handleYearClick}
                       onGenreClick={handleGenreClick}
-                      onLanguageClick={handleLanguageClick}
                       onActorClick={handleActorClick}
                       onDirectorClick={handleDirectorClick}
                       onWriterClick={handleWriterClick}

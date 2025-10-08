@@ -8,8 +8,6 @@ interface FilterContextType {
   setAppliedRatingRange: (range: [number, number]) => void;
   appliedYearRange: [number, number];
   setAppliedYearRange: (range: [number, number]) => void;
-  appliedLanguages: string[];
-  setAppliedLanguages: (languages: string[]) => void;
   appliedSearchText: string;
   setAppliedSearchText: (text: string) => void;
   resetFilters: () => void;
@@ -28,7 +26,6 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
   const appliedYearRange: [number, number] = searchParams.get('year')
     ? searchParams.get('year')!.split('-').map(Number) as [number, number]
     : [1900, 2030];
-  const appliedLanguages = searchParams.get('languages')?.split(',').filter(Boolean) || [];
   const appliedSearchText = searchParams.get('search') || "";
 
   // Write to URL params
@@ -62,16 +59,6 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
     setSearchParams(newParams);
   };
 
-  const setAppliedLanguages = (languages: string[]) => {
-    const newParams = new URLSearchParams(searchParams);
-    if (languages.length > 0) {
-      newParams.set('languages', languages.join(','));
-    } else {
-      newParams.delete('languages');
-    }
-    setSearchParams(newParams);
-  };
-
   const setAppliedSearchText = (text: string) => {
     const newParams = new URLSearchParams(searchParams);
     if (text) {
@@ -95,8 +82,6 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
         setAppliedRatingRange,
         appliedYearRange,
         setAppliedYearRange,
-        appliedLanguages,
-        setAppliedLanguages,
         appliedSearchText,
         setAppliedSearchText,
         resetFilters

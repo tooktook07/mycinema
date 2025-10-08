@@ -1,4 +1,4 @@
-import { Star, Globe, Info, ThumbsDown, ThumbsUp, Heart } from "lucide-react";
+import { Star, Info, ThumbsDown, ThumbsUp, Heart } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,6 @@ interface MovieCardProps extends Movie {
   enableViewportTracking?: boolean;
   onYearClick?: (year: number) => void;
   onGenreClick?: (genre: string) => void;
-  onLanguageClick?: (language: string) => void;
   onActorClick?: (actor: string) => void;
   onDirectorClick?: (director: string) => void;
   onWriterClick?: (writer: string) => void;
@@ -55,7 +54,6 @@ export const MovieCard = ({
   enableViewportTracking = false,
   onYearClick,
   onGenreClick,
-  onLanguageClick,
   onActorClick,
   onDirectorClick,
   onWriterClick,
@@ -175,19 +173,11 @@ export const MovieCard = ({
         {/* Title - Full Width */}
         <h3 className="line-clamp-2 text-base font-semibold leading-tight">{title}</h3>
         
-        {/* Info Row: Left (Year + Lang) | Right (Rating) */}
+        {/* Info Row: Year | Rating */}
         <div className="flex items-center justify-between mt-3">
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80 transition-colors" onClick={() => onYearClick?.(year)}>
-              {year}
-            </Badge>
-            {originalLanguage && (
-              <Badge variant="outline" className="text-xs flex items-center gap-1 cursor-pointer hover:bg-secondary transition-colors" onClick={() => onLanguageClick?.(originalLanguage)}>
-                <Globe className="h-3 w-3" />
-                {originalLanguage.toUpperCase()}
-              </Badge>
-            )}
-          </div>
+          <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80 transition-colors" onClick={() => onYearClick?.(year)}>
+            {year}
+          </Badge>
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="flex items-center gap-1 text-foreground cursor-help">

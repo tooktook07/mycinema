@@ -14,8 +14,6 @@ interface FilterPanelProps {
   onRatingRangeChange: (range: [number, number]) => void;
   yearRange: [number, number];
   onYearRangeChange: (range: [number, number]) => void;
-  selectedLanguages: string[];
-  onLanguageToggle: (language: string) => void;
   searchText: string;
   onSearchTextChange: (text: string) => void;
   onReset: () => void;
@@ -34,20 +32,6 @@ const GENRES = [
   "Fantasy",
 ];
 
-const LANGUAGES = [
-  { code: "en", name: "English" },
-  { code: "es", name: "Spanish" },
-  { code: "fr", name: "French" },
-  { code: "de", name: "German" },
-  { code: "it", name: "Italian" },
-  { code: "ja", name: "Japanese" },
-  { code: "ko", name: "Korean" },
-  { code: "zh", name: "Chinese" },
-  { code: "pt", name: "Portuguese" },
-  { code: "ru", name: "Russian" },
-  { code: "ar", name: "Arabic" },
-  { code: "hi", name: "Hindi" },
-];
 
 export const FilterPanel = ({
   selectedGenres,
@@ -56,8 +40,6 @@ export const FilterPanel = ({
   onRatingRangeChange,
   yearRange,
   onYearRangeChange,
-  selectedLanguages,
-  onLanguageToggle,
   searchText,
   onSearchTextChange,
   onReset,
@@ -80,7 +62,6 @@ export const FilterPanel = ({
   const selectedCount = selectedGenres.length + 
     (ratingRange[0] > 0 || ratingRange[1] < 10 ? 1 : 0) + 
     (yearRange[0] !== 1900 || yearRange[1] !== 2030 ? 1 : 0) +
-    selectedLanguages.length +
     (searchText ? 1 : 0);
 
   return (
@@ -130,7 +111,7 @@ export const FilterPanel = ({
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-4">
+      <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-3">
           <div>
             <Label className="text-base font-semibold text-foreground">Genres</Label>
@@ -151,32 +132,6 @@ export const FilterPanel = ({
                 >
                   {isSelected && <span className="mr-1">✓</span>}
                   {genre}
-                </Badge>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <div>
-            <Label className="text-base font-semibold text-foreground">Languages</Label>
-            <p className="text-xs text-muted-foreground mt-1">Select one or more languages</p>
-          </div>
-          <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-2 rounded border border-border/50 bg-background/50">
-            {LANGUAGES.map((lang) => {
-              const isSelected = selectedLanguages.includes(lang.code);
-              return (
-                <Badge
-                  key={lang.code}
-                  variant={isSelected ? "default" : "outline"}
-                  className={cn(
-                    "cursor-pointer transition-all hover:scale-105",
-                    isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background"
-                  )}
-                  onClick={() => onLanguageToggle(lang.code)}
-                >
-                  {isSelected && <span className="mr-1">✓</span>}
-                  {lang.code.toUpperCase()} - {lang.name}
                 </Badge>
               );
             })}
