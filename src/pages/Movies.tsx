@@ -173,11 +173,8 @@ const Movies = () => {
           query = query.or(`title.ilike.%${appliedSearchText}%,actors.ilike.%${appliedSearchText}%,director.ilike.%${appliedSearchText}%,writing.ilike.%${appliedSearchText}%,keywords.cs.{${appliedSearchText}}`);
         }
 
-        // Sort by user_rating
-        query = query.order('user_rating', {
-          ascending: sortOrder === "asc",
-          foreignTable: 'user_ratings'
-        });
+        // Skip database-level sorting for user_rating (PostgREST limitation with embedded resources)
+        // We'll sort client-side instead
 
         // Apply pagination
         const from = (currentPage - 1) * itemsPerPage;
@@ -185,6 +182,16 @@ const Movies = () => {
         query = query.range(from, to);
 
         const { data, error, count } = await query;
+        
+        // Client-side sorting for user_rating (PostgREST can't order by embedded resource columns)
+        if (data && Array.isArray(data)) {
+          data.sort((a, b) => {
+            const aRating = a.user_ratings?.[0]?.user_rating ?? 0;
+            const bRating = b.user_ratings?.[0]?.user_rating ?? 0;
+            return sortOrder === "asc" ? aRating - bRating : bRating - aRating;
+          });
+          console.log("[Movies Query] Client-side sorted by user_rating", sortOrder);
+        }
         if (error) {
           console.error("[Movies Query] Error fetching with user_rating:", error);
           throw error;
