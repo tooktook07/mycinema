@@ -87,8 +87,14 @@ const Index = () => {
   const [excludedRecommendationIds, setExcludedRecommendationIds] = useState<string[]>([]);
   const [totalMoviesViewed, setTotalMoviesViewed] = useState(0);
   const [totalAvailableMovies, setTotalAvailableMovies] = useState(0);
-  const [isBannerDismissed, setIsBannerDismissed] = useState(() => {
+  const [isGuestBannerDismissed, setIsGuestBannerDismissed] = useState(() => {
+    return localStorage.getItem('guest_banner_dismissed') === 'true';
+  });
+  const [isHeroBannerDismissed, setIsHeroBannerDismissed] = useState(() => {
     return localStorage.getItem('hero_banner_dismissed') === 'true';
+  });
+  const [isWizardCtaDismissed, setIsWizardCtaDismissed] = useState(() => {
+    return localStorage.getItem('wizard_cta_dismissed') === 'true';
   });
   const [guestRatingCount, setGuestRatingCount] = useState(0);
   // Modal state
@@ -108,14 +114,26 @@ const Index = () => {
 
   useEffect(() => {
     if (user) {
-      localStorage.removeItem('hero_banner_dismissed');
-      setIsBannerDismissed(false);
+      localStorage.removeItem('guest_banner_dismissed');
+      setIsGuestBannerDismissed(false);
+      localStorage.removeItem('wizard_cta_dismissed');
+      setIsWizardCtaDismissed(false);
     }
   }, [user]);
 
-  const handleDismissBanner = () => {
+  const handleDismissGuestBanner = () => {
+    localStorage.setItem('guest_banner_dismissed', 'true');
+    setIsGuestBannerDismissed(true);
+  };
+
+  const handleDismissHeroBanner = () => {
     localStorage.setItem('hero_banner_dismissed', 'true');
-    setIsBannerDismissed(true);
+    setIsHeroBannerDismissed(true);
+  };
+
+  const handleDismissWizardCta = () => {
+    localStorage.setItem('wizard_cta_dismissed', 'true');
+    setIsWizardCtaDismissed(true);
   };
   const fetchStats = async () => {
     try {
@@ -587,13 +605,13 @@ const Index = () => {
     : 0;
 
   return <div className="min-h-screen pb-32">
-      {/* Smart Welcome Banner - Guest Only */}
-      {!user && !isBannerDismissed && (
+      {/* Smart Welcome Banner - Guest Only (shown first) */}
+      {!user && !isGuestBannerDismissed && (
         <div className="relative border-b px-4 py-8 bg-gradient-to-br from-primary/10 via-primary/5 to-background">
           <Button 
             variant="ghost" 
             size="icon" 
-            onClick={handleDismissBanner}
+            onClick={handleDismissGuestBanner}
             className="absolute top-4 right-4 hover:bg-background/80"
           >
             <X className="h-4 w-4" />
@@ -638,35 +656,54 @@ const Index = () => {
         </div>
       )}
 
-      {/* Hero Section */}
-      <div className="border-b px-4 py-16">
-        <div className="container mx-auto max-w-7xl">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Film className="h-10 w-10" />
-            <h1 className="text-4xl font-bold md:text-4xl">
-              Welcome to My Cinema App
-            </h1>
+      {/* Hero Section - only show if guest dismissed smart banner OR logged-in user with >= 5 ratings */}
+      {((user && stats && stats.userRatingsCount >= 5 && !isHeroBannerDismissed) || 
+        (!user && isGuestBannerDismissed && !isHeroBannerDismissed)) && (
+        <div className="relative border-b px-4 py-16">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={handleDismissHeroBanner}
+            className="absolute top-4 right-4 hover:bg-background/80"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+          <div className="container mx-auto max-w-7xl">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <Film className="h-10 w-10" />
+              <h1 className="text-4xl font-bold md:text-4xl">
+                Welcome to My Cinema App
+              </h1>
+            </div>
+            <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-6 text-base font-thin">
+              {user 
+                ? "Your personal movie and TV show statistics" 
+                : `Discover and rate ${stats?.totalMovies.toLocaleString() || 0} movies${stats?.yearRange ? ` (${stats.yearRange.earliest} - ${stats.yearRange.latest})` : ''}. Sign in to start rating!`
+              }
+            </p>
+            {!user && <div className="flex justify-center mt-4">
+                <Button size="lg" onClick={() => navigate("/auth")}>
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Sign In to Rate Movies
+                </Button>
+              </div>}
           </div>
-          <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-6 text-base font-thin">
-            {user 
-              ? "Your personal movie and TV show statistics" 
-              : `Discover and rate ${stats?.totalMovies.toLocaleString() || 0} movies${stats?.yearRange ? ` (${stats.yearRange.earliest} - ${stats.yearRange.latest})` : ''}. Sign in to start rating!`
-            }
-          </p>
-          {!user && <div className="flex justify-center mt-4">
-              <Button size="lg" onClick={() => navigate("/auth")}>
-                <LogIn className="h-4 w-4 mr-2" />
-                Sign In to Rate Movies
-              </Button>
-            </div>}
         </div>
-      </div>
+      )}
 
       <div className="container mx-auto max-w-7xl px-4 py-8">
 
-        {/* Wizard CTA for users with < 5 ratings */}
-        {stats && stats.userRatingsCount < 5 && (
-          <Card className="mb-8 bg-gradient-to-br from-primary/10 via-primary/5 to-background border-primary/20">
+        {/* Wizard CTA for logged-in users with < 5 ratings */}
+        {user && stats && stats.userRatingsCount < 5 && !isWizardCtaDismissed && (
+          <Card className="mb-8 bg-gradient-to-br from-primary/10 via-primary/5 to-background border-primary/20 relative">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={handleDismissWizardCta}
+              className="absolute top-4 right-4 hover:bg-background/80 z-10"
+            >
+              <X className="h-4 w-4" />
+            </Button>
             <CardContent className="pt-6">
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                 <div className="flex-1 text-center md:text-left">
