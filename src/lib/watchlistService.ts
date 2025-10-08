@@ -132,6 +132,9 @@ export const getWatchlistMovies = async (userId: string): Promise<Movie[]> => {
       runtime: (item.movies as any).runtime,
       voteCount: (item.movies as any).vote_count,
       originalLanguage: (item.movies as any).original_language,
+      imdbRating: (item.movies as any).imdb_rating,
+      imdbVotes: (item.movies as any).imdb_votes,
+      metascore: (item.movies as any).metascore,
     }));
 };
 

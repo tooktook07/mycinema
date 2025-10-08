@@ -441,8 +441,10 @@ export const MovieDetailModal = () => {
                                       />
                                       <div className="absolute top-2 right-2">
                                         <Badge variant="secondary" className="text-xs">
-                                          <Star className="h-3 w-3 mr-1" />
-                                          {similar.rating.toFixed(1)}
+                                          <Star className="h-3 w-3 mr-1 fill-yellow-500 text-yellow-500" />
+                                          {(similar as any).imdbRating 
+                                            ? (similar as any).imdbRating.toFixed(1) 
+                                            : similar.rating.toFixed(1)}
                                         </Badge>
                                       </div>
                                     </div>

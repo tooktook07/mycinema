@@ -52,6 +52,9 @@ interface Recommendation {
   writing?: string;
   sound?: string;
   keywords?: string[];
+  imdbRating?: number;
+  imdbVotes?: number;
+  metascore?: number;
 }
 const RATING_THRESHOLD = 7.0; // User's liked movies threshold
 const CANDIDATE_RATING_THRESHOLD = 6.5; // Minimum quality for recommendations
@@ -283,7 +286,7 @@ const Index = () => {
         const allExcludedIds = [...excludeIds, ...recentlyShownIds];
         let candidateQuery = supabase
           .from('movies')
-          .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes')
+          .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes, metascore')
           .or(`imdb_rating.gte.${CANDIDATE_RATING_THRESHOLD},and(imdb_rating.is.null,rating.gte.${CANDIDATE_RATING_THRESHOLD})`)
           .not('rating', 'is', null);
         
@@ -390,7 +393,10 @@ const Index = () => {
             runtime: movie.runtime || '',
             writing: movie.writing || '',
             sound: movie.sound || '',
-            keywords: movie.keywords || []
+            keywords: movie.keywords || [],
+            imdbRating: (movie as any).imdb_rating,
+            imdbVotes: (movie as any).imdb_votes,
+            metascore: (movie as any).metascore
           }));
 
         // Mark these recommendations as shown
@@ -403,7 +409,7 @@ const Index = () => {
         const allExcludedIds = [...excludeIds, ...recentlyShownIds];
         let fallbackQuery = supabase
           .from('movies')
-          .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes')
+          .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes, metascore')
           .or(`imdb_rating.gte.${RATING_THRESHOLD},and(imdb_rating.is.null,rating.gte.${RATING_THRESHOLD})`)
           .not('rating', 'is', null)
           .order('imdb_rating', { ascending: false, nullsFirst: false })
@@ -437,7 +443,10 @@ const Index = () => {
           runtime: movie.runtime || '',
           writing: movie.writing || '',
           sound: movie.sound || '',
-          keywords: movie.keywords || []
+          keywords: movie.keywords || [],
+          imdbRating: (movie as any).imdb_rating,
+          imdbVotes: (movie as any).imdb_votes,
+          metascore: (movie as any).metascore
         }));
 
         // Mark these recommendations as shown
@@ -562,7 +571,7 @@ const Index = () => {
                   </Button>
                 </div> : <>
                   <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                    {recommendations?.map(movie => <MovieCard key={movie.id} id={movie.id} title={movie.title} year={movie.year} rating={movie.rating} genre={movie.genre} poster={movie.poster} imdbId={movie.imdbId} plot={movie.plot} voteCount={movie.voteCount} originalLanguage={movie.originalLanguage} actors={movie.actors} director={movie.director} runtime={movie.runtime} writing={movie.writing} sound={movie.sound} keywords={movie.keywords} />)}
+                    {recommendations?.map(movie => <MovieCard key={movie.id} id={movie.id} title={movie.title} year={movie.year} rating={movie.rating} genre={movie.genre} poster={movie.poster} imdbId={movie.imdbId} imdbRating={movie.imdbRating} imdbVotes={movie.imdbVotes} metascore={movie.metascore} plot={movie.plot} voteCount={movie.voteCount} originalLanguage={movie.originalLanguage} actors={movie.actors} director={movie.director} runtime={movie.runtime} writing={movie.writing} sound={movie.sound} keywords={movie.keywords} />)}
                   </div>
                   {recommendations.length > 0 && (
                     <div className="flex justify-center mt-6">
