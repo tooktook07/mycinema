@@ -21,6 +21,7 @@ import {
   ThumbsUp,
   Heart,
   Loader2,
+  ArrowLeft,
 } from "lucide-react";
 import { getOptimizedImageProps } from "@/lib/imageUtils";
 import { MovieWatchlist } from "@/components/MovieWatchlist";
@@ -50,6 +51,27 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
   const [currentRating, setCurrentRating] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [loadingNextMovie, setLoadingNextMovie] = useState(false);
+  const [movieHistory, setMovieHistory] = useState<string[]>([]);
+
+  // Track movie history
+  useEffect(() => {
+    if (movieId && isOpen) {
+      setMovieHistory(prev => {
+        // If this is a new movie (not going back), add to history
+        if (prev.length === 0 || prev[prev.length - 1] !== movieId) {
+          return [...prev, movieId];
+        }
+        return prev;
+      });
+    }
+  }, [movieId, isOpen]);
+
+  // Clear history when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setMovieHistory([]);
+    }
+  }, [isOpen]);
 
   const {
     data: movie,
@@ -228,6 +250,28 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
       setLoadingNextMovie(false);
     }
   };
+
+  // Handle previous movie button
+  const handlePreviousMovie = () => {
+    if (movieHistory.length <= 1) return;
+    
+    // Remove current movie from history
+    const newHistory = [...movieHistory];
+    newHistory.pop();
+    
+    // Get previous movie
+    const previousMovieId = newHistory[newHistory.length - 1];
+    
+    // Update history state
+    setMovieHistory(newHistory);
+    
+    // Navigate to previous movie
+    if (onNavigateToMovie) {
+      onNavigateToMovie(previousMovieId);
+    }
+  };
+
+  const canGoBack = movieHistory.length > 1;
 
   const imageProps = movie ? getOptimizedImageProps(movie.poster) : null;
   const hasValidImdbId = movie?.imdb_id && movie.imdb_id.startsWith("tt");
@@ -431,6 +475,25 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>Love this!</TooltipContent>
+                          </Tooltip>
+
+                          {/* Previous Movie Button */}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={handlePreviousMovie}
+                                disabled={!canGoBack}
+                                className="gap-2"
+                              >
+                                <ArrowLeft className="h-4 w-4" />
+                                Previous
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {canGoBack ? "Go back to previous movie" : "No previous movie"}
+                            </TooltipContent>
                           </Tooltip>
 
                           {/* Next Similar Movie Button */}
