@@ -186,12 +186,12 @@ export const FilterPanel = ({
         <div className="space-y-3">
           <div>
             <Label className="text-base font-semibold text-foreground flex items-center justify-between">
-              <span>IMDB Score Range</span>
+              <span>IMDb Rating Range</span>
               <Badge variant="secondary" className="text-sm font-bold">
                 {ratingRange[0].toFixed(1)} - {ratingRange[1].toFixed(1)}
               </Badge>
             </Label>
-            <p className="text-xs text-muted-foreground mt-1">Filter by rating range</p>
+            <p className="text-xs text-muted-foreground mt-1">Filter by IMDb rating (falls back to TMDB if unavailable)</p>
           </div>
           <div className="pt-2">
             <Slider

@@ -80,7 +80,10 @@ export const MovieWizardCard = ({ movie, onRate, onSkip, totalRated, isProcessin
                 <Badge variant="secondary">{movie.year}</Badge>
                 <div className="flex items-center gap-1">
                   <Star className="h-4 w-4 fill-primary text-primary" />
-                  <span className="font-semibold">{movie.rating}/10</span>
+                  <span className="font-semibold">{(movie as any).imdbRating || movie.rating}/10</span>
+                  <span className="text-xs text-muted-foreground">
+                    ({(movie as any).imdbRating ? 'IMDb' : 'TMDB'})
+                  </span>
                 </div>
                 {movie.originalLanguage && (
                   <Badge variant="outline" className="flex items-center gap-1">

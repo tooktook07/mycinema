@@ -163,18 +163,10 @@ export const MovieDetailModal = () => {
                     {/* Stats and Action Buttons */}
                     <div className="flex flex-wrap items-center justify-between gap-4">
                       <div className="flex flex-wrap items-center gap-4">
-                        {/* TMDB Rating */}
-                        <div className="flex items-center gap-2">
-                          <Star className="h-6 w-6 fill-yellow-500 text-yellow-500" />
-                          <div>
-                            <span className="text-2xl font-bold">{movie.rating}/10</span>
-                            <div className="text-xs text-muted-foreground">TMDB</div>
-                          </div>
-                        </div>
-                        
-                        {/* IMDB Rating (if available) */}
-                        {movie.imdb_rating && (
+                        {/* IMDb Rating (prioritized when available) */}
+                        {movie.imdb_rating ? (
                           <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-lg">
+                            <Star className="h-6 w-6 fill-yellow-500 text-yellow-500" />
                             <div>
                               <span className="text-2xl font-bold">{movie.imdb_rating}/10</span>
                               <div className="text-xs text-muted-foreground">IMDb</div>
@@ -184,6 +176,14 @@ export const MovieDetailModal = () => {
                                 {movie.imdb_votes.toLocaleString()} votes
                               </div>
                             )}
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Star className="h-6 w-6 fill-yellow-500 text-yellow-500" />
+                            <div>
+                              <span className="text-2xl font-bold">{movie.rating}/10</span>
+                              <div className="text-xs text-muted-foreground">TMDB</div>
+                            </div>
                           </div>
                         )}
                         

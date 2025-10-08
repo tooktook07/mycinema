@@ -124,7 +124,8 @@ const Movies = () => {
           query = query.overlaps("genres", appliedGenres);
         }
         if (appliedRatingRange[0] > 0 || appliedRatingRange[1] < 10) {
-          query = query.gte("rating", appliedRatingRange[0]).lte("rating", appliedRatingRange[1]);
+          // Filter by IMDb rating when available, fall back to TMDB rating
+          query = query.or(`and(imdb_rating.gte.${appliedRatingRange[0]},imdb_rating.lte.${appliedRatingRange[1]}),and(imdb_rating.is.null,rating.gte.${appliedRatingRange[0]},rating.lte.${appliedRatingRange[1]})`);
         }
         query = query.gte("year", appliedYearRange[0]).lte("year", appliedYearRange[1]);
         if (appliedLanguages.length > 0) {
@@ -187,7 +188,8 @@ const Movies = () => {
         query = query.overlaps("genres", appliedGenres);
       }
       if (appliedRatingRange[0] > 0 || appliedRatingRange[1] < 10) {
-        query = query.gte("rating", appliedRatingRange[0]).lte("rating", appliedRatingRange[1]);
+        // Filter by IMDb rating when available, fall back to TMDB rating
+        query = query.or(`and(imdb_rating.gte.${appliedRatingRange[0]},imdb_rating.lte.${appliedRatingRange[1]}),and(imdb_rating.is.null,rating.gte.${appliedRatingRange[0]},rating.lte.${appliedRatingRange[1]})`);
       }
       query = query.gte("year", appliedYearRange[0]).lte("year", appliedYearRange[1]);
       if (appliedLanguages.length > 0) {
@@ -199,10 +201,14 @@ const Movies = () => {
         query = query.or(`title.ilike.%${appliedSearchText}%,actors.ilike.%${appliedSearchText}%,director.ilike.%${appliedSearchText}%,writing.ilike.%${appliedSearchText}%,keywords.cs.{${appliedSearchText}}`);
       }
 
-      // Apply sorting
-      query = query.order(sortBy, {
-        ascending: sortOrder === "asc"
-      });
+      // Apply sorting - prioritize IMDb rating for rating sorts
+      if (sortBy === 'rating') {
+        // Sort by IMDb rating when available, then by TMDB rating
+        query = query.order('imdb_rating', { ascending: sortOrder === "asc", nullsFirst: false });
+        query = query.order('rating', { ascending: sortOrder === "asc" });
+      } else {
+        query = query.order(sortBy, { ascending: sortOrder === "asc" });
+      }
 
       // Apply pagination
       const from = (currentPage - 1) * itemsPerPage;
@@ -236,7 +242,10 @@ const Movies = () => {
           originalLanguage: movie.original_language || "",
           writing: movie.writing || "",
           sound: movie.sound || "",
-          keywords: movie.keywords || []
+          keywords: movie.keywords || [],
+          imdbRating: movie.imdb_rating || undefined,
+          imdbVotes: movie.imdb_votes || undefined,
+          metascore: movie.metascore || undefined
         })),
         totalCount: count || 0
       };

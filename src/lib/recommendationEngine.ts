@@ -17,6 +17,8 @@ export interface RecommendationMovie {
   writing?: string;
   sound?: string;
   keywords?: string[];
+  imdbRating?: number;
+  imdbVotes?: number;
 }
 
 const RATING_THRESHOLD = 5; // User's liked movies threshold (Like rating = 5)
@@ -110,11 +112,11 @@ export async function getNextRecommendation(
         }
       });
 
-      // Fetch candidate movies (prefer movies with IMDB data)
+      // Fetch candidate movies (prioritize IMDb ratings)
       let query = supabase
         .from('movies')
         .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes')
-        .gte('rating', CANDIDATE_RATING_THRESHOLD)
+        .or(`imdb_rating.gte.${CANDIDATE_RATING_THRESHOLD},and(imdb_rating.is.null,rating.gte.${CANDIDATE_RATING_THRESHOLD})`)
         .not('rating', 'is', null);
 
       if (allExcludedIds.length > 0) {
@@ -193,6 +195,8 @@ export async function getNextRecommendation(
         year: bestMatch.year,
         poster: bestMatch.poster || '',
         rating: bestMatch.rating || 0,
+        imdbRating: bestMatch.imdb_rating,
+        imdbVotes: bestMatch.imdb_votes,
         plot: bestMatch.plot || '',
         imdbId: bestMatch.imdb_id,
         voteCount: bestMatch.vote_count,
@@ -219,10 +223,10 @@ async function getFallbackRecommendation(excludeIds: string[]): Promise<Recommen
   let query = supabase
     .from('movies')
     .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes')
-    .gte('rating', 7.0)
+    .or(`imdb_rating.gte.7.0,and(imdb_rating.is.null,rating.gte.7.0)`)
     .not('rating', 'is', null);
 
-  // Prefer IMDB-verified movies for new users
+  // Prefer IMDb-verified movies for new users
   query = query.order('imdb_rating', { ascending: false, nullsFirst: false });
   query = query.order('vote_count', { ascending: false });
 
@@ -244,6 +248,8 @@ async function getFallbackRecommendation(excludeIds: string[]): Promise<Recommen
     year: movie.year,
     poster: movie.poster || '',
     rating: movie.rating || 0,
+    imdbRating: movie.imdb_rating,
+    imdbVotes: movie.imdb_votes,
     plot: movie.plot || '',
     imdbId: movie.imdb_id,
     voteCount: movie.vote_count,
@@ -304,11 +310,11 @@ export async function getSimilarMovies(
       languageCounts[referenceMovie.original_language] = 1;
     }
 
-    // Fetch candidate movies
+    // Fetch candidate movies (prioritize IMDb ratings)
     const { data: candidateMovies } = await supabase
       .from('movies')
-      .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords')
-      .gte('rating', CANDIDATE_RATING_THRESHOLD)
+      .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes')
+      .or(`imdb_rating.gte.${CANDIDATE_RATING_THRESHOLD},and(imdb_rating.is.null,rating.gte.${CANDIDATE_RATING_THRESHOLD})`)
       .not('rating', 'is', null)
       .neq('id', movieId)
       .limit(200);
@@ -363,6 +369,8 @@ export async function getSimilarMovies(
       year: movie.year,
       poster: movie.poster || '',
       rating: movie.rating || 0,
+      imdbRating: (movie as any).imdb_rating,
+      imdbVotes: (movie as any).imdb_votes,
       plot: movie.plot || '',
       imdbId: movie.imdb_id,
       voteCount: movie.vote_count,
@@ -436,11 +444,11 @@ async function getNextRecommendationForGuest(
         }
       });
 
-      // Fetch candidate movies
+      // Fetch candidate movies (prioritize IMDb ratings)
       let query = supabase
         .from('movies')
-        .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords')
-        .gte('rating', CANDIDATE_RATING_THRESHOLD)
+        .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes')
+        .or(`imdb_rating.gte.${CANDIDATE_RATING_THRESHOLD},and(imdb_rating.is.null,rating.gte.${CANDIDATE_RATING_THRESHOLD})`)
         .not('rating', 'is', null);
 
       if (allExcludedIds.length > 0) {
@@ -498,6 +506,8 @@ async function getNextRecommendationForGuest(
         year: bestMatch.year,
         poster: bestMatch.poster || '',
         rating: bestMatch.rating || 0,
+        imdbRating: bestMatch.imdb_rating,
+        imdbVotes: bestMatch.imdb_votes,
         plot: bestMatch.plot || '',
         imdbId: bestMatch.imdb_id,
         voteCount: bestMatch.vote_count,

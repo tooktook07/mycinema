@@ -91,17 +91,25 @@ export const MovieCard = ({
             )}
           </div>
           <div className="flex items-center gap-2">
-            {/* TMDB Rating */}
-            <div className="flex items-center gap-1 text-foreground">
-              <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
-              <span className="font-bold text-sm">{rating.toFixed(1)}</span>
-            </div>
-            {/* IMDB Rating (if available) */}
-            {imdbRating && (
+            {/* IMDb Rating (prioritized when available) */}
+            {imdbRating ? (
               <>
-                <span className="text-xs text-muted-foreground">•</span>
-                <Badge variant="outline" className="text-xs flex items-center gap-1 font-semibold">
-                  {imdbRating.toFixed(1)} <span className="text-muted-foreground font-normal">IMDb</span>
+                <div className="flex items-center gap-1 text-foreground">
+                  <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
+                  <span className="font-bold text-sm">{imdbRating.toFixed(1)}</span>
+                </div>
+                <Badge variant="outline" className="text-xs font-normal">
+                  IMDb
+                </Badge>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-1 text-foreground">
+                  <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
+                  <span className="font-bold text-sm">{rating.toFixed(1)}</span>
+                </div>
+                <Badge variant="outline" className="text-xs font-normal">
+                  TMDB
                 </Badge>
               </>
             )}

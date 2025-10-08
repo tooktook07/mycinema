@@ -258,12 +258,12 @@ const Index = () => {
           }
         });
 
-        // Fetch candidate movies (unrated, decent quality)
+        // Fetch candidate movies (unrated, decent quality) - prioritize IMDb ratings
         const allExcludedIds = [...ratedMovieIds, ...excludeIds];
         let candidateQuery = supabase
           .from('movies')
-          .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords')
-          .gte('rating', CANDIDATE_RATING_THRESHOLD)
+          .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes')
+          .or(`imdb_rating.gte.${CANDIDATE_RATING_THRESHOLD},and(imdb_rating.is.null,rating.gte.${CANDIDATE_RATING_THRESHOLD})`)
           .not('rating', 'is', null);
         
         if (allExcludedIds.length > 0) {
@@ -275,6 +275,11 @@ const Index = () => {
         // Calculate similarity scores
         const moviesWithScores = (candidateMovies || []).map(movie => {
           let score = 0;
+          
+          // Boost for IMDb-verified movies
+          if ((movie as any).imdb_rating) {
+            score += 0.5;
+          }
           
           // Genre similarity
           const genreMatches = (movie.genres || []).filter((g: string) => genreCounts[g]).length;
@@ -341,9 +346,10 @@ const Index = () => {
         const allExcludedIds = [...ratedMovieIds, ...excludeIds];
         let fallbackQuery = supabase
           .from('movies')
-          .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords')
-          .gte('rating', RATING_THRESHOLD)
+          .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes')
+          .or(`imdb_rating.gte.${RATING_THRESHOLD},and(imdb_rating.is.null,rating.gte.${RATING_THRESHOLD})`)
           .not('rating', 'is', null)
+          .order('imdb_rating', { ascending: false, nullsFirst: false })
           .order('vote_count', { ascending: false });
         
         if (allExcludedIds.length > 0) {
