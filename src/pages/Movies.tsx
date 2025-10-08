@@ -58,6 +58,8 @@ const Movies = () => {
     setAppliedYearRange,
     appliedSearchText,
     setAppliedSearchText,
+    appliedPopularityRange,
+    setAppliedPopularityRange,
     resetFilters
   } = useFilters();
   const handleGenreToggle = (genre: string) => {
@@ -93,6 +95,33 @@ const Movies = () => {
     setCurrentPage(1);
   };
 
+  const handlePopularityClick = (min: number, max: number) => {
+    setAppliedPopularityRange([min, max]);
+    setCurrentPage(1);
+  };
+
+  const handleAwardClick = (awardType: string) => {
+    setAppliedSearchText(awardType);
+    setCurrentPage(1);
+  };
+
+  const handleMixedClick = (type: string) => {
+    if (type === "critical") {
+      // High rating (8+) + low popularity (<20) = Critical Darlings
+      setAppliedRatingRange([8, 10]);
+      setAppliedPopularityRange([0, 20]);
+    } else if (type === "audience") {
+      // High rating (7+) + high popularity (50+) = Audience Favorites
+      setAppliedRatingRange([7, 10]);
+      setAppliedPopularityRange([50, 1000]);
+    } else if (type === "boxoffice") {
+      // Search for high revenue movies
+      setAppliedSearchText("revenue");
+    }
+    setCurrentPage(1);
+  };
+
+
   const handleOpenDetail = (movieId: string) => {
     setSelectedMovieId(movieId);
     setIsModalOpen(true);
@@ -115,13 +144,14 @@ const Movies = () => {
     error,
     isError
   } = useQuery({
-    queryKey: ["movies", appliedGenres, appliedRatingRange, appliedYearRange, appliedSearchText, currentPage, sortBy, sortOrder, itemsPerPage],
+    queryKey: ["movies", appliedGenres, appliedRatingRange, appliedYearRange, appliedSearchText, appliedPopularityRange, currentPage, sortBy, sortOrder, itemsPerPage],
     queryFn: async () => {
       console.log("[Movies Query] Starting fetch with filters:", {
         genres: appliedGenres,
         rating: appliedRatingRange,
         year: appliedYearRange,
         search: appliedSearchText,
+        popularity: appliedPopularityRange,
         page: currentPage,
         sortBy,
         sortOrder
@@ -156,7 +186,12 @@ const Movies = () => {
 
         // Apply text search across multiple fields
         if (appliedSearchText) {
-          query = query.or(`title.ilike.%${appliedSearchText}%,actors.ilike.%${appliedSearchText}%,director.ilike.%${appliedSearchText}%,writing.ilike.%${appliedSearchText}%,keywords.cs.{${appliedSearchText}}`);
+          query = query.or(`title.ilike.%${appliedSearchText}%,actors.ilike.%${appliedSearchText}%,director.ilike.%${appliedSearchText}%,writing.ilike.%${appliedSearchText}%,keywords.cs.{${appliedSearchText}},awards.ilike.%${appliedSearchText}%`);
+        }
+
+        // Apply popularity filter
+        if (appliedPopularityRange[0] > 0 || appliedPopularityRange[1] < 1000) {
+          query = query.gte("popularity", appliedPopularityRange[0]).lte("popularity", appliedPopularityRange[1]);
         }
 
         // Skip database-level sorting for user_rating (PostgREST limitation with embedded resources)
@@ -226,7 +261,12 @@ const Movies = () => {
 
       // Apply text search across multiple fields
       if (appliedSearchText) {
-        query = query.or(`title.ilike.%${appliedSearchText}%,actors.ilike.%${appliedSearchText}%,director.ilike.%${appliedSearchText}%,writing.ilike.%${appliedSearchText}%,keywords.cs.{${appliedSearchText}}`);
+        query = query.or(`title.ilike.%${appliedSearchText}%,actors.ilike.%${appliedSearchText}%,director.ilike.%${appliedSearchText}%,writing.ilike.%${appliedSearchText}%,keywords.cs.{${appliedSearchText}},awards.ilike.%${appliedSearchText}%`);
+      }
+
+      // Apply popularity filter
+      if (appliedPopularityRange[0] > 0 || appliedPopularityRange[1] < 1000) {
+        query = query.gte("popularity", appliedPopularityRange[0]).lte("popularity", appliedPopularityRange[1]);
       }
 
       // Apply sorting - prioritize IMDb rating for rating sorts
@@ -393,9 +433,6 @@ const Movies = () => {
       <div className="container mx-auto max-w-7xl px-4 py-8">
         {/* Quick Filter Chips */}
         <QuickFilterChips
-          onGenreClick={(genre) => {
-            handleGenreToggle(genre);
-          }}
           onYearClick={(start, end) => {
             setAppliedYearRange([start, end]);
             setCurrentPage(1);
@@ -404,6 +441,9 @@ const Movies = () => {
             setAppliedRatingRange([min, max]);
             setCurrentPage(1);
           }}
+          onPopularityClick={handlePopularityClick}
+          onAwardClick={handleAwardClick}
+          onMixedClick={handleMixedClick}
         />
         
         {/* Filters */}

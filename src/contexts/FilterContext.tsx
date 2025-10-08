@@ -10,6 +10,8 @@ interface FilterContextType {
   setAppliedYearRange: (range: [number, number]) => void;
   appliedSearchText: string;
   setAppliedSearchText: (text: string) => void;
+  appliedPopularityRange: [number, number];
+  setAppliedPopularityRange: (range: [number, number]) => void;
   resetFilters: () => void;
 }
 
@@ -27,6 +29,9 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
     ? searchParams.get('year')!.split('-').map(Number) as [number, number]
     : [1900, 2030];
   const appliedSearchText = searchParams.get('search') || "";
+  const appliedPopularityRange: [number, number] = searchParams.get('popularity')
+    ? searchParams.get('popularity')!.split('-').map(Number) as [number, number]
+    : [0, 1000];
 
   // Write to URL params
   const setAppliedGenres = (genres: string[]) => {
@@ -69,6 +74,16 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
     setSearchParams(newParams);
   };
 
+  const setAppliedPopularityRange = (range: [number, number]) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (range[0] !== 0 || range[1] !== 1000) {
+      newParams.set('popularity', `${range[0]}-${range[1]}`);
+    } else {
+      newParams.delete('popularity');
+    }
+    setSearchParams(newParams);
+  };
+
   const resetFilters = () => {
     setSearchParams(new URLSearchParams());
   };
@@ -84,6 +99,8 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
         setAppliedYearRange,
         appliedSearchText,
         setAppliedSearchText,
+        appliedPopularityRange,
+        setAppliedPopularityRange,
         resetFilters
       }}
     >
