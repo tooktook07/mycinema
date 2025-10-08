@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Sparkles, CheckCircle2 } from "lucide-react";
+import { Loader2, Sparkles, CheckCircle2, RefreshCw } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { MovieWizardCard } from "@/components/MovieWizardCard";
@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { saveGuestRating, getGuestRatings, getGuestRatedCount, saveGuestSkipped, getGuestSkipped } from "@/lib/guestRatings";
+import { clearOldestHalfOfTracking, canClearOlderEntries } from "@/lib/recentlyShownTracker";
 
 interface WizardProps {
   isModal?: boolean;
@@ -27,6 +28,7 @@ const Wizard = ({ isModal = false, onClose }: WizardProps = {}) => {
   const [skippedIds, setSkippedIds] = useState<string[]>([]);
   const [processingAction, setProcessingAction] = useState<'skip' | 'not-interested' | 'like' | 'love' | null>(null);
   const [isGuest, setIsGuest] = useState(false);
+  const [showRefreshButton, setShowRefreshButton] = useState(false);
 
   useEffect(() => {
     setIsGuest(!user);
@@ -83,9 +85,11 @@ const Wizard = ({ isModal = false, onClose }: WizardProps = {}) => {
       }
       
       setCurrentMovie(movie);
+      setShowRefreshButton(canClearOlderEntries());
     } catch (error) {
       console.error("Error loading recommendation:", error);
       toast.error("Failed to load recommendation");
+      setShowRefreshButton(canClearOlderEntries());
     } finally {
       setLoading(false);
     }
@@ -169,6 +173,13 @@ const Wizard = ({ isModal = false, onClose }: WizardProps = {}) => {
     }
   };
 
+  const handleRefreshRecommendations = async () => {
+    clearOldestHalfOfTracking();
+    toast.success("Viewing history refreshed!");
+    setSkippedIds([]);
+    await loadNextMovie();
+  };
+
   if (loading && !currentMovie) {
     return (
       <div className={isModal ? "h-full flex items-center justify-center" : "min-h-screen flex items-center justify-center"}>
@@ -240,19 +251,31 @@ const Wizard = ({ isModal = false, onClose }: WizardProps = {}) => {
             <CardHeader>
               <CardTitle>No More Movies</CardTitle>
               <CardDescription>
-                You've rated all available movies! Check back later for more recommendations.
+                You've seen all available movies! Check back later or clear your viewing history.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button 
-                onClick={() => {
-                  if (isModal && onClose) onClose();
-                  navigate("/movies");
-                }}
-                className="w-full"
-              >
-                Browse All Movies
-              </Button>
+              <div className="flex flex-col gap-2">
+                <Button 
+                  onClick={() => {
+                    if (isModal && onClose) onClose();
+                    navigate("/movies");
+                  }}
+                  className="w-full"
+                  variant="outline"
+                >
+                  Browse All Movies
+                </Button>
+                {showRefreshButton && (
+                  <Button 
+                    onClick={handleRefreshRecommendations}
+                    className="w-full"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Refresh Recommendations
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
         )}

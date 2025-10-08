@@ -4,7 +4,7 @@
  */
 
 const STORAGE_KEY = 'recently_shown_movies';
-const EXCLUSION_DAYS = 1; // Exclude movies for 24 hours after showing
+const EXCLUSION_DAYS = 0.5; // Exclude movies for 12 hours after showing
 
 interface ShownMovie {
   movieId: string;
@@ -74,6 +74,48 @@ export function clearRecentlyShown(): void {
     localStorage.removeItem(STORAGE_KEY);
   } catch (error) {
     console.error('Error clearing recently shown movies:', error);
+  }
+}
+
+/**
+ * Clear the oldest half (6 hours) of tracking data
+ * Keeps entries from the last 6 hours, removes older entries
+ */
+export function clearOldestHalfOfTracking(): void {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return;
+
+    const shownMovies: ShownMovie[] = JSON.parse(stored);
+    const now = Date.now();
+    const sixHoursAgo = now - (0.25 * 24 * 60 * 60 * 1000); // 6 hours
+
+    // Keep only entries from the last 6 hours
+    const recentMovies = shownMovies.filter(movie => movie.shownAt > sixHoursAgo);
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(recentMovies));
+  } catch (error) {
+    console.error('Error clearing oldest tracking data:', error);
+  }
+}
+
+/**
+ * Check if there are entries older than 6 hours that can be cleared
+ */
+export function canClearOlderEntries(): boolean {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return false;
+
+    const shownMovies: ShownMovie[] = JSON.parse(stored);
+    const now = Date.now();
+    const sixHoursAgo = now - (0.25 * 24 * 60 * 60 * 1000); // 6 hours
+
+    // Check if there are any entries older than 6 hours
+    return shownMovies.some(movie => movie.shownAt <= sixHoursAgo);
+  } catch (error) {
+    console.error('Error checking older entries:', error);
+    return false;
   }
 }
 

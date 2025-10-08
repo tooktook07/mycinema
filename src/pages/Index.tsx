@@ -1,4 +1,4 @@
-import { Film, Star, TrendingUp, Calendar, BarChart3, Loader2, LogIn, ArrowRight, Sparkles } from "lucide-react";
+import { Film, Star, TrendingUp, Calendar, BarChart3, Loader2, LogIn, ArrowRight, Sparkles, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +10,8 @@ import { format } from "date-fns";
 import { MovieCard } from "@/components/MovieCard";
 import { MovieDetailModal } from "@/components/MovieDetailModal";
 import { LastSyncCard } from "@/components/LastSyncCard";
-import { getRecentlyShownMovieIds, markMoviesAsShown } from "@/lib/recentlyShownTracker";
+import { getRecentlyShownMovieIds, markMoviesAsShown, clearOldestHalfOfTracking, canClearOlderEntries } from "@/lib/recentlyShownTracker";
+import { toast } from "sonner";
 interface Stats {
   totalMovies: number;
   avgMovieRating: number;
@@ -81,6 +82,7 @@ const Index = () => {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
   const [excludedRecommendationIds, setExcludedRecommendationIds] = useState<string[]>([]);
+  const [showRefreshButton, setShowRefreshButton] = useState(false);
   
   // Modal state
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
@@ -413,6 +415,8 @@ const Index = () => {
         // Fallback: Show top-rated movies for users/guests with few/no ratings
         // Include recently shown movies in exclusion list (but NOT rated movies)
         const allExcludedIds = [...excludeIds, ...recentlyShownIds];
+        
+        // Tier 1: Try high-rated movies (7.0+)
         let fallbackQuery = supabase
           .from('movies')
           .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes, metascore')
@@ -425,7 +429,43 @@ const Index = () => {
           fallbackQuery = fallbackQuery.not('id', 'in', `(${allExcludedIds.join(',')})`);
         }
         
-        const { data: topMovies, error } = await fallbackQuery.limit(200);
+        let { data: topMovies, error } = await fallbackQuery.limit(200);
+
+        // Tier 2: If no high-rated movies, try all movies with any rating
+        if (!topMovies || topMovies.length === 0) {
+          fallbackQuery = supabase
+            .from('movies')
+            .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes, metascore')
+            .not('rating', 'is', null)
+            .order('imdb_rating', { ascending: false, nullsFirst: false })
+            .order('vote_count', { ascending: false });
+          
+          if (allExcludedIds.length > 0) {
+            fallbackQuery = fallbackQuery.not('id', 'in', `(${allExcludedIds.join(',')})`);
+          }
+          
+          const result = await fallbackQuery.limit(200);
+          topMovies = result.data;
+          error = result.error;
+        }
+
+        // Tier 3: If still nothing, ignore recently shown (only exclude explicitly passed excludeIds)
+        if (!topMovies || topMovies.length === 0) {
+          fallbackQuery = supabase
+            .from('movies')
+            .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes, metascore')
+            .not('rating', 'is', null)
+            .order('imdb_rating', { ascending: false, nullsFirst: false })
+            .order('vote_count', { ascending: false });
+          
+          if (excludeIds.length > 0) {
+            fallbackQuery = fallbackQuery.not('id', 'in', `(${excludeIds.join(',')})`);
+          }
+          
+          const result = await fallbackQuery.limit(200);
+          topMovies = result.data;
+          error = result.error;
+        }
 
         if (error) throw error;
 
@@ -460,9 +500,13 @@ const Index = () => {
         
         setRecommendations(selected);
       }
+      
+      // Check if we can show the refresh button
+      setShowRefreshButton(canClearOlderEntries());
     } catch (error) {
       console.error("Error fetching recommendations:", error);
       setRecommendations([]);
+      setShowRefreshButton(canClearOlderEntries());
     } finally {
       setLoadingRecommendations(false);
     }
@@ -472,6 +516,13 @@ const Index = () => {
     const currentIds = recommendations.map(r => r.id);
     setExcludedRecommendationIds([...excludedRecommendationIds, ...currentIds]);
     await fetchRecommendations([...excludedRecommendationIds, ...currentIds]);
+  };
+
+  const handleRefreshRecommendations = async () => {
+    clearOldestHalfOfTracking();
+    toast.success("Viewing history refreshed!");
+    setExcludedRecommendationIds([]);
+    await fetchRecommendations([]);
   };
 
   const handleOpenDetail = (movieId: string) => {
@@ -576,16 +627,22 @@ const Index = () => {
                   </div>
                 </div> : recommendations.length === 0 ? <div className="text-center py-12 px-4 bg-muted/30 rounded-lg border-2 border-dashed">
                   <Star className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-lg font-semibold mb-2">
-                    {user ? "No recommendations yet" : "No movies available"}
-                  </p>
+                  <p className="text-lg font-semibold mb-2">No More Movies</p>
                   <p className="text-sm text-muted-foreground mb-4">
-                    {user ? `Rate at least ${MIN_RATINGS_FOR_PERSONALIZATION} movies with 7+ stars to get personalized recommendations` : "Check back later for top-rated movies"}
+                    You've seen all available movies! Check back later or clear your viewing history.
                   </p>
-                  <Button onClick={() => navigate("/movies")} variant="outline">
-                    <Film className="h-4 w-4 mr-2" />
-                    Browse Movies
-                  </Button>
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
+                    <Button onClick={() => navigate("/movies")} variant="outline">
+                      <Film className="h-4 w-4 mr-2" />
+                      Browse Movies
+                    </Button>
+                    {showRefreshButton && (
+                      <Button onClick={handleRefreshRecommendations} variant="default">
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Refresh Recommendations
+                      </Button>
+                    )}
+                  </div>
                 </div> : <>
                   <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                     {recommendations?.map((movie, index) => (

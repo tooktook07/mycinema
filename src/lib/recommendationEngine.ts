@@ -396,6 +396,7 @@ async function getFallbackRecommendation(excludeIds: string[]): Promise<Recommen
   const recentlyShownIds = getRecentlyShownMovieIds();
   const allExcludedIds = [...excludeIds, ...recentlyShownIds];
   
+  // Tier 1: Try high-rated movies (7.0+) excluding recently shown
   let query = supabase
     .from('movies')
     .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes')
@@ -410,11 +411,45 @@ async function getFallbackRecommendation(excludeIds: string[]): Promise<Recommen
     query = query.not('id', 'in', `(${allExcludedIds.join(',')})`);
   }
 
-  const { data: movies } = await query.limit(50);
+  let { data: movies } = await query.limit(50);
+
+  // Tier 2: If no high-rated movies, try all movies with any rating (excluding recently shown)
+  if (!movies || movies.length === 0) {
+    query = supabase
+      .from('movies')
+      .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes')
+      .not('rating', 'is', null)
+      .order('imdb_rating', { ascending: false, nullsFirst: false })
+      .order('vote_count', { ascending: false });
+
+    if (allExcludedIds.length > 0) {
+      query = query.not('id', 'in', `(${allExcludedIds.join(',')})`);
+    }
+
+    const result = await query.limit(50);
+    movies = result.data;
+  }
+
+  // Tier 3: If still nothing, ignore recently shown (only exclude explicitly passed excludeIds)
+  if (!movies || movies.length === 0) {
+    query = supabase
+      .from('movies')
+      .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes')
+      .not('rating', 'is', null)
+      .order('imdb_rating', { ascending: false, nullsFirst: false })
+      .order('vote_count', { ascending: false });
+
+    if (excludeIds.length > 0) {
+      query = query.not('id', 'in', `(${excludeIds.join(',')})`);
+    }
+
+    const result = await query.limit(50);
+    movies = result.data;
+  }
 
   if (!movies || movies.length === 0) return null;
 
-  // Randomly select from top-rated
+  // Randomly select from available movies
   const randomIndex = Math.floor(Math.random() * movies.length);
   const movie = movies[randomIndex];
 
