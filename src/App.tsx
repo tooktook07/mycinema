@@ -18,6 +18,7 @@ import Login from "./pages/Login";
 import Profile from "./pages/Profile";
 import DiscoverMode from "./pages/DiscoverMode";
 import Watchlist from "./pages/Watchlist";
+import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const AppRoutes = () => {
         <Route path="/auth" element={<Login />} /> {/* Redirect old /auth to /login */}
         <Route path="/account" element={<Account />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/help" element={<Help />} /> {/* Help documentation - no nav link */}
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
