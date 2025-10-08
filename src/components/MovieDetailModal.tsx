@@ -434,33 +434,46 @@ export const MovieDetailModal = () => {
             </div>
 
             {/* Previous/Next Navigation Bar */}
-            {location.state?.moviesList && location.state?.currentIndex !== undefined && (
-              <div className="flex items-center justify-between px-8 py-3 border-b bg-muted/30">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handlePrevious}
-                  disabled={location.state.currentIndex === 0}
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  Previous
-                </Button>
-                
-                <span className="text-xs text-muted-foreground">
-                  {location.state.currentIndex + 1} of {location.state.moviesList.length}
-                </span>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleNext}
-                  disabled={location.state.currentIndex === location.state.moviesList.length - 1}
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </div>
-            )}
+            {(() => {
+              const hasMoviesList = location.state?.moviesList && Array.isArray(location.state.moviesList) && location.state.moviesList.length > 0;
+              const hasCurrentIndex = location.state?.currentIndex !== undefined && location.state?.currentIndex !== null;
+              
+              console.log('[MovieDetailModal] Nav bar check:', { 
+                hasMoviesList, 
+                hasCurrentIndex,
+                moviesListLength: location.state?.moviesList?.length,
+                currentIndex: location.state?.currentIndex,
+                fullState: location.state
+              });
+              
+              return hasMoviesList && hasCurrentIndex ? (
+                <div className="flex items-center justify-between px-8 py-3 border-b bg-muted/30">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePrevious}
+                    disabled={location.state.currentIndex === 0}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    Previous
+                  </Button>
+                  
+                  <span className="text-xs text-muted-foreground">
+                    {location.state.currentIndex + 1} of {location.state.moviesList.length}
+                  </span>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleNext}
+                    disabled={location.state.currentIndex === location.state.moviesList.length - 1}
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+              ) : null;
+            })()}
 
             {/* Content Section */}
             <ScrollArea className="max-h-[400px] p-8 pt-6">

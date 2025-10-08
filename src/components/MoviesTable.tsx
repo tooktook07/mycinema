@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { Star, ExternalLink, Search } from "lucide-react";
+import { Star, ExternalLink, Search, Info } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -21,6 +22,8 @@ interface MoviesTableProps {
 
 export const MoviesTable = ({ movies, title }: MoviesTableProps) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const filteredMovies = useMemo(() => {
     return movies.filter((movie) =>
@@ -72,8 +75,26 @@ export const MoviesTable = ({ movies, title }: MoviesTableProps) => {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredMovies.map((movie) => {
+              filteredMovies.map((movie, index) => {
                 const imageProps = getOptimizedImageProps(movie.poster);
+                
+                const handleOpenDetail = () => {
+                  // Find the index in the original movies array
+                  const originalIndex = movies.findIndex(m => m.id === movie.id);
+                  
+                  navigate(`/movie/${movie.id}`, {
+                    state: {
+                      backgroundLocation: {
+                        pathname: location.pathname,
+                        search: location.search
+                      },
+                      moviesList: movies.map(m => ({ id: m.id, title: m.title })),
+                      currentIndex: originalIndex,
+                      pageContext: 'movies-table'
+                    }
+                  });
+                };
+                
                 return (
                 <TableRow key={movie.id} className="border-border hover:bg-muted/30">
                   <TableCell className="py-2">
@@ -102,6 +123,15 @@ export const MoviesTable = ({ movies, title }: MoviesTableProps) => {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={handleOpenDetail}
+                        className="flex items-center gap-1.5"
+                      >
+                        <Info className="h-3.5 w-3.5" />
+                        Details
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"
