@@ -13,6 +13,8 @@ import Index from "./pages/Index";
 import Movies from "./pages/Movies";
 import Account from "./pages/Account";
 import Auth from "./pages/Auth";
+import SignUp from "./pages/SignUp";
+import Login from "./pages/Login";
 import Profile from "./pages/Profile";
 import DiscoverMode from "./pages/DiscoverMode";
 import Watchlist from "./pages/Watchlist";
@@ -29,7 +31,9 @@ const AppRoutes = () => {
         <Route path="/movies" element={<Movies />} />
         <Route path="/discover" element={<DiscoverMode />} />
         <Route path="/watchlist" element={<Watchlist />} />
-        <Route path="/auth" element={<Auth />} />
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/auth" element={<Login />} /> {/* Redirect old /auth to /login */}
         <Route path="/account" element={<Account />} />
         <Route path="/profile" element={<Profile />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

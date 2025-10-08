@@ -13,7 +13,7 @@ export const WatchlistLoginDialog = ({ open, onOpenChange }: WatchlistLoginDialo
 
   const handleSignUp = () => {
     onOpenChange(false);
-    navigate('/auth');
+    navigate('/signup');
   };
 
   return (

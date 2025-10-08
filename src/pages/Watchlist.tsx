@@ -32,7 +32,7 @@ const Watchlist = () => {
           <p className="text-muted-foreground mb-6">
             Create an account to save movies and build your personal watchlist.
           </p>
-          <Button onClick={() => navigate('/auth')}>
+          <Button onClick={() => navigate('/signup')}>
             Sign In or Sign Up
           </Button>
         </div>

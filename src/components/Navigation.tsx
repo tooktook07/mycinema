@@ -146,7 +146,7 @@ export const Navigation = () => {
                       <span className="hidden sm:inline">Profile</span>
                     </Button>
                   </NavLink>
-                  <NavLink to="/auth">
+                  <NavLink to="/login">
                     <Button
                       variant="ghost"
                       size="sm"

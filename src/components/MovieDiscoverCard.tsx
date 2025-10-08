@@ -24,9 +24,9 @@ export const MovieDiscoverCard = ({ movie, totalRated, onReadMore, enableViewpor
   return (
     <Card ref={cardRef} className="w-full max-w-6xl mx-auto overflow-hidden relative h-[calc(100vh-240px)] min-h-[60vh]">
       {/* Grid Layout: Poster on left, Info on right */}
-      <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] lg:grid-cols-5 h-full">
+      <div className="grid grid-cols-1 md:grid-cols-[380px_1fr] lg:grid-cols-5 h-full">
         {/* Poster Column */}
-        <div className="relative lg:col-span-2 aspect-[2/3] h-[50vh] md:h-full md:aspect-[2/3]">
+        <div className="relative lg:col-span-2 aspect-[2/3] h-[55vh] md:h-[70vh] lg:h-full lg:max-h-[85vh]">
           {/* Progress Indicator */}
           <div className="absolute top-4 left-4 z-10">
             <Badge variant="secondary" className="text-sm font-semibold">
@@ -43,8 +43,8 @@ export const MovieDiscoverCard = ({ movie, totalRated, onReadMore, enableViewpor
         </div>
 
         {/* Info Column */}
-        <div className="lg:col-span-3 flex flex-col h-full">
-          <ScrollArea className="flex-1 px-6 py-6">
+        <div className="lg:col-span-3 flex flex-col h-full overflow-hidden md:min-w-0">
+          <ScrollArea className="flex-1 px-6 py-6 max-h-[40vh] md:max-h-[calc(100vh-240px)]">
             {/* Movie Title & Meta */}
             <div className="mb-4">
               <h2 className="text-2xl md:text-3xl font-bold line-clamp-2">{movie.title}</h2>

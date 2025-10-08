@@ -649,7 +649,7 @@ const Index = () => {
                   Sign up now to save your ratings and unlock personalized AI recommendations.
                 </p>
                 <Button asChild size="lg">
-                  <Link to="/auth">
+                  <Link to="/signup">
                     <Sparkles className="mr-2 h-5 w-5" />
                     Sign Up & Save Progress
                   </Link>
@@ -686,7 +686,7 @@ const Index = () => {
               }
             </p>
             {!user && <div className="flex justify-center mt-4">
-                <Button size="lg" onClick={() => navigate("/auth")}>
+                <Button size="lg" onClick={() => navigate("/login")}>
                   <LogIn className="h-4 w-4 mr-2" />
                   Sign In to Rate Movies
                 </Button>

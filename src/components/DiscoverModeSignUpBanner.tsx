@@ -35,14 +35,14 @@ export const WizardSignUpBanner = () => {
           
           <div className="flex gap-2 mt-4">
             <Button 
-              onClick={() => navigate("/auth")} 
+              onClick={() => navigate("/signup")} 
               size="sm"
               className="font-semibold"
             >
               Sign Up Free
             </Button>
             <Button 
-              onClick={() => navigate("/auth")} 
+              onClick={() => navigate("/login")} 
               variant="outline" 
               size="sm"
             >

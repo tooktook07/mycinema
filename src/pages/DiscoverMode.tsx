@@ -381,6 +381,17 @@ const DiscoverMode = () => {
           isOpen={isDetailModalOpen}
           onClose={() => setIsDetailModalOpen(false)}
           movieId={currentMovie.id}
+          onNavigateToMovie={(movieId) => {
+            setCurrentMovie(prev => {
+              if (prev) {
+                // You could optionally mark the previous movie as shown here
+              }
+              return null;
+            });
+            setIsDetailModalOpen(false);
+            // Load the new movie by refetching recommendations with this ID in mind
+            loadNextMovie();
+          }}
         />
       )}
     </div>
