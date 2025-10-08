@@ -4,7 +4,7 @@
  */
 
 const STORAGE_KEY = 'recently_shown_movies';
-const EXCLUSION_DAYS = 7; // Exclude movies for 7 days after showing
+const EXCLUSION_DAYS = 1; // Exclude movies for 24 hours after showing
 
 interface ShownMovie {
   movieId: string;
