@@ -176,20 +176,30 @@ const Index = () => {
       
       // Fetch user's rated movies if logged in OR guest ratings from localStorage
       let userLikedMovies: any[] = [];
-      let ratedMovieIds: string[] = [];
+      const ratingMap = new Map<string, number>();
+      const watchlistSet = new Set<string>();
       
       if (user && user.id !== 'dev-user-id') {
         const { data: userRatings } = await supabase
           .from('user_ratings')
-          .select('media_id, user_rating')
+          .select('media_id, user_rating, in_watchlist')
           .eq('user_id', user.id)
-          .eq('media_type', 'movie')
-          .not('user_rating', 'is', null);
+          .eq('media_type', 'movie');
         
-        ratedMovieIds = (userRatings || []).map(r => r.media_id).filter(Boolean) as string[];
+        // Create maps for quick lookup during scoring
+        (userRatings || []).forEach(r => {
+          if (r.user_rating) {
+            ratingMap.set(r.media_id, r.user_rating);
+          }
+          if (r.in_watchlist) {
+            watchlistSet.add(r.media_id);
+          }
+        });
         
         // Get movies the user liked (rating >= 7.0) with full details
-        const likedRatings = (userRatings || []).filter(r => (r.user_rating || 0) >= RATING_THRESHOLD);
+        const likedRatings = Array.from(ratingMap.entries())
+          .filter(([_, rating]) => rating >= RATING_THRESHOLD)
+          .map(([movieId, _]) => ({ media_id: movieId }));
         
         if (likedRatings.length >= MIN_RATINGS_FOR_PERSONALIZATION) {
           const { data: likedMoviesData } = await supabase
@@ -205,10 +215,14 @@ const Index = () => {
         const guestRatings = getGuestRatings();
         
         if (guestRatings.length > 0) {
-          ratedMovieIds = guestRatings.map(r => r.movieId);
+          guestRatings.forEach(r => {
+            ratingMap.set(r.movieId, r.rating);
+          });
           
           // Get movies the guest liked (rating >= 7.0) with full details
-          const likedRatings = guestRatings.filter(r => r.rating >= RATING_THRESHOLD);
+          const likedRatings = Array.from(ratingMap.entries())
+            .filter(([_, rating]) => rating >= RATING_THRESHOLD)
+            .map(([movieId, _]) => ({ movieId }));
           
           if (likedRatings.length >= MIN_RATINGS_FOR_PERSONALIZATION) {
             const { data: likedMoviesData } = await supabase
@@ -220,6 +234,8 @@ const Index = () => {
           }
         }
       }
+      
+      const ratedMovieIds = Array.from(ratingMap.keys());
 
       // If user has enough ratings, use similarity algorithm
       if (userLikedMovies.length >= MIN_RATINGS_FOR_PERSONALIZATION) {
@@ -262,9 +278,9 @@ const Index = () => {
           }
         });
 
-        // Fetch candidate movies (unrated, decent quality) - prioritize IMDb ratings
-        // Include recently shown movies in exclusion list
-        const allExcludedIds = [...ratedMovieIds, ...excludeIds, ...recentlyShownIds];
+        // Fetch candidate movies (decent quality) - prioritize IMDb ratings
+        // Include recently shown movies in exclusion list (but NOT rated movies - they get penalties instead)
+        const allExcludedIds = [...excludeIds, ...recentlyShownIds];
         let candidateQuery = supabase
           .from('movies')
           .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes')
@@ -319,6 +335,32 @@ const Index = () => {
           const popularityBoost = Math.min((movie.vote_count || 0) / 10000, 0.1);
           score += popularityBoost;
           
+          // Apply graduated penalties
+          let penaltyMultiplier = 1.0;
+          
+          // Apply watchlist penalty (movies user wants to watch)
+          if (watchlistSet.has(movie.id)) {
+            penaltyMultiplier = Math.min(penaltyMultiplier, 0.4); // 60% reduction
+          }
+          
+          // Apply already-rated penalty (strongest penalty)
+          if (ratingMap.has(movie.id)) {
+            const userRating = ratingMap.get(movie.id);
+            
+            if (userRating === 10) {
+              // LOVE: reduce by 80% (user already loved this)
+              penaltyMultiplier = Math.min(penaltyMultiplier, 0.2);
+            } else if (userRating === 5) {
+              // LIKE: reduce by 60% (user already liked this)
+              penaltyMultiplier = Math.min(penaltyMultiplier, 0.4);
+            } else if (userRating === 1) {
+              // NOT_INTERESTED: reduce by 85% (user disliked this)
+              penaltyMultiplier = Math.min(penaltyMultiplier, 0.15);
+            }
+          }
+          
+          score *= penaltyMultiplier;
+          
           return { ...movie, similarityScore: score };
         });
 
@@ -357,8 +399,8 @@ const Index = () => {
         setRecommendations(topRecommendations);
       } else {
         // Fallback: Show top-rated movies for users/guests with few/no ratings
-        // Include recently shown movies in exclusion list
-        const allExcludedIds = [...ratedMovieIds, ...excludeIds, ...recentlyShownIds];
+        // Include recently shown movies in exclusion list (but NOT rated movies)
+        const allExcludedIds = [...excludeIds, ...recentlyShownIds];
         let fallbackQuery = supabase
           .from('movies')
           .select('id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes')

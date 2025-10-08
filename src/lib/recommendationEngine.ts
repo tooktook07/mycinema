@@ -66,20 +66,32 @@ export async function getNextRecommendation(
     // Get recently shown movies to exclude
     const recentlyShownIds = getRecentlyShownMovieIds();
     
-    // Phase 1 & 3: Fetch user's rated movies WITH timestamps for temporal decay
+    // Phase 1 & 3: Fetch user's rated movies WITH timestamps AND watchlist status
     const { data: userRatings } = await supabase
       .from('user_ratings')
-      .select('media_id, user_rating, created_at')
+      .select('media_id, user_rating, in_watchlist, created_at')
       .eq('user_id', userId)
-      .eq('media_type', 'movie')
-      .not('user_rating', 'is', null);
+      .eq('media_type', 'movie');
     
-    const ratedMovieIds = (userRatings || []).map(r => r.media_id).filter(Boolean) as string[];
-    const allExcludedIds = [...ratedMovieIds, ...excludeIds, ...recentlyShownIds];
+    // Create maps for quick lookup during scoring
+    const ratingMap = new Map<string, number>();
+    const watchlistSet = new Set<string>();
+    
+    (userRatings || []).forEach(r => {
+      if (r.user_rating) {
+        ratingMap.set(r.media_id, r.user_rating);
+      }
+      if (r.in_watchlist) {
+        watchlistSet.add(r.media_id);
+      }
+    });
+    
+    // Only exclude from already excluded and recently shown (not rated movies)
+    const allExcludedIds = [...excludeIds, ...recentlyShownIds];
     
     // Filter ratings that matter (likes and dislikes, exclude neutral)
     const meaningfulRatings = (userRatings || []).filter(r => 
-      r.user_rating === 1 || r.user_rating === 5 || r.user_rating === 10
+      r.user_rating && (r.user_rating === 1 || r.user_rating === 5 || r.user_rating === 10)
     );
     
     // If user has enough ratings, use similarity algorithm
@@ -307,6 +319,28 @@ export async function getNextRecommendation(
             }
           }
         });
+        
+        // Apply watchlist penalty (movies user wants to watch but may/may not have rated)
+        if (watchlistSet.has(movie.id)) {
+          penaltyMultiplier = Math.min(penaltyMultiplier, 0.4); // 60% reduction
+        }
+        
+        // Apply already-rated penalty (strongest penalty)
+        if (ratingMap.has(movie.id)) {
+          const userRating = ratingMap.get(movie.id);
+          
+          if (userRating === 10) {
+            // LOVE: reduce by 80% (user already loved this)
+            penaltyMultiplier = Math.min(penaltyMultiplier, 0.2);
+          } else if (userRating === 5) {
+            // LIKE: reduce by 60% (user already liked this)
+            penaltyMultiplier = Math.min(penaltyMultiplier, 0.4);
+          } else if (userRating === 1) {
+            // NOT_INTERESTED: reduce by 85% (user disliked this)
+            penaltyMultiplier = Math.min(penaltyMultiplier, 0.15);
+          }
+        }
+        
         score *= penaltyMultiplier;
         
         return { ...movie, similarityScore: score };
@@ -539,8 +573,14 @@ async function getNextRecommendationForGuest(
   excludeIds: string[] = []
 ): Promise<RecommendationMovie | null> {
   try {
-    const ratedMovieIds = guestRatings.map(r => r.movieId);
-    const allExcludedIds = [...ratedMovieIds, ...excludeIds];
+    // Create rating map for quick lookup
+    const ratingMap = new Map<string, number>();
+    guestRatings.forEach(r => {
+      ratingMap.set(r.movieId, r.rating);
+    });
+    
+    // Only exclude explicitly excluded movies (not rated movies - they get penalties instead)
+    const allExcludedIds = [...excludeIds];
     
     // Filter meaningful ratings (likes and dislikes)
     const meaningfulRatings = guestRatings.filter(r => 
@@ -737,6 +777,23 @@ async function getNextRecommendationForGuest(
             }
           }
         });
+        
+        // Apply already-rated penalty for guest users
+        if (ratingMap.has(movie.id)) {
+          const userRating = ratingMap.get(movie.id);
+          
+          if (userRating === 10) {
+            // LOVE: reduce by 80% (user already loved this)
+            penaltyMultiplier = Math.min(penaltyMultiplier, 0.2);
+          } else if (userRating === 5) {
+            // LIKE: reduce by 60% (user already liked this)
+            penaltyMultiplier = Math.min(penaltyMultiplier, 0.4);
+          } else if (userRating === 1) {
+            // NOT_INTERESTED: reduce by 85% (user disliked this)
+            penaltyMultiplier = Math.min(penaltyMultiplier, 0.15);
+          }
+        }
+        
         score *= penaltyMultiplier;
         
         return { ...movie, similarityScore: score };
