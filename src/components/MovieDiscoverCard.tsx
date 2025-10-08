@@ -1,4 +1,4 @@
-import { Star, Globe, Info, Heart, ThumbsUp, X } from "lucide-react";
+import { Star, Globe, Info } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,22 +12,11 @@ interface MovieDiscoverCardProps {
   totalRated: number;
   sessionRatings: number;
   recentStats: { count: number; oldestShownDaysAgo: number | null };
-  savedRating?: number;
-  savedInWatchlist?: boolean;
   onReadMore?: () => void;
   enableViewportTracking?: boolean;
 }
 
-export const MovieDiscoverCard = ({ 
-  movie, 
-  totalRated, 
-  sessionRatings, 
-  recentStats, 
-  savedRating,
-  savedInWatchlist,
-  onReadMore, 
-  enableViewportTracking = false 
-}: MovieDiscoverCardProps) => {
+export const MovieDiscoverCard = ({ movie, totalRated, sessionRatings, recentStats, onReadMore, enableViewportTracking = false }: MovieDiscoverCardProps) => {
   const imageProps = getOptimizedImageProps(movie.poster, movie.local_poster_url);
   const cardRef = useViewportTracking(movie.id, enableViewportTracking);
 
@@ -47,30 +36,10 @@ export const MovieDiscoverCard = ({
 
       {/* Bottom Overlay - Movie Info */}
       <div className="absolute bottom-32 left-0 right-0 z-[60] px-6 pb-6 safe-area-bottom">
-        {/* Movie Title with Status Badges */}
-        <div className="flex items-start gap-2 mb-3">
-          <h2 className="text-xl md:text-2xl font-bold text-white drop-shadow-lg leading-tight flex-1">
-            {movie.title}
-          </h2>
-          <div className="flex gap-1 flex-shrink-0">
-            {savedRating !== undefined && (
-              <Badge className="bg-blue-500/90 text-white border-none backdrop-blur-md">
-                {savedRating === 10 ? (
-                  <Heart className="h-3 w-3 fill-current" />
-                ) : savedRating === 5 ? (
-                  <ThumbsUp className="h-3 w-3" />
-                ) : (
-                  <X className="h-3 w-3" />
-                )}
-              </Badge>
-            )}
-            {savedInWatchlist && (
-              <Badge className="bg-pink-500/90 text-white border-none backdrop-blur-md">
-                <Heart className="h-3 w-3 fill-current" />
-              </Badge>
-            )}
-          </div>
-        </div>
+        {/* Movie Title */}
+        <h2 className="text-xl md:text-2xl font-bold text-white mb-3 drop-shadow-lg leading-tight">
+          {movie.title}
+        </h2>
 
         {/* Meta Info Row */}
         <div className="flex items-center gap-2 mb-3 flex-wrap">
