@@ -1,4 +1,4 @@
-import { Film, Star, TrendingUp, Calendar, BarChart3, Loader2, LogIn, ArrowRight, Sparkles, RefreshCw } from "lucide-react";
+import { Film, Star, TrendingUp, Calendar, BarChart3, Loader2, LogIn, ArrowRight, Sparkles, RefreshCw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,7 @@ import { LastSyncCard } from "@/components/LastSyncCard";
 import { getRecentlyShownMovieIds, markMoviesAsShown, clearOldestHalfOfTracking, canClearOlderEntries, clearRecentlyShown, getRecentlyShownStats } from "@/lib/recentlyShownTracker";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
+import { getGuestRatedCount } from "@/lib/guestRatings";
 interface Stats {
   totalMovies: number;
   avgMovieRating: number;
@@ -86,6 +87,10 @@ const Index = () => {
   const [excludedRecommendationIds, setExcludedRecommendationIds] = useState<string[]>([]);
   const [totalMoviesViewed, setTotalMoviesViewed] = useState(0);
   const [totalAvailableMovies, setTotalAvailableMovies] = useState(0);
+  const [isBannerDismissed, setIsBannerDismissed] = useState(() => {
+    return localStorage.getItem('hero_banner_dismissed') === 'true';
+  });
+  const [guestRatingCount, setGuestRatingCount] = useState(0);
   // Modal state
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -94,6 +99,24 @@ const Index = () => {
     fetchStats();
     fetchRecommendations();
   }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      setGuestRatingCount(getGuestRatedCount());
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      localStorage.removeItem('hero_banner_dismissed');
+      setIsBannerDismissed(false);
+    }
+  }, [user]);
+
+  const handleDismissBanner = () => {
+    localStorage.setItem('hero_banner_dismissed', 'true');
+    setIsBannerDismissed(true);
+  };
   const fetchStats = async () => {
     try {
       // Fetch total movies
@@ -564,6 +587,57 @@ const Index = () => {
     : 0;
 
   return <div className="min-h-screen pb-32">
+      {/* Smart Welcome Banner - Guest Only */}
+      {!user && !isBannerDismissed && (
+        <div className="relative border-b px-4 py-8 bg-gradient-to-br from-primary/10 via-primary/5 to-background">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={handleDismissBanner}
+            className="absolute top-4 right-4 hover:bg-background/80"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+          
+          <div className="max-w-3xl mx-auto text-center">
+            {guestRatingCount === 0 ? (
+              <>
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <Sparkles className="h-6 w-6 text-primary" />
+                  <h2 className="text-2xl font-bold">Discover Your Perfect Movies</h2>
+                </div>
+                <p className="text-lg text-muted-foreground mb-6">
+                  Rate just 5 movies to unlock AI-powered personalized recommendations tailored to your taste!
+                </p>
+                <Button asChild size="lg">
+                  <Link to="/movies">
+                    <Sparkles className="mr-2 h-5 w-5" />
+                    Start Rating Now
+                  </Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <Sparkles className="h-6 w-6 text-primary" />
+                  <h2 className="text-2xl font-bold">Great Progress!</h2>
+                </div>
+                <p className="text-lg text-muted-foreground mb-4">
+                  You've rated <span className="font-bold text-primary">{guestRatingCount}</span> movie{guestRatingCount !== 1 ? 's' : ''}! 
+                  Sign up now to save your ratings and unlock personalized AI recommendations.
+                </p>
+                <Button asChild size="lg">
+                  <Link to="/auth">
+                    <Sparkles className="mr-2 h-5 w-5" />
+                    Sign Up & Save Progress
+                  </Link>
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Hero Section */}
       <div className="border-b px-4 py-16">
         <div className="container mx-auto max-w-7xl">
