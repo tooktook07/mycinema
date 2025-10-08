@@ -14,7 +14,7 @@ serve(async (req) => {
   let syncId: string | undefined;
 
   try {
-    const { minRating = 0, maxRating = 10, yearRange = [2025, 2025], genres, excludedGenres, statuses, languages, minVoteCount = 100, minPopularity = 0, syncMode = false, maxPages = 10, enrichWithOMDb = false } = await req.json();
+    const { minRating = 0, maxRating = 10, yearRange = [2025, 2025], genres, excludedGenres, statuses, languages, minVoteCount = 100, minPopularity = 0, syncMode = false, maxPages = 50, enrichWithOMDb = false } = await req.json();
     const TMDB_API_KEY = Deno.env.get("TMDB_API_KEY");
     const OMDB_API_KEY = Deno.env.get("OMDB_API_KEY");
 

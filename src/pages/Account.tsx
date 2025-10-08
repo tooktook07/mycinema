@@ -23,9 +23,9 @@ const Account = () => {
   const [excludedGenres, setExcludedGenres] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(["Released"]);
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
-  const [ratingRange, setRatingRange] = useState<[number, number]>([6.9, 9.5]);
-  const [yearRange, setYearRange] = useState<[number, number]>([2025, 2025]);
-  const [minVoteCount, setMinVoteCount] = useState(1000);
+  const [ratingRange, setRatingRange] = useState<[number, number]>([5.0, 10.0]);
+  const [yearRange, setYearRange] = useState<[number, number]>([2005, 2025]);
+  const [minVoteCount, setMinVoteCount] = useState(50);
   const [minPopularity, setMinPopularity] = useState(0);
   
   // Tab and re-run state
