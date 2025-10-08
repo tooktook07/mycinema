@@ -111,6 +111,8 @@ export const MovieCard = ({
             media_id: id,
             media_type: 'movie',
             user_rating: ratingValue,
+          }, {
+            onConflict: 'user_id,media_id,media_type'
           });
 
         if (error) throw error;
@@ -206,37 +208,57 @@ export const MovieCard = ({
         </div>
 
         {/* Rating Buttons - At Bottom */}
-        <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t">
-          <Button 
-            size="sm" 
-            variant={currentRating === 1 ? "default" : "outline"} 
-            onClick={() => handleRate(1)} 
-            disabled={saving}
-            className="flex-1"
-          >
-            <ThumbsDown className="h-3.5 w-3.5 mr-1" />
-            <span className="text-xs">Not for me</span>
-          </Button>
-          <Button 
-            size="sm" 
-            variant={currentRating === 5 ? "default" : "outline"}
-            onClick={() => handleRate(5)} 
-            disabled={saving}
-            className="flex-1"
-          >
-            <ThumbsUp className="h-3.5 w-3.5 mr-1" />
-            <span className="text-xs">I liked this</span>
-          </Button>
-          <Button 
-            size="sm" 
-            variant={currentRating === 10 ? "default" : "outline"}
-            onClick={() => handleRate(10)} 
-            disabled={saving}
-            className="flex-1"
-          >
-            <Heart className="h-3.5 w-3.5 mr-1 fill-current" />
-            <span className="text-xs">Love this!</span>
-          </Button>
+        <div className="flex items-center justify-center gap-2 mt-4 pt-3 border-t">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                size="icon" 
+                variant={currentRating === 1 ? "default" : "outline"} 
+                onClick={() => handleRate(1)} 
+                disabled={saving}
+                className="h-9 w-9"
+              >
+                <ThumbsDown className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="text-xs">Not for me</p>
+            </TooltipContent>
+          </Tooltip>
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                size="icon" 
+                variant={currentRating === 5 ? "default" : "outline"}
+                onClick={() => handleRate(5)} 
+                disabled={saving}
+                className="h-9 w-9"
+              >
+                <ThumbsUp className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="text-xs">I liked this</p>
+            </TooltipContent>
+          </Tooltip>
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                size="icon" 
+                variant={currentRating === 10 ? "default" : "outline"}
+                onClick={() => handleRate(10)} 
+                disabled={saving}
+                className="h-9 w-9"
+              >
+                <Heart className="h-4 w-4 fill-current" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="text-xs">Love this!</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </CardContent>
     </Card>
