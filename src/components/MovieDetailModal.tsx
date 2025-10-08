@@ -52,6 +52,7 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
   const [saving, setSaving] = useState(false);
   const [loadingNextMovie, setLoadingNextMovie] = useState(false);
   const [movieHistory, setMovieHistory] = useState<string[]>([]);
+  const [relevanceReason, setRelevanceReason] = useState<string>("");
 
   // Track movie history
   useEffect(() => {
@@ -131,6 +132,111 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
     
     loadRating();
   }, [movieId, user, isOpen]);
+
+  // Calculate relevance reason
+  useEffect(() => {
+    const calculateRelevance = async () => {
+      if (!movieId || !movie || !isOpen) {
+        setRelevanceReason("");
+        return;
+      }
+
+      try {
+        // Fetch user's highly rated movies (rating >= 5)
+        let ratedMovies: any[] = [];
+        
+        if (user) {
+          const { data } = await supabase
+            .from('user_ratings')
+            .select('media_id, user_rating')
+            .eq('user_id', user.id)
+            .eq('media_type', 'movie')
+            .gte('user_rating', 5);
+          
+          if (data && data.length > 0) {
+            const movieIds = data.map(r => r.media_id);
+            const { data: moviesData } = await supabase
+              .from('movies')
+              .select('genres, director, actors, keywords')
+              .in('id', movieIds);
+            
+            ratedMovies = moviesData || [];
+          }
+        } else {
+          // For guest users
+          const guestRatings = getGuestRatings().filter(r => r.rating >= 5);
+          if (guestRatings.length > 0) {
+            const movieIds = guestRatings.map(r => r.movieId);
+            const { data: moviesData } = await supabase
+              .from('movies')
+              .select('genres, director, actors, keywords')
+              .in('id', movieIds);
+            
+            ratedMovies = moviesData || [];
+          }
+        }
+
+        if (ratedMovies.length === 0) {
+          setRelevanceReason("This movie matches popular preferences and high ratings");
+          return;
+        }
+
+        // Calculate matches
+        const reasons: string[] = [];
+        const movieGenres = movie.genres || [];
+        const movieDirector = movie.director || '';
+        const movieActors = (movie.actors || '').split(', ').filter(a => a);
+        const movieKeywords = movie.keywords || [];
+
+        // Check genre matches
+        const likedGenres = new Set<string>();
+        ratedMovies.forEach(m => {
+          (m.genres || []).forEach((g: string) => likedGenres.add(g));
+        });
+        const matchedGenres = movieGenres.filter(g => likedGenres.has(g));
+        if (matchedGenres.length > 0) {
+          reasons.push(`You enjoyed ${matchedGenres.slice(0, 2).join(', ')} movies`);
+        }
+
+        // Check director matches
+        const likedDirectors = new Set(ratedMovies.map(m => m.director).filter(Boolean));
+        if (movieDirector && likedDirectors.has(movieDirector)) {
+          reasons.push(`You liked movies by ${movieDirector}`);
+        }
+
+        // Check actor matches
+        const likedActors = new Set<string>();
+        ratedMovies.forEach(m => {
+          (m.actors || '').split(', ').filter((a: string) => a).forEach((a: string) => likedActors.add(a));
+        });
+        const matchedActors = movieActors.filter(a => likedActors.has(a));
+        if (matchedActors.length > 0) {
+          reasons.push(`Features ${matchedActors[0]} from your favorites`);
+        }
+
+        // Check keyword matches
+        const likedKeywords = new Set<string>();
+        ratedMovies.forEach(m => {
+          (m.keywords || []).forEach((k: string) => likedKeywords.add(k));
+        });
+        const matchedKeywords = movieKeywords.filter(k => likedKeywords.has(k));
+        if (matchedKeywords.length > 0) {
+          reasons.push(`Similar themes: ${matchedKeywords.slice(0, 2).join(', ')}`);
+        }
+
+        if (reasons.length > 0) {
+          setRelevanceReason(reasons.slice(0, 3).join(' • '));
+        } else {
+          setRelevanceReason("Recommended based on your viewing preferences");
+        }
+      } catch (error) {
+        console.error('Error calculating relevance:', error);
+        setRelevanceReason("");
+      }
+    };
+
+    calculateRelevance();
+  }, [movieId, movie, user, isOpen]);
 
   const handleRate = async (ratingValue: number) => {
     if (!movieId || !movie) return;
@@ -350,7 +456,24 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                   {/* Title & Quick Info */}
                   <div className="flex-1 space-y-3">
                     <DialogHeader>
-                      <DialogTitle className="text-4xl font-bold">{movie.title}</DialogTitle>
+                      <div className="flex items-start gap-2">
+                        <DialogTitle className="text-4xl font-bold flex-1">{movie.title}</DialogTitle>
+                        {relevanceReason && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 mt-1">
+                                  <Info className="h-5 w-5 text-muted-foreground" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p className="font-semibold mb-1">Why this movie?</p>
+                                <p className="text-sm">{relevanceReason}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                      </div>
                       {movie.tagline && <p className="text-lg text-muted-foreground italic">"{movie.tagline}"</p>}
                     </DialogHeader>
 
