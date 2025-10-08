@@ -10,7 +10,7 @@ import { format } from "date-fns";
 import { MovieCard } from "@/components/MovieCard";
 import { MovieDetailModal } from "@/components/MovieDetailModal";
 import { LastSyncCard } from "@/components/LastSyncCard";
-import { getRecentlyShownMovieIds, markMoviesAsShown, clearOldestHalfOfTracking, canClearOlderEntries } from "@/lib/recentlyShownTracker";
+import { getRecentlyShownMovieIds, markMoviesAsShown, clearOldestHalfOfTracking, canClearOlderEntries, clearRecentlyShown } from "@/lib/recentlyShownTracker";
 import { toast } from "sonner";
 interface Stats {
   totalMovies: number;
@@ -83,6 +83,7 @@ const Index = () => {
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
   const [excludedRecommendationIds, setExcludedRecommendationIds] = useState<string[]>([]);
   const [showRefreshButton, setShowRefreshButton] = useState(false);
+  const [hasRefreshed, setHasRefreshed] = useState(false);
   
   // Modal state
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
@@ -521,6 +522,15 @@ const Index = () => {
   const handleRefreshRecommendations = async () => {
     clearOldestHalfOfTracking();
     toast.success("Viewing history refreshed!");
+    setHasRefreshed(true);
+    setExcludedRecommendationIds([]);
+    await fetchRecommendations([]);
+  };
+
+  const handleClearAllHistory = async () => {
+    clearRecentlyShown();
+    toast.success("All viewing history cleared!");
+    setHasRefreshed(false);
     setExcludedRecommendationIds([]);
     await fetchRecommendations([]);
   };
@@ -636,10 +646,15 @@ const Index = () => {
                       <Film className="h-4 w-4 mr-2" />
                       Browse Movies
                     </Button>
-                    {showRefreshButton && (
+                    {showRefreshButton && !hasRefreshed ? (
                       <Button onClick={handleRefreshRecommendations} variant="default">
                         <RefreshCw className="h-4 w-4 mr-2" />
                         Refresh Recommendations
+                      </Button>
+                    ) : hasRefreshed && (
+                      <Button onClick={handleClearAllHistory} variant="default">
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Clear All History
                       </Button>
                     )}
                   </div>
