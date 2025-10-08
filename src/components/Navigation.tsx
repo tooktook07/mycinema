@@ -43,6 +43,21 @@ export const Navigation = () => {
             </NavLink>
             
             <NavLink
+              to="/discover"
+              className={({ isActive }) =>
+                cn(
+                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded text-sm transition-colors",
+                  isActive
+                    ? "bg-foreground text-background"
+                    : "text-muted-foreground hover:text-foreground"
+                )
+              }
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Discover</span>
+            </NavLink>
+            
+            <NavLink
               to="/movies"
               className={({ isActive }) =>
                 cn(
@@ -73,16 +88,6 @@ export const Navigation = () => {
                 <span className="hidden sm:inline">Watchlist</span>
               </NavLink>
             )}
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate("/discover")}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-sm text-muted-foreground hover:text-foreground"
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Discover</span>
-            </Button>
             
             {isAdmin && (
               <NavLink

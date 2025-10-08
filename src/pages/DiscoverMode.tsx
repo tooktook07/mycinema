@@ -191,7 +191,7 @@ const DiscoverMode = () => {
   }
 
   return (
-    <div className="min-h-screen py-8 px-4 pb-40">
+    <div className="min-h-screen pt-6 px-4 pb-44">
       <div className="container mx-auto max-w-7xl">
         {/* Compact Header with Stats */}
         <div className="flex items-center justify-between mb-6 px-4">

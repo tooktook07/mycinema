@@ -22,11 +22,11 @@ export const MovieDiscoverCard = ({ movie, totalRated, onReadMore, enableViewpor
   const cardRef = useViewportTracking(movie.id, enableViewportTracking);
 
   return (
-    <Card ref={cardRef} className="w-full max-w-6xl mx-auto overflow-hidden relative h-[calc(100vh-280px)] min-h-[65vh]">
+    <Card ref={cardRef} className="w-full max-w-6xl mx-auto overflow-hidden relative h-[calc(100vh-240px)] min-h-[60vh]">
       {/* Grid Layout: Poster on left, Info on right */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 h-full">
+      <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] lg:grid-cols-5 h-full">
         {/* Poster Column */}
-        <div className="relative lg:col-span-2 min-h-[35vh] max-h-[40vh] md:h-full">
+        <div className="relative lg:col-span-2 aspect-[2/3] h-[50vh] md:h-full md:aspect-[2/3]">
           {/* Progress Indicator */}
           <div className="absolute top-4 left-4 z-10">
             <Badge variant="secondary" className="text-sm font-semibold">
