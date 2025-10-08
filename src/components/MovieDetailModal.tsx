@@ -156,17 +156,22 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
         saveGuestRating(movieId, ratingValue);
       }
       
-      setCurrentRating(ratingValue);
-      
-      const messages = {
-        1: "Marked as not for me",
-        5: "👍 I liked this!",
-        10: "❤️ Love this!"
-      };
-      
-      toast({
-        title: messages[ratingValue as keyof typeof messages],
-      });
+    setCurrentRating(ratingValue);
+    
+    const messages = {
+      1: "Marked as not for me",
+      5: "👍 I liked this!",
+      10: "❤️ Love this!"
+    };
+    
+    toast({
+      title: messages[ratingValue as keyof typeof messages],
+    });
+    
+    // Auto-navigate to next similar movie after rating
+    setTimeout(() => {
+      handleNextSimilarMovie();
+    }, 800);
     } catch (error) {
       console.error('Error saving rating:', error);
       toast({
@@ -428,7 +433,12 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                             Google
                           </a>
                         </Button>
-                        <MovieWatchlist movieId={movie.id} movieTitle={movie.title} iconOnly={true} />
+                        <MovieWatchlist 
+                          movieId={movie.id} 
+                          movieTitle={movie.title} 
+                          iconOnly={true}
+                          onAddToWatchlist={handleNextSimilarMovie}
+                        />
                         
                         {/* Inline Rating Buttons */}
                         <TooltipProvider>

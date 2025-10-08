@@ -19,9 +19,10 @@ interface MovieWatchlistProps {
   movieTitle: string;
   iconOnly?: boolean;
   preloadedInWatchlist?: boolean;
+  onAddToWatchlist?: () => void;
 }
 
-export const MovieWatchlist = ({ movieId, movieTitle, iconOnly = false, preloadedInWatchlist }: MovieWatchlistProps) => {
+export const MovieWatchlist = ({ movieId, movieTitle, iconOnly = false, preloadedInWatchlist, onAddToWatchlist }: MovieWatchlistProps) => {
   const { user, session } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -53,6 +54,13 @@ export const MovieWatchlist = ({ movieId, movieTitle, iconOnly = false, preloade
       
       if (user?.id) {
         logActivity(user.id, 'watchlist_added', { movie_id: movieId, movie_title: movieTitle });
+      }
+      
+      // Auto-navigate to next similar movie after adding to watchlist
+      if (onAddToWatchlist) {
+        setTimeout(() => {
+          onAddToWatchlist();
+        }, 800);
       }
     },
     onError: (error: Error) => {
