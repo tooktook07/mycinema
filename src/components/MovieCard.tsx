@@ -9,6 +9,8 @@ import { MovieWatchlist } from "@/components/MovieWatchlist";
 import { getOptimizedImageProps } from "@/lib/imageUtils";
 import { useNavigate, useLocation } from "react-router-dom";
 interface MovieCardProps extends Movie {
+  preloadedUserRating?: number | null;
+  preloadedInWatchlist?: boolean;
   onYearClick?: (year: number) => void;
   onGenreClick?: (genre: string) => void;
   onLanguageClick?: (language: string) => void;
@@ -40,6 +42,8 @@ export const MovieCard = ({
   boxOffice,
   awards,
   dataSources,
+  preloadedUserRating,
+  preloadedInWatchlist,
   onYearClick,
   onGenreClick,
   onLanguageClick,
@@ -161,14 +165,24 @@ export const MovieCard = ({
             <Tooltip delayDuration={300}>
               <TooltipTrigger asChild>
                 <div>
-                  <MovieRating movieId={id} movieTitle={title} iconOnly />
+                  <MovieRating 
+                    movieId={id} 
+                    movieTitle={title} 
+                    iconOnly 
+                    preloadedRating={preloadedUserRating}
+                  />
                 </div>
               </TooltipTrigger>
               <TooltipContent className="text-xs">
                 <p>Rate this movie</p>
               </TooltipContent>
             </Tooltip>
-            <MovieWatchlist movieId={id} movieTitle={title} iconOnly />
+            <MovieWatchlist 
+              movieId={id} 
+              movieTitle={title} 
+              iconOnly 
+              preloadedInWatchlist={preloadedInWatchlist}
+            />
           </div>
         </div>
       </CardContent>

@@ -18,20 +18,22 @@ interface MovieWatchlistProps {
   movieId: string;
   movieTitle: string;
   iconOnly?: boolean;
+  preloadedInWatchlist?: boolean;
 }
 
-export const MovieWatchlist = ({ movieId, movieTitle, iconOnly = false }: MovieWatchlistProps) => {
+export const MovieWatchlist = ({ movieId, movieTitle, iconOnly = false, preloadedInWatchlist }: MovieWatchlistProps) => {
   const { user, session } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
 
-  // Check if movie is in watchlist
+  // Check if movie is in watchlist (skip if preloaded data available)
   const { data: inWatchlist = false, refetch } = useQuery({
     queryKey: ['watchlist', movieId, user?.id],
     queryFn: () => user?.id ? isInWatchlist(user.id, movieId) : Promise.resolve(false),
-    enabled: !!user?.id,
+    enabled: !!user?.id && preloadedInWatchlist === undefined,
+    initialData: preloadedInWatchlist,
   });
 
   // Add to watchlist mutation

@@ -12,8 +12,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Movie } from "@/data/types";
 import { useFilters } from "@/contexts/FilterContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Movies = () => {
+  const { user } = useAuth();
+
   // Debug logging
   useEffect(() => {
     console.log("[Movies] Component mounted on route:", window.location.pathname);
@@ -26,7 +29,7 @@ const Movies = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<"rating" | "year" | "title" | "user_rating">("rating");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [itemsPerPage, setItemsPerPage] = useState(100);
+  const [itemsPerPage, setItemsPerPage] = useState(50); // Optimized: reduced from 100
 
   // Filter states from context
   const {
@@ -123,10 +126,12 @@ const Movies = () => {
         if (appliedGenres.length > 0) {
           query = query.overlaps("genres", appliedGenres);
         }
-        if (appliedRatingRange[0] > 0 || appliedRatingRange[1] < 10) {
-          // Filter by IMDb rating when available, fall back to TMDB rating
-          query = query.or(`and(imdb_rating.gte.${appliedRatingRange[0]},imdb_rating.lte.${appliedRatingRange[1]}),and(imdb_rating.is.null,rating.gte.${appliedRatingRange[0]},rating.lte.${appliedRatingRange[1]})`);
-        }
+      if (appliedRatingRange[0] > 0 || appliedRatingRange[1] < 10) {
+        // Optimized: Simpler rating filter using indexes
+        const [min, max] = appliedRatingRange;
+        query = query.or(`imdb_rating.gte.${min},and(imdb_rating.is.null,rating.gte.${min})`);
+        query = query.or(`imdb_rating.lte.${max},and(imdb_rating.is.null,rating.lte.${max})`);
+      }
         query = query.gte("year", appliedYearRange[0]).lte("year", appliedYearRange[1]);
         if (appliedLanguages.length > 0) {
           query = query.in("original_language", appliedLanguages);
@@ -188,8 +193,10 @@ const Movies = () => {
         query = query.overlaps("genres", appliedGenres);
       }
       if (appliedRatingRange[0] > 0 || appliedRatingRange[1] < 10) {
-        // Filter by IMDb rating when available, fall back to TMDB rating
-        query = query.or(`and(imdb_rating.gte.${appliedRatingRange[0]},imdb_rating.lte.${appliedRatingRange[1]}),and(imdb_rating.is.null,rating.gte.${appliedRatingRange[0]},rating.lte.${appliedRatingRange[1]})`);
+        // Optimized: Simpler rating filter using indexes
+        const [min, max] = appliedRatingRange;
+        query = query.or(`imdb_rating.gte.${min},and(imdb_rating.is.null,rating.gte.${min})`);
+        query = query.or(`imdb_rating.lte.${max},and(imdb_rating.is.null,rating.lte.${max})`);
       }
       query = query.gte("year", appliedYearRange[0]).lte("year", appliedYearRange[1]);
       if (appliedLanguages.length > 0) {
@@ -249,11 +256,44 @@ const Movies = () => {
         })),
         totalCount: count || 0
       };
-    }
+    },
+    staleTime: 60000, // 1 minute - optimized caching
+    gcTime: 300000, // 5 minutes cache time
   });
   const movies = moviesData?.movies || [];
   const totalCount = moviesData?.totalCount || 0;
   const totalPages = Math.ceil(totalCount / itemsPerPage);
+
+  // Batch fetch user data for all displayed movies (N+1 query fix)
+  const { data: userDataMap = {} } = useQuery({
+    queryKey: ["batch-user-data", movies.map(m => m.id), user?.id],
+    queryFn: async () => {
+      if (!user?.id) return {};
+      
+      const movieIds = movies.map(m => m.id);
+      if (movieIds.length === 0) return {};
+
+      const { data } = await supabase
+        .from("user_ratings")
+        .select("media_id, user_rating, in_watchlist")
+        .eq("user_id", user.id)
+        .eq("media_type", "movie")
+        .in("media_id", movieIds);
+      
+      // Create lookup map
+      const map: Record<string, { rating: number | null, inWatchlist: boolean }> = {};
+      data?.forEach(item => {
+        map[item.media_id] = {
+          rating: item.user_rating,
+          inWatchlist: item.in_watchlist || false
+        };
+      });
+      
+      return map;
+    },
+    enabled: !!user?.id && movies.length > 0,
+    staleTime: 30000, // 30 seconds
+  });
 
   // Debug query states
   useEffect(() => {

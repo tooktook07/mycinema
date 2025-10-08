@@ -20,6 +20,7 @@ interface MovieRatingProps {
   movieId: string;
   movieTitle: string;
   iconOnly?: boolean;
+  preloadedRating?: number | null;
 }
 
 type SentimentRating = 1 | 5 | 10 | null;
@@ -30,7 +31,7 @@ const sentimentLabels = {
   10: "Love",
 };
 
-export const MovieRating = ({ movieId, movieTitle, iconOnly = false }: MovieRatingProps) => {
+export const MovieRating = ({ movieId, movieTitle, iconOnly = false, preloadedRating }: MovieRatingProps) => {
   const { user } = useEffectiveAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -44,13 +45,21 @@ export const MovieRating = ({ movieId, movieTitle, iconOnly = false }: MovieRati
   const isRealUser = user && user.id !== 'dev-user-id';
 
   useEffect(() => {
+    // If preloaded data is available, use it (batch optimization)
+    if (preloadedRating !== undefined) {
+      const sentimentValue = preloadedRating as SentimentRating;
+      setSavedRating(sentimentValue);
+      setRating(sentimentValue);
+      return;
+    }
+
     if (isRealUser) {
       fetchUserRating();
     } else {
       // Check guest ratings from localStorage
       fetchGuestRating();
     }
-  }, [user, movieId, isRealUser]);
+  }, [user, movieId, isRealUser, preloadedRating]);
 
   const fetchGuestRating = () => {
     const guestRatings = getGuestRatings();
