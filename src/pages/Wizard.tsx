@@ -129,11 +129,11 @@ const Wizard = ({ isModal = false, onClose }: WizardProps = {}) => {
       
       // Show appropriate toast based on rating
       if (rating === 10) {
-        toast.success("❤️ Added to your loves!");
+        toast.success("❤️ Love this! Added to your favorites!");
       } else if (rating === 5) {
-        toast.success("👍 Added to your likes!");
+        toast.success("👍 I liked this! Added to your collection!");
       } else {
-        toast.info("Marked as not interested");
+        toast.info("Marked as not for me");
       }
 
       // Load next movie

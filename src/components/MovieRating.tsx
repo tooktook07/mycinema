@@ -26,9 +26,9 @@ interface MovieRatingProps {
 type SentimentRating = 1 | 5 | 10 | null;
 
 const sentimentLabels = {
-  1: "Not Interested",
-  5: "Like",
-  10: "Love",
+  1: "Not for me",
+  5: "I liked this",
+  10: "Love this!",
 };
 
 export const MovieRating = ({ movieId, movieTitle, iconOnly = false, preloadedRating }: MovieRatingProps) => {
@@ -205,7 +205,7 @@ export const MovieRating = ({ movieId, movieTitle, iconOnly = false, preloadedRa
             )}
           >
             <ThumbsDown className="h-8 w-8" />
-            <span className="font-semibold">Not Interested</span>
+            <span className="font-semibold">Not for me</span>
           </Button>
           
           <Button
@@ -219,7 +219,7 @@ export const MovieRating = ({ movieId, movieTitle, iconOnly = false, preloadedRa
             )}
           >
             <ThumbsUp className="h-8 w-8" />
-            <span className="font-semibold">Like</span>
+            <span className="font-semibold">I liked this</span>
           </Button>
           
           <Button
@@ -233,7 +233,7 @@ export const MovieRating = ({ movieId, movieTitle, iconOnly = false, preloadedRa
             )}
           >
             <Heart className="h-8 w-8" />
-            <span className="font-semibold">Love</span>
+            <span className="font-semibold">Love this!</span>
           </Button>
         </div>
       </DialogContent>

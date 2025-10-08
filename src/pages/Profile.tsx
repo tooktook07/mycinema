@@ -148,11 +148,11 @@ export default function Profile() {
 
   const getRatingBadge = (rating: number) => {
     if (rating === 1) {
-      return <Badge variant="destructive" className="gap-1"><ThumbsDown className="h-3 w-3" /> Not Interested</Badge>;
+      return <Badge variant="destructive" className="gap-1"><ThumbsDown className="h-3 w-3" /> Not for me</Badge>;
     } else if (rating === 5) {
-      return <Badge variant="secondary" className="gap-1"><Star className="h-3 w-3" /> Like</Badge>;
+      return <Badge variant="secondary" className="gap-1"><Star className="h-3 w-3" /> I liked this</Badge>;
     } else if (rating === 10) {
-      return <Badge variant="default" className="gap-1"><Heart className="h-3 w-3 fill-current" /> Love</Badge>;
+      return <Badge variant="default" className="gap-1"><Heart className="h-3 w-3 fill-current" /> Love this!</Badge>;
     }
     return null;
   };

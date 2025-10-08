@@ -127,7 +127,7 @@ export const MovieWizardCard = ({ movie, onRate, onSkip, totalRated, isProcessin
                   ) : (
                     <X className="h-5 w-5" />
                   )}
-                  <span className="text-[10px] md:text-xs">Not Interested</span>
+                  <span className="text-[10px] md:text-xs">Not for me</span>
                 </Button>
 
                 <Button
@@ -142,7 +142,7 @@ export const MovieWizardCard = ({ movie, onRate, onSkip, totalRated, isProcessin
                   ) : (
                     <ThumbsUp className="h-5 w-5" />
                   )}
-                  <span className="text-[10px] md:text-xs">Like</span>
+                  <span className="text-[10px] md:text-xs">I liked this</span>
                 </Button>
 
                 <Button
@@ -157,7 +157,7 @@ export const MovieWizardCard = ({ movie, onRate, onSkip, totalRated, isProcessin
                   ) : (
                     <Heart className="h-5 w-5" />
                   )}
-                  <span className="text-[10px] md:text-xs">Love</span>
+                  <span className="text-[10px] md:text-xs">Love this!</span>
                 </Button>
               </div>
 
