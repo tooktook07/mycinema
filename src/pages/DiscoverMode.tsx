@@ -18,7 +18,9 @@ const DiscoverMode = () => {
   const { user } = useAuth();
   const [currentMovie, setCurrentMovie] = useState<RecommendationMovie | null>(null);
   const [movieHistory, setMovieHistory] = useState<RecommendationMovie[]>([]);
+  const [movieStates, setMovieStates] = useState<Record<string, { rating?: number; inWatchlist?: boolean }>>({});
   const [navigationDirection, setNavigationDirection] = useState<'forward' | 'backward'>('forward');
+  const [animationKey, setAnimationKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [totalRated, setTotalRated] = useState(0);
@@ -58,6 +60,7 @@ const DiscoverMode = () => {
   const loadNextMovie = async () => {
     setLoading(true);
     setNavigationDirection('forward');
+    setAnimationKey(prev => prev + 1);
     try {
       let movie: RecommendationMovie | null = null;
       
@@ -92,22 +95,19 @@ const DiscoverMode = () => {
   const handlePrevious = () => {
     if (movieHistory.length === 0 || saving) return;
     
-    setSaving(true);
     setNavigationDirection('backward');
-    try {
-      // Get the last movie from history
-      const prevMovie = movieHistory[movieHistory.length - 1];
-      
-      // Remove it from history
-      setMovieHistory(prev => prev.slice(0, -1));
-      
-      // Set it as current movie
-      setCurrentMovie(prevMovie);
-      
-      toast.info("⬅️ Previous movie");
-    } finally {
-      setSaving(false);
-    }
+    setAnimationKey(prev => prev + 1);
+    
+    // Get the last movie from history
+    const prevMovie = movieHistory[movieHistory.length - 1];
+    
+    // Remove it from history
+    setMovieHistory(prev => prev.slice(0, -1));
+    
+    // Set it as current movie
+    setCurrentMovie(prevMovie);
+    
+    toast.info("⬅️ Previous movie");
   };
 
   const handleRate = async (rating: number) => {
@@ -131,6 +131,15 @@ const DiscoverMode = () => {
       } else {
         saveGuestRating(currentMovie.id, rating);
       }
+
+      // Store the rating state
+      setMovieStates(prev => ({
+        ...prev,
+        [currentMovie.id]: { 
+          ...prev[currentMovie.id],
+          rating 
+        }
+      }));
 
       setTotalRated(prev => prev + 1);
       setSessionRatings(prev => prev + 1);
@@ -237,7 +246,7 @@ const DiscoverMode = () => {
         <>
           <AnimatePresence mode="wait">
             <motion.div
-              key={currentMovie.id}
+              key={`${currentMovie.id}-${animationKey}`}
               initial={{ y: navigationDirection === 'backward' ? "-100%" : "100%" }}
               animate={{ y: 0 }}
               exit={{ y: navigationDirection === 'backward' ? "100%" : "-100%" }}
@@ -249,6 +258,8 @@ const DiscoverMode = () => {
                 totalRated={totalRated}
                 sessionRatings={sessionRatings}
                 recentStats={recentStats}
+                savedRating={movieStates[currentMovie.id]?.rating}
+                savedInWatchlist={movieStates[currentMovie.id]?.inWatchlist}
                 onReadMore={() => setIsDetailModalOpen(true)}
                 enableViewportTracking={false}
               />
@@ -297,6 +308,15 @@ const DiscoverMode = () => {
                 movieTitle={currentMovie.title}
                 className="flex-1 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border-white/20"
                 variant="outline"
+                onAddToWatchlist={() => {
+                  setMovieStates(prev => ({
+                    ...prev,
+                    [currentMovie.id]: {
+                      ...prev[currentMovie.id],
+                      inWatchlist: true
+                    }
+                  }));
+                }}
               />
 
               <Button
