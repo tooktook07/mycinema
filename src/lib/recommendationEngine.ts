@@ -30,7 +30,7 @@ const MIN_RATINGS_FOR_PERSONALIZATION = 5; // Minimum ratings needed for similar
 const RATING_WEIGHTS = {
   LOVE: 3.0,           // Rating 10 → 3x weight
   LIKE: 1.0,           // Rating 5 → 1x weight
-  NOT_INTERESTED: -0.5 // Rating 1 → negative signal
+  NOT_INTERESTED: -2.0 // Rating 1 → strong negative signal
 };
 
 // Temporal decay multipliers (Phase 3)
@@ -42,11 +42,11 @@ const TEMPORAL_DECAY = {
 
 // Similarity weights
 const WEIGHTS = {
-  GENRE: 0.35,
-  DIRECTOR: 0.20,
-  ACTOR: 0.20,
-  KEYWORD: 0.15,
-  LANGUAGE: 0.10,
+  GENRE: 0.50,    // Increased from 0.35 - primary factor
+  DIRECTOR: 0.15, // Reduced from 0.20
+  ACTOR: 0.15,    // Reduced from 0.20
+  KEYWORD: 0.10,  // Reduced from 0.15
+  LANGUAGE: 0.10, // Same
 };
 
 export async function getNextRecommendation(
@@ -209,12 +209,12 @@ export async function getNextRecommendation(
         return null;
       }
 
-      // Calculate max weights for normalization
-      const maxGenreWeight = Math.max(...Object.values(genrePreferences).filter(w => w > 0), 1);
-      const maxDirectorWeight = Math.max(...Object.values(directorPreferences).filter(w => w > 0), 1);
-      const maxActorWeight = Math.max(...Object.values(actorPreferences).filter(w => w > 0), 1);
-      const maxKeywordWeight = Math.max(...Object.values(keywordPreferences).filter(w => w > 0), 1);
-      const maxLangWeight = Math.max(...Object.values(languagePreferences).filter(w => w > 0), 1);
+      // Calculate max weights for normalization (include negatives)
+      const maxGenreWeight = Math.max(...Object.values(genrePreferences).map(Math.abs), 1);
+      const maxDirectorWeight = Math.max(...Object.values(directorPreferences).map(Math.abs), 1);
+      const maxActorWeight = Math.max(...Object.values(actorPreferences).map(Math.abs), 1);
+      const maxKeywordWeight = Math.max(...Object.values(keywordPreferences).map(Math.abs), 1);
+      const maxLangWeight = Math.max(...Object.values(languagePreferences).map(Math.abs), 1);
 
       // Calculate similarity scores with weighted preferences
       const moviesWithScores = candidateMovies.map(movie => {
@@ -234,11 +234,11 @@ export async function getNextRecommendation(
           score += 2.0;
         }
         
-        // Phase 2: TF-IDF Genre scoring
+        // Phase 2: TF-IDF Genre scoring (now includes negative preferences)
         let genreScore = 0;
         (movie.genres || []).forEach((genre: string) => {
           const preference = genrePreferences[genre];
-          if (preference && preference > 0) {
+          if (preference) {
             const tf = preference;
             const idf = genreIDF[genre] || 0;
             genreScore += tf * idf;
@@ -247,52 +247,67 @@ export async function getNextRecommendation(
         const normalizedGenreScore = maxGenreWeight > 0 ? genreScore / maxGenreWeight : 0;
         score += normalizedGenreScore * WEIGHTS.GENRE;
         
-        // Weighted director scoring
+        // Weighted director scoring (now includes negative preferences)
         if (movie.director && directorPreferences[movie.director]) {
           const directorWeight = directorPreferences[movie.director];
-          if (directorWeight > 0) {
-            score += (directorWeight / maxDirectorWeight) * WEIGHTS.DIRECTOR;
-          }
+          score += (directorWeight / maxDirectorWeight) * WEIGHTS.DIRECTOR;
         }
         
-        // Weighted actor scoring
+        // Weighted actor scoring (now includes negative preferences)
         let actorScore = 0;
         if (movie.actors) {
           movie.actors.split(',').forEach((actor: string) => {
             const cleanActor = actor.trim();
             const preference = actorPreferences[cleanActor];
-            if (preference && preference > 0) {
+            if (preference) {
               actorScore += preference;
             }
           });
         }
-        if (maxActorWeight > 0 && actorScore > 0) {
+        if (maxActorWeight > 0) {
           score += (actorScore / maxActorWeight) * WEIGHTS.ACTOR;
         }
         
-        // Weighted keyword scoring
+        // Weighted keyword scoring (now includes negative preferences)
         let keywordScore = 0;
         (movie.keywords || []).forEach((keyword: string) => {
           const preference = keywordPreferences[keyword];
-          if (preference && preference > 0) {
+          if (preference) {
             keywordScore += preference;
           }
         });
-        if (maxKeywordWeight > 0 && keywordScore > 0) {
+        if (maxKeywordWeight > 0) {
           score += (keywordScore / maxKeywordWeight) * WEIGHTS.KEYWORD;
         }
         
-        // Weighted language scoring
+        // Weighted language scoring (now includes negative preferences)
         if (movie.original_language && languagePreferences[movie.original_language]) {
           const langWeight = languagePreferences[movie.original_language];
-          if (langWeight > 0) {
-            score += (langWeight / maxLangWeight) * WEIGHTS.LANGUAGE;
-          }
+          score += (langWeight / maxLangWeight) * WEIGHTS.LANGUAGE;
         }
         
         // Slight boost for popularity
         const popularityBoost = Math.min((effectiveVotes || 0) / 10000, 0.1);
         score += popularityBoost;
+        
+        // Phase 3: Apply graduated penalty system for disliked genres
+        let penaltyMultiplier = 1.0;
+        (movie.genres || []).forEach((genre: string) => {
+          const preference = genrePreferences[genre];
+          if (preference) {
+            if (preference <= -4.0) {
+              // 3+ dislikes: 80% penalty
+              penaltyMultiplier = Math.min(penaltyMultiplier, 0.2);
+            } else if (preference <= -2.0) {
+              // 1-2 dislikes: 50% penalty
+              penaltyMultiplier = Math.min(penaltyMultiplier, 0.5);
+            } else if (preference < 0) {
+              // Any negative preference: 30% penalty
+              penaltyMultiplier = Math.min(penaltyMultiplier, 0.7);
+            }
+          }
+        });
+        score *= penaltyMultiplier;
         
         return { ...movie, similarityScore: score };
       });
@@ -639,22 +654,22 @@ async function getNextRecommendationForGuest(
         return null;
       }
 
-      // Calculate max weights for normalization
-      const maxGenreWeight = Math.max(...Object.values(genrePreferences).filter(w => w > 0), 1);
-      const maxDirectorWeight = Math.max(...Object.values(directorPreferences).filter(w => w > 0), 1);
-      const maxActorWeight = Math.max(...Object.values(actorPreferences).filter(w => w > 0), 1);
-      const maxKeywordWeight = Math.max(...Object.values(keywordPreferences).filter(w => w > 0), 1);
-      const maxLangWeight = Math.max(...Object.values(languagePreferences).filter(w => w > 0), 1);
+      // Calculate max weights for normalization (include negatives)
+      const maxGenreWeight = Math.max(...Object.values(genrePreferences).map(Math.abs), 1);
+      const maxDirectorWeight = Math.max(...Object.values(directorPreferences).map(Math.abs), 1);
+      const maxActorWeight = Math.max(...Object.values(actorPreferences).map(Math.abs), 1);
+      const maxKeywordWeight = Math.max(...Object.values(keywordPreferences).map(Math.abs), 1);
+      const maxLangWeight = Math.max(...Object.values(languagePreferences).map(Math.abs), 1);
 
       // Calculate similarity scores with weighted preferences
       const moviesWithScores = candidateMovies.map(movie => {
         let score = 0;
         
-        // TF-IDF Genre scoring
+        // TF-IDF Genre scoring (now includes negative preferences)
         let genreScore = 0;
         (movie.genres || []).forEach((genre: string) => {
           const preference = genrePreferences[genre];
-          if (preference && preference > 0) {
+          if (preference) {
             const tf = preference;
             const idf = genreIDF[genre] || 0;
             genreScore += tf * idf;
@@ -663,51 +678,66 @@ async function getNextRecommendationForGuest(
         const normalizedGenreScore = maxGenreWeight > 0 ? genreScore / maxGenreWeight : 0;
         score += normalizedGenreScore * WEIGHTS.GENRE;
         
-        // Weighted director scoring
+        // Weighted director scoring (now includes negative preferences)
         if (movie.director && directorPreferences[movie.director]) {
           const directorWeight = directorPreferences[movie.director];
-          if (directorWeight > 0) {
-            score += (directorWeight / maxDirectorWeight) * WEIGHTS.DIRECTOR;
-          }
+          score += (directorWeight / maxDirectorWeight) * WEIGHTS.DIRECTOR;
         }
         
-        // Weighted actor scoring
+        // Weighted actor scoring (now includes negative preferences)
         let actorScore = 0;
         if (movie.actors) {
           movie.actors.split(',').forEach((actor: string) => {
             const cleanActor = actor.trim();
             const preference = actorPreferences[cleanActor];
-            if (preference && preference > 0) {
+            if (preference) {
               actorScore += preference;
             }
           });
         }
-        if (maxActorWeight > 0 && actorScore > 0) {
+        if (maxActorWeight > 0) {
           score += (actorScore / maxActorWeight) * WEIGHTS.ACTOR;
         }
         
-        // Weighted keyword scoring
+        // Weighted keyword scoring (now includes negative preferences)
         let keywordScore = 0;
         (movie.keywords || []).forEach((keyword: string) => {
           const preference = keywordPreferences[keyword];
-          if (preference && preference > 0) {
+          if (preference) {
             keywordScore += preference;
           }
         });
-        if (maxKeywordWeight > 0 && keywordScore > 0) {
+        if (maxKeywordWeight > 0) {
           score += (keywordScore / maxKeywordWeight) * WEIGHTS.KEYWORD;
         }
         
-        // Weighted language scoring
+        // Weighted language scoring (now includes negative preferences)
         if (movie.original_language && languagePreferences[movie.original_language]) {
           const langWeight = languagePreferences[movie.original_language];
-          if (langWeight > 0) {
-            score += (langWeight / maxLangWeight) * WEIGHTS.LANGUAGE;
-          }
+          score += (langWeight / maxLangWeight) * WEIGHTS.LANGUAGE;
         }
         
         const popularityBoost = Math.min((movie.vote_count || 0) / 10000, 0.1);
         score += popularityBoost;
+        
+        // Apply graduated penalty system for disliked genres
+        let penaltyMultiplier = 1.0;
+        (movie.genres || []).forEach((genre: string) => {
+          const preference = genrePreferences[genre];
+          if (preference) {
+            if (preference <= -4.0) {
+              // 3+ dislikes: 80% penalty
+              penaltyMultiplier = Math.min(penaltyMultiplier, 0.2);
+            } else if (preference <= -2.0) {
+              // 1-2 dislikes: 50% penalty
+              penaltyMultiplier = Math.min(penaltyMultiplier, 0.5);
+            } else if (preference < 0) {
+              // Any negative preference: 30% penalty
+              penaltyMultiplier = Math.min(penaltyMultiplier, 0.7);
+            }
+          }
+        });
+        score *= penaltyMultiplier;
         
         return { ...movie, similarityScore: score };
       });
