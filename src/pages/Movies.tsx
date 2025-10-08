@@ -39,6 +39,15 @@ const Movies = () => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [itemsPerPage, setItemsPerPage] = useState(50); // Optimized: reduced from 100
 
+  // Auto-reset sort to "rating" if user logs out while "My Rating" is selected
+  useEffect(() => {
+    if (!user && sortBy === "user_rating") {
+      console.log("[Movies] User logged out with user_rating sort active - resetting to rating");
+      setSortBy("rating");
+      setSortOrder("desc");
+    }
+  }, [user, sortBy]);
+
   // Filter states from context
   const {
     appliedGenres,
@@ -323,6 +332,16 @@ const Movies = () => {
   }, [isLoading, isError, error, totalCount, movies.length]);
   const handleSortChange = (value: string) => {
     const [field, order] = value.split("-") as [typeof sortBy, typeof sortOrder];
+    
+    // Defensive validation: prevent user_rating sort when not logged in
+    if (field === "user_rating" && !user) {
+      console.warn("[Movies] Attempted to set user_rating sort without logged in user - defaulting to rating");
+      setSortBy("rating");
+      setSortOrder("desc");
+      setCurrentPage(1);
+      return;
+    }
+    
     setSortBy(field);
     setSortOrder(order);
     setCurrentPage(1);
@@ -428,8 +447,12 @@ const Movies = () => {
                 <SelectContent>
                   <SelectItem value="rating-desc">Rating (High to Low)</SelectItem>
                   <SelectItem value="rating-asc">Rating (Low to High)</SelectItem>
-                  <SelectItem value="user_rating-desc">My Rating (High to Low)</SelectItem>
-                  <SelectItem value="user_rating-asc">My Rating (Low to High)</SelectItem>
+                  {user && (
+                    <>
+                      <SelectItem value="user_rating-desc">My Rating (High to Low)</SelectItem>
+                      <SelectItem value="user_rating-asc">My Rating (Low to High)</SelectItem>
+                    </>
+                  )}
                   <SelectItem value="year-desc">Year (Newest First)</SelectItem>
                   <SelectItem value="year-asc">Year (Oldest First)</SelectItem>
                   <SelectItem value="title-asc">Title (A to Z)</SelectItem>
