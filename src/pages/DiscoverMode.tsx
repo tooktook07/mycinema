@@ -18,6 +18,7 @@ const DiscoverMode = () => {
   const { user } = useAuth();
   const [currentMovie, setCurrentMovie] = useState<RecommendationMovie | null>(null);
   const [movieHistory, setMovieHistory] = useState<RecommendationMovie[]>([]);
+  const [navigationDirection, setNavigationDirection] = useState<'forward' | 'backward'>('forward');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [totalRated, setTotalRated] = useState(0);
@@ -56,6 +57,7 @@ const DiscoverMode = () => {
 
   const loadNextMovie = async () => {
     setLoading(true);
+    setNavigationDirection('forward');
     try {
       let movie: RecommendationMovie | null = null;
       
@@ -91,6 +93,7 @@ const DiscoverMode = () => {
     if (movieHistory.length === 0 || saving) return;
     
     setSaving(true);
+    setNavigationDirection('backward');
     try {
       // Get the last movie from history
       const prevMovie = movieHistory[movieHistory.length - 1];
@@ -154,6 +157,7 @@ const DiscoverMode = () => {
     if (!currentMovie || saving) return;
     
     setSaving(true);
+    setNavigationDirection('forward');
     
     try {
       const newSkipped = [...skippedIds, currentMovie.id];
@@ -234,9 +238,9 @@ const DiscoverMode = () => {
           <AnimatePresence mode="wait">
             <motion.div
               key={currentMovie.id}
-              initial={{ y: "100%" }}
+              initial={{ y: navigationDirection === 'backward' ? "-100%" : "100%" }}
               animate={{ y: 0 }}
-              exit={{ y: "-100%" }}
+              exit={{ y: navigationDirection === 'backward' ? "100%" : "-100%" }}
               transition={{ duration: 0.4, ease: "easeInOut" }}
               className="absolute inset-0"
             >
