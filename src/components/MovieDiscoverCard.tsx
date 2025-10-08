@@ -85,7 +85,6 @@ export const MovieDiscoverCard = ({ movie, totalRated, sessionRatings, recentSta
                 onClick={onReadMore}
                 className="text-white hover:text-white/80 underline underline-offset-2 backdrop-blur-md inline-flex items-center text-sm transition-colors"
               >
-                <Info className="h-4 w-4 mr-1" />
                 Read More
               </button>
             )}
