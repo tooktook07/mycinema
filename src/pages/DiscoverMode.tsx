@@ -17,6 +17,7 @@ const DiscoverMode = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [currentMovie, setCurrentMovie] = useState<RecommendationMovie | null>(null);
+  const [movieHistory, setMovieHistory] = useState<RecommendationMovie[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [totalRated, setTotalRated] = useState(0);
@@ -72,12 +73,37 @@ const DiscoverMode = () => {
         );
       }
       
+      // Add current movie to history before showing new one
+      if (currentMovie) {
+        setMovieHistory(prev => [...prev, currentMovie]);
+      }
+      
       setCurrentMovie(movie);
     } catch (error) {
       console.error("Error loading recommendation:", error);
       toast.error("Failed to load recommendation");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (movieHistory.length === 0 || saving) return;
+    
+    setSaving(true);
+    try {
+      // Get the last movie from history
+      const prevMovie = movieHistory[movieHistory.length - 1];
+      
+      // Remove it from history
+      setMovieHistory(prev => prev.slice(0, -1));
+      
+      // Set it as current movie
+      setCurrentMovie(prevMovie);
+      
+      toast.info("⬅️ Previous movie");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -177,8 +203,18 @@ const DiscoverMode = () => {
   };
 
   const handleTouchEnd = () => {
+    const swipeDistance = Math.abs(touchStart - touchEnd);
+    
+    // Require minimum swipe distance
+    if (swipeDistance < 50) return;
+    
+    // Swipe up (touchStart > touchEnd) = Next movie
     if (touchStart - touchEnd > 50) {
       handleSkip();
+    }
+    // Swipe down (touchEnd > touchStart) = Previous movie
+    else if (touchEnd - touchStart > 50) {
+      handlePrevious();
     }
   };
 
