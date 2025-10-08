@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Sparkles, CheckCircle2, RefreshCw, X, ThumbsUp, Heart, ArrowRight } from "lucide-react";
+import { Loader2, RefreshCw, X, ThumbsUp, Heart, SkipForward, Trash2, Film } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { MovieDiscoverCard } from "@/components/MovieDiscoverCard";
@@ -8,11 +9,9 @@ import { MovieDetailModal } from "@/components/MovieDetailModal";
 import { MovieWatchlist } from "@/components/MovieWatchlist";
 import { getNextRecommendation, RecommendationMovie } from "@/lib/recommendationEngine";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { saveGuestRating, getGuestRatings, getGuestRatedCount, saveGuestSkipped, getGuestSkipped } from "@/lib/guestRatings";
-import { clearOldestHalfOfTracking, canClearOlderEntries, clearRecentlyShown, getRecentlyShownStats } from "@/lib/recentlyShownTracker";
+import { clearOldestHalfOfTracking, canClearOlderEntries, clearRecentlyShown, getRecentlyShownStats, markMoviesAsShown } from "@/lib/recentlyShownTracker";
 
 const DiscoverMode = () => {
   const navigate = useNavigate();
@@ -23,19 +22,19 @@ const DiscoverMode = () => {
   const [totalRated, setTotalRated] = useState(0);
   const [sessionRatings, setSessionRatings] = useState(0);
   const [skippedIds, setSkippedIds] = useState<string[]>([]);
-  const [processingAction, setProcessingAction] = useState<'skip' | 'not-interested' | 'like' | 'love' | null>(null);
-  const [isGuest, setIsGuest] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
+
+  const recentStats = getRecentlyShownStats();
 
   useEffect(() => {
-    setIsGuest(!user);
     loadTotalRatings();
     loadNextMovie();
   }, [user]);
 
   const loadTotalRatings = async () => {
     if (!user) {
-      // Guest user: load from localStorage
       setTotalRated(getGuestRatedCount());
       return;
     }
@@ -60,10 +59,8 @@ const DiscoverMode = () => {
       let movie: RecommendationMovie | null = null;
       
       if (user) {
-        // Authenticated user
         movie = await getNextRecommendation(user.id, skippedIds);
       } else {
-        // Guest user
         const guestRatings = getGuestRatings();
         const guestSkipped = getGuestSkipped();
         const allSkipped = [...skippedIds, ...guestSkipped];
@@ -73,12 +70,6 @@ const DiscoverMode = () => {
           allSkipped,
           guestRatings.map(r => ({ movieId: r.movieId, rating: r.rating }))
         );
-      }
-      
-      if (!movie) {
-        toast.info("No more recommendations available at the moment.");
-        navigate("/movies");
-        return;
       }
       
       setCurrentMovie(movie);
@@ -93,19 +84,9 @@ const DiscoverMode = () => {
   const handleRate = async (rating: number) => {
     if (!currentMovie || saving) return;
     
-    // Set processing action based on rating
-    if (rating === 1) {
-      setProcessingAction('not-interested');
-    } else if (rating === 5) {
-      setProcessingAction('like');
-    } else if (rating === 10) {
-      setProcessingAction('love');
-    }
-    
     setSaving(true);
     try {
       if (user) {
-        // Authenticated user: save to database
         const { error } = await supabase
           .from('user_ratings')
           .upsert({
@@ -119,52 +100,47 @@ const DiscoverMode = () => {
 
         if (error) throw error;
       } else {
-        // Guest user: save to localStorage
         saveGuestRating(currentMovie.id, rating);
       }
 
       setTotalRated(prev => prev + 1);
       setSessionRatings(prev => prev + 1);
       
-      // Show appropriate toast based on rating
       if (rating === 10) {
-        toast.success("❤️ Love this! Added to your favorites!");
+        toast.success("❤️ Love this!");
       } else if (rating === 5) {
-        toast.success("👍 I liked this! Added to your collection!");
+        toast.success("👍 I liked this!");
       } else {
-        toast.info("Marked as not for me");
+        toast.info("Not for me");
       }
 
-      // Load next movie
+      markMoviesAsShown([currentMovie.id]);
       await loadNextMovie();
     } catch (error) {
       console.error("Error saving rating:", error);
       toast.error("Failed to save rating");
     } finally {
       setSaving(false);
-      setProcessingAction(null);
     }
   };
 
   const handleSkip = async () => {
     if (!currentMovie || saving) return;
     
-    setProcessingAction('skip');
     setSaving(true);
     
     try {
       const newSkipped = [...skippedIds, currentMovie.id];
       setSkippedIds(newSkipped);
       
-      // Save skipped to localStorage for guests
       if (!user) {
         saveGuestSkipped(newSkipped);
       }
       
+      markMoviesAsShown([currentMovie.id]);
       await loadNextMovie();
     } finally {
       setSaving(false);
-      setProcessingAction(null);
     }
   };
 
@@ -182,218 +158,169 @@ const DiscoverMode = () => {
     await loadNextMovie();
   };
 
-  if (loading && !currentMovie) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
+  const handleNavigateToSimilarMovie = (movieId: string) => {
+    if (currentMovie) {
+      markMoviesAsShown([currentMovie.id]);
+    }
+    // In a full implementation, you'd load the specific movie here
+    // For now, just load next recommendation
+    loadNextMovie();
+    setIsDetailModalOpen(false);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientY);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientY);
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStart - touchEnd > 50) {
+      handleSkip();
+    }
+  };
 
   return (
-    <div className="min-h-screen pt-6 px-4 pb-44">
-      <div className="container mx-auto max-w-7xl">
-        {/* Compact Header with Stats */}
-        <div className="flex items-center justify-between mb-6 px-4">
-          {/* Left: Title & Description */}
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <Sparkles className="h-5 w-5 text-primary" />
-              <h1 className="text-xl md:text-2xl font-bold">Discover Mode</h1>
-              {isGuest && (
-                <Badge variant="secondary" className="text-xs">
-                  🎭 Guest
-                </Badge>
-              )}
-            </div>
-            <p className="text-xs md:text-sm text-muted-foreground">
-              Rate movies to get personalized recommendations
-            </p>
-          </div>
+    <div 
+      className="relative h-screen w-full overflow-hidden bg-black"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {loading && !currentMovie ? (
+        <div className="absolute inset-0 flex items-center justify-center bg-black">
+          <Loader2 className="h-12 w-12 animate-spin text-white" />
+        </div>
+      ) : currentMovie ? (
+        <>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentMovie.id}
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "-100%" }}
+              transition={{ duration: 0.4, ease: "easeInOut" }}
+              className="absolute inset-0"
+            >
+              <MovieDiscoverCard
+                movie={currentMovie}
+                totalRated={totalRated}
+                sessionRatings={sessionRatings}
+                recentStats={recentStats}
+                onReadMore={() => setIsDetailModalOpen(true)}
+                enableViewportTracking={false}
+              />
+            </motion.div>
+          </AnimatePresence>
 
-          {/* Right: Session Stats */}
-          <div className="flex gap-3">
-            {!isGuest && (
-              <div className="text-right">
-                <div className="text-xl md:text-2xl font-bold">{totalRated}</div>
-                <p className="text-[10px] md:text-xs text-muted-foreground whitespace-nowrap">
-                  Total Ratings
-                </p>
-              </div>
+          <div className="absolute bottom-0 left-0 right-0 z-50 bg-gradient-to-t from-black/95 via-black/80 to-transparent pt-8 pb-6 px-4 safe-area-bottom">
+            <div className="grid grid-cols-3 gap-3 mb-3">
+              <Button
+                size="lg"
+                variant="outline"
+                className="flex flex-col gap-1 h-16 bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-red-500/80 hover:text-white hover:border-red-500/80"
+                onClick={() => handleRate(1)}
+                disabled={saving}
+              >
+                <X className="h-6 w-6" />
+                <span className="text-xs">Not for me</span>
+              </Button>
+
+              <Button
+                size="lg"
+                variant="outline"
+                className="flex flex-col gap-1 h-16 bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-blue-500/80 hover:text-white hover:border-blue-500/80"
+                onClick={() => handleRate(5)}
+                disabled={saving}
+              >
+                <ThumbsUp className="h-6 w-6" />
+                <span className="text-xs">I like it</span>
+              </Button>
+
+              <Button
+                size="lg"
+                variant="outline"
+                className="flex flex-col gap-1 h-16 bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-pink-500/80 hover:text-white hover:border-pink-500/80"
+                onClick={() => handleRate(10)}
+                disabled={saving}
+              >
+                <Heart className="h-6 w-6" />
+                <span className="text-xs">Love it!</span>
+              </Button>
+            </div>
+
+            <div className="flex gap-3">
+              <MovieWatchlist
+                movieId={currentMovie.id}
+                movieTitle={currentMovie.title}
+                className="flex-1 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border-white/20"
+                variant="outline"
+              />
+
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={handleSkip}
+                disabled={saving}
+                className="flex-1 flex items-center justify-center gap-2 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border-white/20"
+              >
+                <span>Next Movie</span>
+                <SkipForward className="h-5 w-5" />
+              </Button>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-black via-gray-900 to-black p-6 text-center">
+          <Film className="h-20 w-20 text-white/50 mb-4" />
+          <h2 className="text-2xl font-bold text-white mb-2">No More Movies</h2>
+          <p className="text-white/70 mb-6 max-w-md">
+            You've seen all available recommendations. Try refreshing or clearing history.
+          </p>
+          
+          <div className="flex flex-col gap-3 w-full max-w-sm">
+            {canClearOlderEntries() && (
+              <Button
+                onClick={handleRefreshRecommendations}
+                variant="outline"
+                size="lg"
+                className="w-full bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border-white/20"
+              >
+                <RefreshCw className="mr-2 h-5 w-5" />
+                Refresh Recommendations
+              </Button>
             )}
             
-            {sessionRatings > 0 && (
-              <div className="text-right border-l pl-3">
-                <div className="text-xl md:text-2xl font-bold flex items-center justify-end gap-1.5 text-primary">
-                  <CheckCircle2 className="h-4 w-4" />
-                  {sessionRatings}
-                </div>
-                <p className="text-[10px] md:text-xs text-muted-foreground whitespace-nowrap">
-                  This Session
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
+            <Button
+              onClick={handleClearAllHistory}
+              variant="outline"
+              size="lg"
+              className="w-full bg-white/10 backdrop-blur-md text-white hover:bg-red-500/80 border-white/20"
+            >
+              <Trash2 className="mr-2 h-5 w-5" />
+              Clear All History
+            </Button>
 
-        {/* Movie Card */}
-        {currentMovie ? (
-          <div className="flex justify-center flex-1 mb-6">
-            <MovieDiscoverCard
-              movie={currentMovie}
-              totalRated={totalRated}
-              onReadMore={() => setIsDetailModalOpen(true)}
-              enableViewportTracking={true}
-            />
-          </div>
-        ) : (
-          <Card className="max-w-2xl mx-auto">
-            <CardHeader>
-              <CardTitle>No More Movies</CardTitle>
-              <CardDescription>
-                You've seen all available movies! Check back later or clear your viewing history.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col gap-2">
-                <Button 
-                  onClick={() => navigate("/movies")}
-                  className="w-full"
-                  variant="outline"
-                >
-                  Browse All Movies
-                </Button>
-                {canClearOlderEntries() ? (
-                  <Button 
-                    onClick={handleRefreshRecommendations}
-                    className="w-full"
-                  >
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Refresh Recommendations
-                  </Button>
-                ) : getRecentlyShownStats().count > 0 && (
-                  <Button 
-                    onClick={handleClearAllHistory}
-                    className="w-full"
-                  >
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Clear All History
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
-      {/* Sticky Bottom Action Bar */}
-      {currentMovie && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 border-t backdrop-blur-md bg-background/95 shadow-lg">
-          <div className="container mx-auto max-w-7xl py-4 px-4">
-            <div className="space-y-3">
-              {/* Row 1: Rating Buttons */}
-              <div className="grid grid-cols-3 gap-3">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="flex flex-col gap-1.5 h-auto py-3 hover:bg-destructive hover:text-destructive-foreground hover:border-destructive"
-                  onClick={() => handleRate(1)}
-                  disabled={saving}
-                >
-                  {saving && processingAction === 'not-interested' ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <X className="h-5 w-5" />
-                  )}
-                  <span className="text-xs">Not for me</span>
-                </Button>
-
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="flex flex-col gap-1.5 h-auto py-3 hover:bg-primary hover:text-primary-foreground"
-                  onClick={() => handleRate(5)}
-                  disabled={saving}
-                >
-                  {saving && processingAction === 'like' ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <ThumbsUp className="h-5 w-5" />
-                  )}
-                  <span className="text-xs">I liked this</span>
-                </Button>
-
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="flex flex-col gap-1.5 h-auto py-3 hover:bg-accent hover:text-accent-foreground"
-                  onClick={() => handleRate(10)}
-                  disabled={saving}
-                >
-                  {saving && processingAction === 'love' ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <Heart className="h-5 w-5" />
-                  )}
-                  <span className="text-xs">Love this!</span>
-                </Button>
-              </div>
-
-              {/* Row 2: Watchlist + Next Movie */}
-              <div className="flex justify-between items-center gap-3">
-                <MovieWatchlist
-                  movieId={currentMovie.id}
-                  movieTitle={currentMovie.title}
-                  onAddToWatchlist={() => {
-                    // Optionally skip to next movie after adding to watchlist
-                    // handleSkip();
-                  }}
-                />
-
-                <Button
-                  variant="ghost"
-                  size="lg"
-                  onClick={handleSkip}
-                  disabled={saving}
-                  className="flex items-center gap-2"
-                >
-                  {saving && processingAction === 'skip' ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Loading...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Next Movie</span>
-                      <ArrowRight className="h-4 w-4" />
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
+            <Button
+              onClick={() => navigate('/movies')}
+              variant="outline"
+              size="lg"
+              className="w-full bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border-white/20"
+            >
+              Browse All Movies
+            </Button>
           </div>
         </div>
       )}
 
-      {/* Movie Detail Modal */}
-      {currentMovie && (
-        <MovieDetailModal
-          isOpen={isDetailModalOpen}
-          onClose={() => setIsDetailModalOpen(false)}
-          movieId={currentMovie.id}
-          onNavigateToMovie={(movieId) => {
-            setCurrentMovie(prev => {
-              if (prev) {
-                // You could optionally mark the previous movie as shown here
-              }
-              return null;
-            });
-            setIsDetailModalOpen(false);
-            // Load the new movie by refetching recommendations with this ID in mind
-            loadNextMovie();
-          }}
-        />
-      )}
+      <MovieDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        movieId={currentMovie?.id || null}
+        onNavigateToMovie={handleNavigateToSimilarMovie}
+      />
     </div>
   );
 };

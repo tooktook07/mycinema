@@ -20,9 +20,11 @@ interface MovieWatchlistProps {
   iconOnly?: boolean;
   preloadedInWatchlist?: boolean;
   onAddToWatchlist?: () => void;
+  className?: string;
+  variant?: "default" | "outline" | "ghost";
 }
 
-export const MovieWatchlist = ({ movieId, movieTitle, iconOnly = false, preloadedInWatchlist, onAddToWatchlist }: MovieWatchlistProps) => {
+export const MovieWatchlist = ({ movieId, movieTitle, iconOnly = false, preloadedInWatchlist, onAddToWatchlist, className, variant = "default" }: MovieWatchlistProps) => {
   const { user, session } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -148,9 +150,10 @@ export const MovieWatchlist = ({ movieId, movieTitle, iconOnly = false, preloade
   return (
     <>
       <Button
-        variant={inWatchlist ? "default" : "outline"}
+        variant={inWatchlist ? "default" : variant}
         onClick={handleClick}
         disabled={isLoading}
+        className={className}
       >
         <Bookmark className={`h-4 w-4 mr-2 ${inWatchlist ? 'fill-current' : ''}`} />
         {inWatchlist ? 'In Watchlist' : 'Add to Watchlist'}
