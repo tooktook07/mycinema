@@ -20,6 +20,7 @@ import {
   ThumbsDown,
   ThumbsUp,
   Heart,
+  Loader2,
 } from "lucide-react";
 import { getOptimizedImageProps } from "@/lib/imageUtils";
 import { MovieWatchlist } from "@/components/MovieWatchlist";
@@ -32,20 +33,23 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/comp
 import { getSimilarMovies } from "@/lib/recommendationEngine";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Card } from "@/components/ui/card";
+import { getRecentlyShownMovieIds, markMoviesAsShown } from "@/lib/recentlyShownTracker";
 
 interface MovieDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   movieId: string | null;
+  onNavigateToMovie?: (movieId: string) => void;
 }
 
-export const MovieDetailModal = ({ isOpen, onClose, movieId }: MovieDetailModalProps) => {
+export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }: MovieDetailModalProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useEffectiveAuth();
   
   const [currentRating, setCurrentRating] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
+  const [loadingNextMovie, setLoadingNextMovie] = useState(false);
 
   const {
     data: movie,
@@ -63,12 +67,12 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId }: MovieDetailModalP
     enabled: !!movieId && isOpen,
   });
 
-  // Fetch similar movies
+  // Fetch similar movies (20 for next movie feature, display 6 in carousel)
   const { data: similarMovies, isLoading: loadingSimilar } = useQuery({
     queryKey: ["similarMovies", movieId],
     queryFn: async () => {
       if (!movieId) return [];
-      return await getSimilarMovies(movieId, 6);
+      return await getSimilarMovies(movieId, 20);
     },
     enabled: !!movieId && isOpen,
   });
@@ -151,6 +155,80 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId }: MovieDetailModalP
       setSaving(false);
     }
   };
+
+  // Fetch next similar movie that hasn't been shown
+  const fetchNextSimilarMovie = async () => {
+    if (!movieId || !similarMovies) return null;
+    
+    // Get exclusion lists
+    const recentlyShownIds = getRecentlyShownMovieIds();
+    const ratedMovieIds = new Set<string>();
+    const watchlistIds = new Set<string>();
+    
+    if (user) {
+      const { data: ratings } = await supabase
+        .from('user_ratings')
+        .select('media_id, in_watchlist, user_rating')
+        .eq('user_id', user.id)
+        .eq('media_type', 'movie');
+      
+      ratings?.forEach(r => {
+        if (r.user_rating !== null) ratedMovieIds.add(r.media_id);
+        if (r.in_watchlist) watchlistIds.add(r.media_id);
+      });
+    } else {
+      const guestRatings = getGuestRatings();
+      guestRatings.forEach(r => ratedMovieIds.add(r.movieId));
+    }
+    
+    // Filter out exclusions
+    const availableMovies = similarMovies.filter(m => 
+      m.id !== movieId &&
+      !recentlyShownIds.includes(m.id) &&
+      !ratedMovieIds.has(m.id) &&
+      !watchlistIds.has(m.id)
+    );
+    
+    return availableMovies[0] || null;
+  };
+
+  // Handle next similar movie button
+  const handleNextSimilarMovie = async () => {
+    if (!movieId) return;
+    setLoadingNextMovie(true);
+    
+    try {
+      const nextMovie = await fetchNextSimilarMovie();
+      
+      if (nextMovie) {
+        // Mark current movie as shown
+        markMoviesAsShown([movieId]);
+        
+        // Navigate to next movie
+        if (onNavigateToMovie) {
+          onNavigateToMovie(nextMovie.id);
+          toast({
+            title: "Next Movie",
+            description: `Now viewing: ${nextMovie.title}`,
+          });
+        }
+      } else {
+        toast({
+          title: "No more similar movies",
+          description: "Try exploring from the recommendations page!",
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching next similar movie:', error);
+      toast({
+        title: "Error loading next movie",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingNextMovie(false);
+    }
+  };
+
   const imageProps = movie ? getOptimizedImageProps(movie.poster) : null;
   const hasValidImdbId = movie?.imdb_id && movie.imdb_id.startsWith("tt");
   const imdbUrl = hasValidImdbId ? `https://www.imdb.com/title/${movie.imdb_id}/` : "";
@@ -353,6 +431,27 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId }: MovieDetailModalP
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>Love this!</TooltipContent>
+                          </Tooltip>
+
+                          {/* Next Similar Movie Button */}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                size="sm" 
+                                variant="default"
+                                onClick={handleNextSimilarMovie}
+                                disabled={loadingNextMovie}
+                                className="gap-2"
+                              >
+                                {loadingNextMovie ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Sparkles className="h-4 w-4" />
+                                )}
+                                Next Similar
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Discover a similar movie you haven't seen</TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
                       </div>
@@ -691,7 +790,7 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId }: MovieDetailModalP
                       <div className="relative">
                         <Carousel opts={{ align: "start", loop: false }} className="w-full">
                           <CarouselContent className="-ml-2">
-                            {similarMovies.map((similar) => {
+                            {similarMovies.slice(0, 6).map((similar) => {
                               const similarImageProps = getOptimizedImageProps(similar.poster);
                               return (
                                 <CarouselItem key={similar.id} className="pl-2 basis-1/3 md:basis-1/4 lg:basis-1/6">

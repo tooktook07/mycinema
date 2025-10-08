@@ -104,6 +104,10 @@ const Movies = () => {
     setSelectedMovieId(null);
   };
 
+  const handleNavigateToMovie = (newMovieId: string) => {
+    setSelectedMovieId(newMovieId);
+  };
+
 
   // Fetch movies with filters, pagination, and sorting
   const {
@@ -517,6 +521,7 @@ const Movies = () => {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         movieId={selectedMovieId}
+        onNavigateToMovie={handleNavigateToMovie}
       />
     </div>;
 };

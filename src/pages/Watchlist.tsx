@@ -70,6 +70,10 @@ const Watchlist = () => {
     setSelectedMovieId(null);
   };
 
+  const handleNavigateToMovie = (newMovieId: string) => {
+    setSelectedMovieId(newMovieId);
+  };
+
   return (
     <div className="min-h-screen">
       <div className="container mx-auto max-w-7xl px-4 py-8">
@@ -114,6 +118,7 @@ const Watchlist = () => {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         movieId={selectedMovieId}
+        onNavigateToMovie={handleNavigateToMovie}
       />
     </div>
   );

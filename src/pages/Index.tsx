@@ -595,6 +595,10 @@ const Index = () => {
     setSelectedMovieId(null);
   };
 
+  const handleNavigateToMovie = (newMovieId: string) => {
+    setSelectedMovieId(newMovieId);
+  };
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -865,6 +869,7 @@ const Index = () => {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         movieId={selectedMovieId}
+        onNavigateToMovie={handleNavigateToMovie}
       />
     </div>;
 };
