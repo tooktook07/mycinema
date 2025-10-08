@@ -1,11 +1,9 @@
-import { Star, ExternalLink, Search, Users, Globe, Info } from "lucide-react";
+import { Star, Globe, Info } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Movie } from "@/data/types";
 import { MovieRating } from "@/components/MovieRating";
-import { MovieWatchlist } from "@/components/MovieWatchlist";
 import { getOptimizedImageProps } from "@/lib/imageUtils";
 import { useNavigate, useLocation } from "react-router-dom";
 interface MovieCardProps extends Movie {
@@ -65,17 +63,22 @@ export const MovieCard = ({
     navigate(`/movie/${id}`, { state: { backgroundLocation: location } });
   };
   return <Card className="group overflow-hidden transition-all duration-300 hover:shadow-lg">
-      <div className="aspect-[2/3] overflow-hidden relative">
+      <div 
+        className="aspect-[2/3] overflow-hidden relative cursor-pointer"
+        onClick={handleMoreInfo}
+      >
         <img {...imageProps} alt={title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-        <Button 
-          size="sm" 
-          variant="secondary" 
-          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={handleMoreInfo}
-        >
-          <Info className="h-4 w-4 mr-1" />
-          More Info
-        </Button>
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+          <Button 
+            size="sm" 
+            variant="secondary" 
+            className="opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Info className="h-4 w-4 mr-1" />
+            More Info
+          </Button>
+        </div>
       </div>
       <CardContent className="p-4">
         {/* Title - Full Width */}
@@ -129,61 +132,14 @@ export const MovieCard = ({
           ))}
         </div>
 
-        {/* Action Icons - At Bottom */}
-        <div className="flex items-center justify-between gap-1 mt-4 pt-3 border-t">
-          <div className="flex items-center gap-1">
-            {hasValidImdbId && (
-              <Tooltip delayDuration={300}>
-                <TooltipTrigger asChild>
-                  <Button size="icon" variant="ghost" className="h-8 w-8" asChild>
-                    <a href={imdbUrl} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent className="text-xs">
-                  <p>View on IMDB</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
-            
-            <Tooltip delayDuration={300}>
-              <TooltipTrigger asChild>
-                <Button size="icon" variant="ghost" className="h-8 w-8" asChild>
-                  <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer nofollow">
-                    <Search className="h-4 w-4" />
-                  </a>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="text-xs">
-                <p>Google Search</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-          
-          <div className="flex items-center gap-1">
-            <Tooltip delayDuration={300}>
-              <TooltipTrigger asChild>
-                <div>
-                  <MovieRating 
-                    movieId={id} 
-                    movieTitle={title} 
-                    iconOnly 
-                    preloadedRating={preloadedUserRating}
-                  />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent className="text-xs">
-                <p>Rate this movie</p>
-              </TooltipContent>
-            </Tooltip>
-            <MovieWatchlist 
-              movieId={id} 
-              movieTitle={title} 
-              iconOnly 
-              preloadedInWatchlist={preloadedInWatchlist}
-            />
-          </div>
+        {/* Rating Options - At Bottom */}
+        <div className="mt-4 pt-3 border-t">
+          <MovieRating 
+            movieId={id} 
+            movieTitle={title} 
+            iconOnly={false}
+            preloadedRating={preloadedUserRating}
+          />
         </div>
       </CardContent>
     </Card>;
