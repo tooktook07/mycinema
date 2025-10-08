@@ -12,19 +12,6 @@ serve(async (req) => {
   }
 
   let syncId: string | undefined;
-  let totalMovies = 0;
-  let importedMovies = 0;
-  let updatedMovies = 0;
-  let removedMovies = 0;
-  let skippedMovies = 0;
-  let failedMovies = 0;
-  const logs: string[] = [];
-  
-  // Initialize Supabase admin client outside try block so it's accessible in catch
-  const supabaseAdmin = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-  );
 
   try {
     const {
@@ -38,7 +25,7 @@ serve(async (req) => {
       minVoteCount = 100,
       minPopularity = 0,
       syncMode = false,
-      maxPages = 25, // Process up to 25 pages (500 movies) per sync - prevents timeout
+      maxPages = 25, // Reduced from 50 to 25 pages per sync for safety
     } = await req.json();
     const TMDB_API_KEY = Deno.env.get("TMDB_API_KEY");
 
@@ -71,6 +58,12 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Use service role key for database operations
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    );
 
     // Create sync history record
     const filters = {
@@ -108,8 +101,15 @@ serve(async (req) => {
     const SAFE_TIMEOUT = 160000; // 160 seconds (safe margin before 180s CPU limit)
     let consecutiveFailures = 0;
 
+    let totalMovies = 0;
+    let importedMovies = 0;
+    let updatedMovies = 0;
+    let removedMovies = 0;
+    let skippedMovies = 0;
+    let failedMovies = 0;
     let page = 1;
     let totalPages = 1;
+    const logs: string[] = [];
     const processedImdbIds = new Set<string>();
     const startTime = Date.now();
 
@@ -190,12 +190,6 @@ serve(async (req) => {
 
     // Fetch pages up to maxPages limit to prevent timeout
     while (page <= Math.min(totalPages, maxPages)) {
-      // Check if we're approaching CPU timeout - exit gracefully
-      if (Date.now() - startTime > SAFE_TIMEOUT) {
-        logMsg(`⚠️ Approaching CPU timeout limit, stopping gracefully at page ${page}`);
-        break;
-      }
-
       // Build query parameters
       let queryParams = `api_key=${TMDB_API_KEY}&primary_release_date.gte=${yearRange[0]}-01-01&primary_release_date.lte=${yearRange[1]}-12-31&vote_average.gte=${minRating}&vote_average.lte=${maxRating}&vote_count.gte=${minVoteCount}&sort_by=vote_average.desc&page=${page}`;
       if (genreIds && genreIds.length > 0) {
@@ -410,33 +404,29 @@ serve(async (req) => {
       page++;
     }
 
-    // Remove movies that don't match filters anymore (only in sync mode)
-    if (syncMode) {
-      // Check if we have time for cleanup
-      if (Date.now() - startTime > SAFE_TIMEOUT) {
-        logMsg(`⚠️ Skipping cleanup phase - approaching timeout limit`);
-      } else {
-        logMsg(`Checking for movies to remove that don't match current filters...`);
+    // Skip cleanup phase if approaching timeout to avoid CPU limit
+    if (syncMode && Date.now() - startTime <= SAFE_TIMEOUT) {
+      logMsg(`Checking for movies to remove that don't match current filters...`);
 
-        // Get all movies from database
-        const { data: allMovies, error: fetchError } = await supabaseAdmin
-          .from("movies")
-          .select("id, imdb_id, title, rating, vote_count, status, genres, original_language");
+      // Get all movies from database
+      const { data: allMovies, error: fetchError } = await supabaseAdmin
+        .from("movies")
+        .select("id, imdb_id, title, rating, vote_count, status, genres, original_language");
 
-        if (fetchError) {
-          logMsg(`✗ Error fetching movies for cleanup: ${fetchError.message}`);
-        } else if (allMovies) {
-          for (const movie of allMovies) {
-            // Check timeout before processing each movie
-            if (Date.now() - startTime > SAFE_TIMEOUT) {
-              logMsg(`⚠️ Stopping cleanup early - approaching timeout limit`);
-              break;
-            }
+      if (fetchError) {
+        logMsg(`✗ Error fetching movies for cleanup: ${fetchError.message}`);
+      } else if (allMovies) {
+        for (const movie of allMovies) {
+          // Check timeout before processing each movie
+          if (Date.now() - startTime > SAFE_TIMEOUT) {
+            logMsg(`⚠️ Stopping cleanup early - approaching timeout limit`);
+            break;
+          }
 
-            // Skip if this movie was just processed (it matches filters)
-            if (processedImdbIds.has(movie.imdb_id)) {
-              continue;
-            }
+          // Skip if this movie was just processed (it matches filters)
+          if (processedImdbIds.has(movie.imdb_id)) {
+            continue;
+          }
 
           // Check if movie should be removed based on filters
           let shouldRemove = false;
@@ -487,6 +477,8 @@ serve(async (req) => {
           }
         }
       }
+    } else if (syncMode) {
+      logMsg(`⚠️ Skipping cleanup phase - approaching timeout limit`);
     }
 
     const completionMsg = `${syncMode ? "Sync" : "Import"} complete: ${importedMovies} imported, ${updatedMovies} updated, ${removedMovies} removed, ${skippedMovies} skipped, ${failedMovies} failed. Processed ${page - 1} pages out of ${totalPages} total (found ${totalMovies} total movies).`;
@@ -538,21 +530,18 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error in import-tmdb-movies function:", error);
 
-    // Update sync history with error
+    // Update sync history with error if we have a sync ID
     if (syncId) {
+      const supabaseAdmin = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      );
       await supabaseAdmin
         .from("sync_history")
         .update({
           completed_at: new Date().toISOString(),
           status: "failed",
           error_message: error instanceof Error ? error.message : "Unknown error",
-          total_found: totalMovies,
-          imported: importedMovies,
-          updated: updatedMovies,
-          removed: removedMovies,
-          skipped: skippedMovies,
-          failed: failedMovies,
-          logs,
         })
         .eq("id", syncId);
     }
