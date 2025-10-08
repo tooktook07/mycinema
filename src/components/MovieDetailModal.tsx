@@ -456,13 +456,13 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                   {/* Title & Quick Info */}
                   <div className="flex-1 space-y-3">
                     <DialogHeader>
-                      <div className="flex items-start gap-2">
-                        <DialogTitle className="text-4xl font-bold flex-1">{movie.title}</DialogTitle>
+                      <DialogTitle className="text-4xl font-bold flex items-center gap-2">
+                        {movie.title}
                         {relevanceReason && (
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 mt-1">
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
                                   <Info className="h-5 w-5 text-muted-foreground" />
                                 </Button>
                               </TooltipTrigger>
@@ -473,7 +473,7 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                             </Tooltip>
                           </TooltipProvider>
                         )}
-                      </div>
+                      </DialogTitle>
                       {movie.tagline && <p className="text-lg text-muted-foreground italic">"{movie.tagline}"</p>}
                     </DialogHeader>
 
