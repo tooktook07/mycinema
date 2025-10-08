@@ -47,11 +47,6 @@ export const MovieDiscoverCard = ({ movie, totalRated, sessionRatings, recentSta
                 +{sessionRatings} this session
               </Badge>
             )}
-            {recentStats.count > 0 && (
-              <Badge variant="outline" className="bg-white/10 text-white border-white/30 backdrop-blur-md">
-                {recentStats.count} shown recently
-              </Badge>
-            )}
           </div>
         </div>
       </div>
