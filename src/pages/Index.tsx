@@ -2,6 +2,7 @@ import { Film, Star, TrendingUp, Calendar, BarChart3, Loader2, LogIn, ArrowRight
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -83,6 +84,8 @@ const Index = () => {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
   const [excludedRecommendationIds, setExcludedRecommendationIds] = useState<string[]>([]);
+  const [totalMoviesViewed, setTotalMoviesViewed] = useState(0);
+  const [totalAvailableMovies, setTotalAvailableMovies] = useState(0);
   // Modal state
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -407,6 +410,16 @@ const Index = () => {
           }));
 
         setRecommendations(topRecommendations);
+        setTotalMoviesViewed(prev => prev + topRecommendations.length);
+        
+        // Calculate total available movies
+        const { count } = await supabase
+          .from('movies')
+          .select('*', { count: 'exact', head: true })
+          .or(`imdb_rating.gte.${CANDIDATE_RATING_THRESHOLD},and(imdb_rating.is.null,rating.gte.${CANDIDATE_RATING_THRESHOLD})`)
+          .not('rating', 'is', null)
+          .not('id', 'in', `(${[...ratedMovieIds, ...watchlistSet].join(',')})`);
+        setTotalAvailableMovies(count || 0);
       } else {
         // Fallback: Show top-rated movies for users/guests with few/no ratings
         // Include recently shown movies in exclusion list (but NOT rated movies)
@@ -492,6 +505,14 @@ const Index = () => {
         }));
 
         setRecommendations(selected);
+        setTotalMoviesViewed(prev => prev + selected.length);
+        
+        // Calculate total available movies
+        const { count } = await supabase
+          .from('movies')
+          .select('*', { count: 'exact', head: true })
+          .not('rating', 'is', null);
+        setTotalAvailableMovies(count || 0);
       }
     } catch (error) {
       console.error("Error fetching recommendations:", error);
@@ -511,6 +532,7 @@ const Index = () => {
     clearOldestHalfOfTracking();
     toast.success("Viewing history refreshed!");
     setExcludedRecommendationIds([]);
+    setTotalMoviesViewed(0);
     await fetchRecommendations([]);
   };
 
@@ -518,6 +540,7 @@ const Index = () => {
     clearRecentlyShown();
     toast.success("All viewing history cleared!");
     setExcludedRecommendationIds([]);
+    setTotalMoviesViewed(0);
     await fetchRecommendations([]);
   };
 
@@ -536,7 +559,11 @@ const Index = () => {
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>;
   }
-  return <div className="min-h-screen">
+  const progressPercentage = totalAvailableMovies > 0 
+    ? Math.min((totalMoviesViewed / totalAvailableMovies) * 100, 100) 
+    : 0;
+
+  return <div className="min-h-screen pb-32">
       {/* Hero Section */}
       <div className="border-b px-4 py-16">
         <div className="container mx-auto max-w-7xl">
@@ -671,33 +698,56 @@ const Index = () => {
                         enableViewportTracking={true}
                         onOpenDetail={handleOpenDetail}
                       />
-                    ))}
+                     ))}
                   </div>
-                  {recommendations.length > 0 && (
-                    <div className="flex justify-center mt-6">
-                      <Button 
-                        onClick={handleShowMoreRecommendations}
-                        variant="outline"
-                        disabled={loadingRecommendations}
-                      >
-                        {loadingRecommendations ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Loading...
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="h-4 w-4 mr-2" />
-                            Show More Recommendations
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  )}
                 </>}
             </CardContent>
         </Card>
       </div>
+
+      {/* Sticky Load More Button */}
+      {recommendations.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 border-t backdrop-blur-md bg-background/95 shadow-lg">
+          <div className="container mx-auto max-w-7xl px-4 py-4">
+            <div className="flex flex-col gap-3">
+              {/* Progress Bar */}
+              <div className="space-y-2">
+                <Progress value={progressPercentage} className="h-2" />
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    Showing {totalMoviesViewed} of ~{totalAvailableMovies} movies
+                  </span>
+                  <span className="text-muted-foreground font-medium">
+                    {Math.round(progressPercentage)}%
+                  </span>
+                </div>
+              </div>
+              
+              {/* Load More Button */}
+              <div className="flex justify-center">
+                <Button 
+                  onClick={handleShowMoreRecommendations}
+                  disabled={loadingRecommendations}
+                  size="lg"
+                  className="min-w-[280px]"
+                >
+                  {loadingRecommendations ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Loading More...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Load More Recommendations
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Movie Detail Modal */}
       <MovieDetailModal
