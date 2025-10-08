@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Sparkles, CheckCircle2, RefreshCw } from "lucide-react";
+import { Loader2, Sparkles, CheckCircle2, RefreshCw, X, ThumbsUp, Heart, ArrowRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { MovieDiscoverCard } from "@/components/MovieDiscoverCard";
+import { MovieDetailModal } from "@/components/MovieDetailModal";
+import { MovieWatchlist } from "@/components/MovieWatchlist";
 import { getNextRecommendation, RecommendationMovie } from "@/lib/recommendationEngine";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +25,7 @@ const DiscoverMode = () => {
   const [skippedIds, setSkippedIds] = useState<string[]>([]);
   const [processingAction, setProcessingAction] = useState<'skip' | 'not-interested' | 'like' | 'love' | null>(null);
   const [isGuest, setIsGuest] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   useEffect(() => {
     setIsGuest(!user);
@@ -188,7 +191,7 @@ const DiscoverMode = () => {
   }
 
   return (
-    <div className="min-h-screen py-8 px-4">
+    <div className="min-h-screen py-8 px-4 pb-40">
       <div className="container mx-auto max-w-7xl">
         {/* Compact Header with Stats */}
         <div className="flex items-center justify-between mb-6 px-4">
@@ -238,11 +241,8 @@ const DiscoverMode = () => {
           <div className="flex justify-center flex-1 mb-6">
             <MovieDiscoverCard
               movie={currentMovie}
-              onRate={handleRate}
-              onSkip={handleSkip}
               totalRated={totalRated}
-              isProcessing={saving}
-              processingAction={processingAction}
+              onReadMore={() => setIsDetailModalOpen(true)}
               enableViewportTracking={true}
             />
           </div>
@@ -285,6 +285,104 @@ const DiscoverMode = () => {
           </Card>
         )}
       </div>
+
+      {/* Sticky Bottom Action Bar */}
+      {currentMovie && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 border-t backdrop-blur-md bg-background/95 shadow-lg">
+          <div className="container mx-auto max-w-7xl py-4 px-4">
+            <div className="space-y-3">
+              {/* Row 1: Rating Buttons */}
+              <div className="grid grid-cols-3 gap-3">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="flex flex-col gap-1.5 h-auto py-3 hover:bg-destructive hover:text-destructive-foreground hover:border-destructive"
+                  onClick={() => handleRate(1)}
+                  disabled={saving}
+                >
+                  {saving && processingAction === 'not-interested' ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <X className="h-5 w-5" />
+                  )}
+                  <span className="text-xs">Not for me</span>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="flex flex-col gap-1.5 h-auto py-3 hover:bg-primary hover:text-primary-foreground"
+                  onClick={() => handleRate(5)}
+                  disabled={saving}
+                >
+                  {saving && processingAction === 'like' ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <ThumbsUp className="h-5 w-5" />
+                  )}
+                  <span className="text-xs">I liked this</span>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="flex flex-col gap-1.5 h-auto py-3 hover:bg-accent hover:text-accent-foreground"
+                  onClick={() => handleRate(10)}
+                  disabled={saving}
+                >
+                  {saving && processingAction === 'love' ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <Heart className="h-5 w-5" />
+                  )}
+                  <span className="text-xs">Love this!</span>
+                </Button>
+              </div>
+
+              {/* Row 2: Watchlist + Next Movie */}
+              <div className="flex justify-between items-center gap-3">
+                <MovieWatchlist
+                  movieId={currentMovie.id}
+                  movieTitle={currentMovie.title}
+                  onAddToWatchlist={() => {
+                    // Optionally skip to next movie after adding to watchlist
+                    // handleSkip();
+                  }}
+                />
+
+                <Button
+                  variant="ghost"
+                  size="lg"
+                  onClick={handleSkip}
+                  disabled={saving}
+                  className="flex items-center gap-2"
+                >
+                  {saving && processingAction === 'skip' ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Loading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Next Movie</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Movie Detail Modal */}
+      {currentMovie && (
+        <MovieDetailModal
+          isOpen={isDetailModalOpen}
+          onClose={() => setIsDetailModalOpen(false)}
+          movieId={currentMovie.id}
+        />
+      )}
     </div>
   );
 };
