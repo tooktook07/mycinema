@@ -201,6 +201,8 @@ export const getUserActivityLogs = async (
   userId: string,
   filters?: ActivityFilters
 ): Promise<Activity[]> => {
+  await verifyAdminAccess();
+  
   let query = supabase
     .from('user_activity_logs')
     .select('*')

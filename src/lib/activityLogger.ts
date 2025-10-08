@@ -6,9 +6,11 @@ export const logActivity = async (
   details?: any
 ) => {
   try {
-    // Get IP and user agent from browser
+    // Get user agent from browser
     const userAgent = navigator.userAgent;
     
+    // Note: IP address cannot be obtained client-side for security reasons.
+    // If IP logging is required, implement it server-side in edge functions instead.
     await logUserActivity(userId, actionType, details, undefined, userAgent);
   } catch (error) {
     // Silently fail - don't block user actions if logging fails
