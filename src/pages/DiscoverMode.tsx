@@ -183,12 +183,13 @@ const DiscoverMode = () => {
   };
 
   return (
-    <div 
-      className="relative h-screen w-full overflow-hidden bg-black"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    >
+    <div className="flex justify-center items-center min-h-screen bg-black">
+      <div 
+        className="relative h-screen w-full max-w-md overflow-hidden bg-black"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
       {loading && !currentMovie ? (
         <div className="absolute inset-0 flex items-center justify-center bg-black">
           <Loader2 className="h-12 w-12 animate-spin text-white" />
@@ -321,6 +322,7 @@ const DiscoverMode = () => {
         movieId={currentMovie?.id || null}
         onNavigateToMovie={handleNavigateToSimilarMovie}
       />
+      </div>
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import { Film, Home, Settings, LogIn, LogOut, User, Sparkles, Bookmark } from "lucide-react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useEffectiveAuth } from "@/contexts/DevModeContext";
@@ -15,12 +15,25 @@ import {
 export const Navigation = () => {
   const { user, isAdmin, signOut } = useEffectiveAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isDiscoverPage = location.pathname === '/discover';
 
   return (
-    <nav className="border-b bg-background sticky top-0 z-50">
-      <div className="container mx-auto max-w-7xl px-4">
+    <nav className={cn(
+      "h-12 z-50",
+      isDiscoverPage 
+        ? "fixed top-0 left-0 right-0 bg-gradient-to-b from-black/90 via-black/50 to-transparent border-none"
+        : "sticky top-0 border-b bg-background"
+    )}>
+      <div className={cn(
+        "container mx-auto px-4",
+        isDiscoverPage ? "max-w-md" : "max-w-7xl"
+      )}>
         <div className="flex items-center justify-between h-12">
-          <NavLink to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+          <NavLink to="/" className={cn(
+            "flex items-center gap-2 hover:opacity-80 transition-opacity",
+            isDiscoverPage && "text-white"
+          )}>
             <Film className="h-4 w-4" />
             <span className="text-sm font-semibold">My Cinema</span>
           </NavLink>
@@ -32,9 +45,13 @@ export const Navigation = () => {
               className={({ isActive }) =>
                 cn(
                   "flex items-center gap-1.5 px-2.5 py-1.5 rounded text-sm transition-colors",
-                  isActive
-                    ? "bg-foreground text-background"
-                    : "text-muted-foreground hover:text-foreground"
+                  isDiscoverPage
+                    ? isActive
+                      ? "bg-white/20 text-white"
+                      : "text-white/70 hover:text-white"
+                    : isActive
+                      ? "bg-foreground text-background"
+                      : "text-muted-foreground hover:text-foreground"
                 )
               }
             >
@@ -47,9 +64,13 @@ export const Navigation = () => {
               className={({ isActive }) =>
                 cn(
                   "flex items-center gap-1.5 px-2.5 py-1.5 rounded text-sm transition-colors",
-                  isActive
-                    ? "bg-foreground text-background"
-                    : "text-muted-foreground hover:text-foreground"
+                  isDiscoverPage
+                    ? isActive
+                      ? "bg-white/20 text-white"
+                      : "text-white/70 hover:text-white"
+                    : isActive
+                      ? "bg-foreground text-background"
+                      : "text-muted-foreground hover:text-foreground"
                 )
               }
             >
@@ -62,9 +83,13 @@ export const Navigation = () => {
               className={({ isActive }) =>
                 cn(
                   "flex items-center gap-1.5 px-2.5 py-1.5 rounded text-sm transition-colors",
-                  isActive
-                    ? "bg-foreground text-background"
-                    : "text-muted-foreground hover:text-foreground"
+                  isDiscoverPage
+                    ? isActive
+                      ? "bg-white/20 text-white"
+                      : "text-white/70 hover:text-white"
+                    : isActive
+                      ? "bg-foreground text-background"
+                      : "text-muted-foreground hover:text-foreground"
                 )
               }
             >
@@ -78,9 +103,13 @@ export const Navigation = () => {
                 className={({ isActive }) =>
                   cn(
                     "flex items-center gap-1.5 px-2.5 py-1.5 rounded text-sm transition-colors",
-                    isActive
-                      ? "bg-foreground text-background"
-                      : "text-muted-foreground hover:text-foreground"
+                    isDiscoverPage
+                      ? isActive
+                        ? "bg-white/20 text-white"
+                        : "text-white/70 hover:text-white"
+                      : isActive
+                        ? "bg-foreground text-background"
+                        : "text-muted-foreground hover:text-foreground"
                   )
                 }
               >
@@ -95,9 +124,13 @@ export const Navigation = () => {
                 className={({ isActive }) =>
                   cn(
                     "flex items-center gap-1.5 px-2.5 py-1.5 rounded text-sm transition-colors",
-                    isActive
-                      ? "bg-foreground text-background"
-                      : "text-muted-foreground hover:text-foreground"
+                    isDiscoverPage
+                      ? isActive
+                        ? "bg-white/20 text-white"
+                        : "text-white/70 hover:text-white"
+                      : isActive
+                        ? "bg-foreground text-background"
+                        : "text-muted-foreground hover:text-foreground"
                   )
                 }
               >
@@ -106,7 +139,10 @@ export const Navigation = () => {
               </NavLink>
             )}
 
-            <div className="ml-1 pl-1 border-l flex items-center gap-1">
+            <div className={cn(
+              "ml-1 pl-1 flex items-center gap-1",
+              isDiscoverPage ? "border-l border-white/20" : "border-l"
+            )}>
               <ThemeToggle />
               {user ? (
                 <DropdownMenu>
@@ -114,7 +150,10 @@ export const Navigation = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="flex items-center gap-1.5 px-2.5 py-1.5"
+                      className={cn(
+                        "flex items-center gap-1.5 px-2.5 py-1.5",
+                        isDiscoverPage && "text-white hover:bg-white/20"
+                      )}
                     >
                       <User className="h-3.5 w-3.5" />
                       <span className="hidden sm:inline">Profile</span>
@@ -140,7 +179,10 @@ export const Navigation = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="flex items-center gap-1.5 px-2.5 py-1.5"
+                      className={cn(
+                        "flex items-center gap-1.5 px-2.5 py-1.5",
+                        isDiscoverPage && "text-white hover:bg-white/20"
+                      )}
                     >
                       <User className="h-3.5 w-3.5" />
                       <span className="hidden sm:inline">Profile</span>
@@ -150,7 +192,10 @@ export const Navigation = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="flex items-center gap-1.5 px-2.5 py-1.5"
+                      className={cn(
+                        "flex items-center gap-1.5 px-2.5 py-1.5",
+                        isDiscoverPage && "text-white hover:bg-white/20"
+                      )}
                     >
                       <LogIn className="h-3.5 w-3.5" />
                       <span className="hidden sm:inline">Sign In</span>
