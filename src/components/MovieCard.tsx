@@ -21,9 +21,6 @@ interface MovieCardProps extends Movie {
   onDirectorClick?: (director: string) => void;
   onWriterClick?: (writer: string) => void;
   onKeywordClick?: (keyword: string) => void;
-  moviesList?: Array<{ id: string; title: string }>;
-  currentIndex?: number;
-  pageContext?: string;
   onOpenDetail?: (movieId: string) => void;
 }
 export const MovieCard = ({
@@ -58,9 +55,6 @@ export const MovieCard = ({
   onDirectorClick,
   onWriterClick,
   onKeywordClick,
-  moviesList,
-  currentIndex,
-  pageContext,
   onOpenDetail
 }: MovieCardProps) => {
   const { toast } = useToast();

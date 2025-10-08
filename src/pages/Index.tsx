@@ -610,9 +610,6 @@ const Index = () => {
                         writing={movie.writing} 
                         sound={movie.sound} 
                         keywords={movie.keywords}
-                        moviesList={recommendations.map(m => ({ id: m.id, title: m.title }))}
-                        currentIndex={index}
-                        pageContext="home"
                         onOpenDetail={handleOpenDetail}
                       />
                     ))}

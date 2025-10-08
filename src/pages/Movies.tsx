@@ -499,9 +499,6 @@ const Movies = () => {
                       onDirectorClick={handleDirectorClick}
                       onWriterClick={handleWriterClick}
                       onKeywordClick={handleKeywordClick}
-                      moviesList={movies.map(m => ({ id: m.id, title: m.title }))}
-                      currentIndex={index}
-                      pageContext="movies"
                       onOpenDetail={handleOpenDetail}
                     />
                   );

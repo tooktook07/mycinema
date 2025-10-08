@@ -102,9 +102,6 @@ const Watchlist = () => {
               <MovieCard 
                 key={movie.id}
                 {...movie}
-                moviesList={movies.map(m => ({ id: m.id, title: m.title }))}
-                currentIndex={index}
-                pageContext="watchlist"
                 onOpenDetail={handleOpenDetail}
               />
             ))}

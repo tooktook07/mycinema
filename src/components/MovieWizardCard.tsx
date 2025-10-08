@@ -1,11 +1,10 @@
-import { Star, Heart, ThumbsUp, X, Info, ExternalLink, Search, Users, Globe, SkipForward, Loader2 } from "lucide-react";
+import { Star, Heart, ThumbsUp, X, ExternalLink, Search, Users, Globe, SkipForward, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getOptimizedImageProps } from "@/lib/imageUtils";
 import { RecommendationMovie } from "@/lib/recommendationEngine";
-import { useNavigate, useLocation } from "react-router-dom";
 
 interface MovieWizardCardProps {
   movie: RecommendationMovie;
@@ -17,16 +16,10 @@ interface MovieWizardCardProps {
 }
 
 export const MovieWizardCard = ({ movie, onRate, onSkip, totalRated, isProcessing, processingAction }: MovieWizardCardProps) => {
-  const navigate = useNavigate();
-  const location = useLocation();
   const imageProps = getOptimizedImageProps(movie.poster);
   const hasValidImdbId = movie.imdbId && movie.imdbId.startsWith('tt');
   const imdbUrl = `https://www.imdb.com/title/${movie.imdbId}/`;
   const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(movie.title)}+${movie.year}`;
-
-  const handleMoreInfo = () => {
-    navigate(`/movie/${movie.id}`, { state: { backgroundLocation: location } });
-  };
 
   return (
     <Card className="w-full max-w-6xl mx-auto overflow-hidden relative h-[calc(100vh-200px)]">
@@ -51,19 +44,8 @@ export const MovieWizardCard = ({ movie, onRate, onSkip, totalRated, isProcessin
             </Badge>
           </div>
 
-          {/* More Info Button */}
-          <Button 
-            size="sm" 
-            variant="secondary" 
-            className="absolute top-4 right-4 z-10"
-            onClick={handleMoreInfo}
-          >
-            <Info className="h-4 w-4 mr-1" />
-            More Info
-          </Button>
-
           {/* Movie Poster */}
-          <img 
+          <img
             {...imageProps}
             alt={movie.title}
             className="w-full h-full object-cover"

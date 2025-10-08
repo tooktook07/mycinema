@@ -2,14 +2,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DevModeProvider } from "@/contexts/DevModeContext";
 import { FilterProvider } from "@/contexts/FilterContext";
 import { DevModeSwitcher } from "@/components/DevModeSwitcher";
-import { MovieDetailModal } from "@/components/MovieDetailModal";
 import Index from "./pages/Index";
 import Movies from "./pages/Movies";
 import Account from "./pages/Account";
@@ -22,13 +21,10 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const AppRoutes = () => {
-  const location = useLocation();
-  const background = location.state?.backgroundLocation;
-
   return (
     <>
       <Navigation />
-      <Routes location={background || location}>
+      <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/movies" element={<Movies />} />
         <Route path="/wizard" element={<Wizard />} />
