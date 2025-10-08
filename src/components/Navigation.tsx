@@ -56,7 +56,7 @@ export const Navigation = () => {
               }
             >
               <Home className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Home</span>
+              <span className={cn("hidden", !isDiscoverPage && "sm:inline")}>Home</span>
             </NavLink>
             
             <NavLink
@@ -75,7 +75,7 @@ export const Navigation = () => {
               }
             >
               <Sparkles className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Discover</span>
+              <span className={cn("hidden", !isDiscoverPage && "sm:inline")}>Discover</span>
             </NavLink>
             
             <NavLink
@@ -94,7 +94,7 @@ export const Navigation = () => {
               }
             >
               <Film className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Movies</span>
+              <span className={cn("hidden", !isDiscoverPage && "sm:inline")}>Movies</span>
             </NavLink>
 
             {user && (
@@ -114,7 +114,7 @@ export const Navigation = () => {
                 }
               >
                 <Bookmark className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Watchlist</span>
+                <span className={cn("hidden", !isDiscoverPage && "sm:inline")}>Watchlist</span>
               </NavLink>
             )}
             
@@ -135,7 +135,7 @@ export const Navigation = () => {
                 }
               >
                 <Settings className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Admin</span>
+                <span className={cn("hidden", !isDiscoverPage && "sm:inline")}>Admin</span>
               </NavLink>
             )}
 
@@ -156,7 +156,7 @@ export const Navigation = () => {
                       )}
                     >
                       <User className="h-3.5 w-3.5" />
-                      <span className="hidden sm:inline">Profile</span>
+                      <span className={cn("hidden", !isDiscoverPage && "sm:inline")}>Profile</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -185,7 +185,7 @@ export const Navigation = () => {
                       )}
                     >
                       <User className="h-3.5 w-3.5" />
-                      <span className="hidden sm:inline">Profile</span>
+                      <span className={cn("hidden", !isDiscoverPage && "sm:inline")}>Profile</span>
                     </Button>
                   </NavLink>
                   <NavLink to="/login">
@@ -198,7 +198,7 @@ export const Navigation = () => {
                       )}
                     >
                       <LogIn className="h-3.5 w-3.5" />
-                      <span className="hidden sm:inline">Sign In</span>
+                      <span className={cn("hidden", !isDiscoverPage && "sm:inline")}>Sign In</span>
                     </Button>
                   </NavLink>
                 </>
