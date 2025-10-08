@@ -85,7 +85,7 @@ export const MovieDiscoverCard = ({ movie, totalRated, sessionRatings, recentSta
                 variant="ghost"
                 size="sm"
                 onClick={onReadMore}
-                className="text-white hover:bg-white/20 -ml-3 backdrop-blur-md"
+                className="text-white hover:bg-white/20 backdrop-blur-md"
               >
                 <Info className="h-4 w-4 mr-1" />
                 Read More
