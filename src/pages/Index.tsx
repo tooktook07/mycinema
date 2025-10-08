@@ -270,7 +270,7 @@ const Index = () => {
           candidateQuery = candidateQuery.not('id', 'in', `(${allExcludedIds.join(',')})`);
         }
         
-        const { data: candidateMovies } = await candidateQuery.limit(500);
+        const { data: candidateMovies } = await candidateQuery.limit(1000);
 
         // Calculate similarity scores
         const moviesWithScores = (candidateMovies || []).map(movie => {
@@ -317,9 +317,15 @@ const Index = () => {
           return { ...movie, similarityScore: score };
         });
 
-        // Sort by similarity score and select top recommendations
-        const topRecommendations = moviesWithScores
+        // Sort by similarity score and select top 50 matches for diversity
+        const TOP_MATCHES_POOL = 50;
+        const topMatches = moviesWithScores
           .sort((a, b) => b.similarityScore - a.similarityScore)
+          .slice(0, Math.min(TOP_MATCHES_POOL, moviesWithScores.length));
+
+        // Randomly shuffle and select final recommendations
+        const shuffled = topMatches.sort(() => Math.random() - 0.5);
+        const topRecommendations = shuffled
           .slice(0, RECOMMENDATIONS_COUNT)
           .map(movie => ({
             id: movie.id,

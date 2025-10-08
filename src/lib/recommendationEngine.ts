@@ -199,7 +199,7 @@ export async function getNextRecommendation(
         query = query.not('id', 'in', `(${allExcludedIds.join(',')})`);
       }
 
-      const { data: candidateMovies } = await query.limit(200); // Increased from 100
+      const { data: candidateMovies } = await query.limit(500); // Increased for more variety
 
       if (!candidateMovies || candidateMovies.length === 0) {
         return null;
@@ -293,11 +293,17 @@ export async function getNextRecommendation(
         return { ...movie, similarityScore: score };
       });
 
-      // Get the best match
-      const bestMatch = moviesWithScores
-        .sort((a, b) => b.similarityScore - a.similarityScore)[0];
+      // Select randomly from top matches for variety
+      const TOP_MATCHES_FOR_WIZARD = 20;
+      const topMatches = moviesWithScores
+        .sort((a, b) => b.similarityScore - a.similarityScore)
+        .slice(0, TOP_MATCHES_FOR_WIZARD);
 
-      if (!bestMatch) return null;
+      if (!topMatches || topMatches.length === 0) return null;
+
+      // Randomly select one from top matches
+      const randomIndex = Math.floor(Math.random() * topMatches.length);
+      const bestMatch = topMatches[randomIndex];
 
       return {
         id: bestMatch.id,
