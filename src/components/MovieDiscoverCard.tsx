@@ -27,7 +27,7 @@ export const MovieDiscoverCard = ({ movie, totalRated, sessionRatings, recentSta
         <img
           {...imageProps}
           alt={movie.title}
-          className="w-full h-full object-cover object-center"
+          className="w-full h-full object-cover object-[center_20%]"
         />
         
         {/* Dark gradient overlays for readability */}
