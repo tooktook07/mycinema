@@ -48,13 +48,8 @@ export const MovieDetailModal = () => {
   const [currentRating, setCurrentRating] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // Fallback: If modal opened without backgroundLocation, redirect to home
-  useEffect(() => {
-    if (!location.state?.backgroundLocation) {
-      console.log('[MovieDetailModal] No backgroundLocation found, redirecting to home');
-      navigate('/', { replace: true });
-    }
-  }, [location.state, navigate]);
+  // Determine if opened as modal overlay or direct route
+  const isModalMode = !!location.state?.backgroundLocation;
 
   const {
     data: movie,
@@ -156,12 +151,12 @@ export const MovieDetailModal = () => {
   };
 
   const handleClose = () => {
-    if (location.state?.backgroundLocation) {
+    if (isModalMode && location.state?.backgroundLocation) {
       const bg = location.state.backgroundLocation;
       const targetPath = `${bg.pathname}${bg.search || ''}`;
       navigate(targetPath, { replace: true });
     } else {
-      navigate("/");
+      navigate("/", { replace: true });
     }
   };
 
@@ -435,7 +430,7 @@ export const MovieDetailModal = () => {
               const hasMoviesList = location.state?.moviesList && Array.isArray(location.state.moviesList) && location.state.moviesList.length > 0;
               const hasCurrentIndex = location.state?.currentIndex !== undefined && location.state?.currentIndex !== null;
               
-              return hasMoviesList && hasCurrentIndex ? (
+              return isModalMode && hasMoviesList && hasCurrentIndex ? (
                 <div className="flex items-center justify-between px-8 py-3 border-b bg-muted/30">
                   <Button
                     variant="outline"
