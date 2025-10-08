@@ -256,7 +256,7 @@ export const MovieCard = ({
                 disabled={saving}
                 className="h-9 w-9"
               >
-                <Heart className="h-4 w-4 fill-current" />
+                <Heart className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
