@@ -187,10 +187,7 @@ serve(async (req) => {
     }
 
     // Fetch pages up to maxPages limit to prevent timeout
-    const pagesToProcess = Math.min(totalPages, maxPages);
-    logMsg(`Will process ${pagesToProcess} pages out of ${totalPages} total pages (maxPages limit: ${maxPages})`);
-
-    while (page <= pagesToProcess) {
+    while (page <= Math.min(totalPages, maxPages)) {
       // Build query parameters
       let queryParams = `api_key=${TMDB_API_KEY}&primary_release_date.gte=${yearRange[0]}-01-01&primary_release_date.lte=${yearRange[1]}-12-31&vote_average.gte=${minRating}&vote_average.lte=${maxRating}&vote_count.gte=${minVoteCount}&sort_by=vote_average.desc&page=${page}`;
       if (genreIds && genreIds.length > 0) {
@@ -216,7 +213,7 @@ serve(async (req) => {
       totalPages = data.total_pages;
       totalMovies = data.total_results;
 
-      logMsg(`Processing page ${page} of ${pagesToProcess} (${totalPages} total), found ${data.results.length} movies`);
+      logMsg(`Processing page ${page} of ${Math.min(totalPages, maxPages)} (${totalPages} total), found ${data.results.length} movies`);
 
       // Process each movie
       for (const movie of data.results) {
