@@ -574,7 +574,7 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                                 disabled={saving}
                                 className="h-9 w-9"
                               >
-                                <ThumbsDown className="h-4 w-4" />
+                                <ThumbsDown className={`h-4 w-4 ${currentRating === 1 ? 'fill-current' : ''}`} />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>Not for me</TooltipContent>
@@ -589,7 +589,7 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                                 disabled={saving}
                                 className="h-9 w-9"
                               >
-                                <ThumbsUp className="h-4 w-4" />
+                                <ThumbsUp className={`h-4 w-4 ${currentRating === 5 ? 'fill-current' : ''}`} />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>I liked this</TooltipContent>
@@ -604,7 +604,7 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                                 disabled={saving}
                                 className="h-9 w-9"
                               >
-                                <Heart className="h-4 w-4" />
+                                <Heart className={`h-4 w-4 ${currentRating === 10 ? 'fill-current' : ''}`} />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>Love this!</TooltipContent>
