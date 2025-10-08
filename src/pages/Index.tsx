@@ -735,89 +735,88 @@ const Index = () => {
 
 
         {/* Recommendations for all users */}
-        <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                {user ? <>
-                    <Sparkles className="h-5 w-5 text-yellow-500" />
-                    AI Recommendations For You
-                  </> : <>
-                    <Star className="h-5 w-5 text-yellow-500" />
-                    Top Rated Movies
-                  </>}
-              </CardTitle>
-              <CardDescription>
-                {user 
-                  ? stats?.userRatingsCount && stats.userRatingsCount >= MIN_RATINGS_FOR_PERSONALIZATION
-                    ? "Based on your ratings and preferences, we think you'll love these movies"
-                    : `Rate ${MIN_RATINGS_FOR_PERSONALIZATION}+ movies to get personalized AI recommendations`
-                  : "Discover highly-rated movies from our collection"
-                }
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loadingRecommendations ? <div className="flex items-center justify-center py-12">
-                  <div className="text-center space-y-2">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto" />
-                    <p className="text-sm text-muted-foreground">
-                      {user ? "Finding movies you'll love..." : "Loading top movies..."}
-                    </p>
-                  </div>
-                </div> : recommendations.length === 0 ? <div className="text-center py-12 px-4 bg-muted/30 rounded-lg border-2 border-dashed">
-                  <Star className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-lg font-semibold mb-2">No More Movies</p>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    You've seen all available movies! Check back later or clear your viewing history.
-                  </p>
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
-                    <Button onClick={() => navigate("/movies")} variant="outline">
-                      <Film className="h-4 w-4 mr-2" />
-                      Browse Movies
-                    </Button>
-                    {canClearOlderEntries() ? (
-                      <Button onClick={handleRefreshRecommendations} variant="default">
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        Refresh Recommendations
-                      </Button>
-                    ) : getRecentlyShownStats().count > 0 && (
-                      <Button onClick={handleClearAllHistory} variant="default">
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Clear All History
-                      </Button>
-                    )}
-                  </div>
-                </div> : <>
-                  <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                    {recommendations?.map((movie, index) => (
-                      <MovieCard 
-                        key={movie.id}
-                        id={movie.id} 
-                        title={movie.title} 
-                        year={movie.year} 
-                        rating={movie.rating} 
-                        genre={movie.genre} 
-                        poster={movie.poster} 
-                        imdbId={movie.imdbId} 
-                        imdbRating={movie.imdbRating} 
-                        imdbVotes={movie.imdbVotes} 
-                        metascore={movie.metascore} 
-                        plot={movie.plot} 
-                        voteCount={movie.voteCount} 
-                        originalLanguage={movie.originalLanguage} 
-                        actors={movie.actors} 
-                        director={movie.director} 
-                        runtime={movie.runtime} 
-                        writing={movie.writing} 
-                        sound={movie.sound} 
-                        keywords={movie.keywords}
-                        enableViewportTracking={true}
-                        onOpenDetail={handleOpenDetail}
-                      />
-                     ))}
-                  </div>
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <h2 className="text-2xl font-semibold leading-none tracking-tight flex items-center gap-2">
+              {user ? <>
+                  <Sparkles className="h-5 w-5 text-yellow-500" />
+                  AI Recommendations For You
+                </> : <>
+                  <Star className="h-5 w-5 text-yellow-500" />
+                  Top Rated Movies
                 </>}
-            </CardContent>
-        </Card>
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {user 
+                ? stats?.userRatingsCount && stats.userRatingsCount >= MIN_RATINGS_FOR_PERSONALIZATION
+                  ? "Based on your ratings and preferences, we think you'll love these movies"
+                  : `Rate ${MIN_RATINGS_FOR_PERSONALIZATION}+ movies to get personalized AI recommendations`
+                : "Discover highly-rated movies from our collection"
+              }
+            </p>
+          </div>
+
+          {loadingRecommendations ? <div className="flex items-center justify-center py-12">
+              <div className="text-center space-y-2">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+                <p className="text-sm text-muted-foreground">
+                  {user ? "Finding movies you'll love..." : "Loading top movies..."}
+                </p>
+              </div>
+            </div> : recommendations.length === 0 ? <div className="text-center py-12 px-4 bg-muted/30 rounded-lg border-2 border-dashed">
+              <Star className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-lg font-semibold mb-2">No More Movies</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                You've seen all available movies! Check back later or clear your viewing history.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
+                <Button onClick={() => navigate("/movies")} variant="outline">
+                  <Film className="h-4 w-4 mr-2" />
+                  Browse Movies
+                </Button>
+                {canClearOlderEntries() ? (
+                  <Button onClick={handleRefreshRecommendations} variant="default">
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Refresh Recommendations
+                  </Button>
+                ) : getRecentlyShownStats().count > 0 && (
+                  <Button onClick={handleClearAllHistory} variant="default">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Clear All History
+                  </Button>
+                )}
+              </div>
+            </div> : <>
+              <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                {recommendations?.map((movie, index) => (
+                  <MovieCard 
+                    key={movie.id}
+                    id={movie.id} 
+                    title={movie.title} 
+                    year={movie.year} 
+                    rating={movie.rating} 
+                    genre={movie.genre} 
+                    poster={movie.poster} 
+                    imdbId={movie.imdbId} 
+                    imdbRating={movie.imdbRating} 
+                    imdbVotes={movie.imdbVotes} 
+                    metascore={movie.metascore} 
+                    plot={movie.plot} 
+                    voteCount={movie.voteCount} 
+                    originalLanguage={movie.originalLanguage} 
+                    actors={movie.actors} 
+                    director={movie.director} 
+                    runtime={movie.runtime} 
+                    writing={movie.writing} 
+                    sound={movie.sound} 
+                    keywords={movie.keywords}
+                    enableViewportTracking={true}
+                    onOpenDetail={handleOpenDetail}
+                  />
+                 ))}
+              </div>
+            </>}
+        </div>
       </div>
 
       {/* Sticky Load More Button */}
