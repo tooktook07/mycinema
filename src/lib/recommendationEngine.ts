@@ -22,8 +22,22 @@ export interface RecommendationMovie {
 }
 
 const RATING_THRESHOLD = 5; // User's liked movies threshold (Like rating = 5)
-const CANDIDATE_RATING_THRESHOLD = 6.5; // Minimum quality for recommendations
+const CANDIDATE_RATING_THRESHOLD = 6.0; // Minimum quality for recommendations (lowered for more candidates)
 const MIN_RATINGS_FOR_PERSONALIZATION = 5; // Minimum ratings needed for similarity algorithm
+
+// Rating weight constants (Phase 1)
+const RATING_WEIGHTS = {
+  LOVE: 3.0,           // Rating 10 → 3x weight
+  LIKE: 1.0,           // Rating 5 → 1x weight
+  NOT_INTERESTED: -0.5 // Rating 1 → negative signal
+};
+
+// Temporal decay multipliers (Phase 3)
+const TEMPORAL_DECAY = {
+  RECENT: 2.0,  // Last 30 days
+  MEDIUM: 1.5,  // 30-90 days
+  OLD: 1.0      // 90+ days
+};
 
 // Similarity weights
 const WEIGHTS = {
@@ -48,10 +62,10 @@ export async function getNextRecommendation(
     return getFallbackRecommendation(excludeIds);
   }
   try {
-    // Fetch user's rated movies
+    // Phase 1 & 3: Fetch user's rated movies WITH timestamps for temporal decay
     const { data: userRatings } = await supabase
       .from('user_ratings')
-      .select('media_id, user_rating')
+      .select('media_id, user_rating, created_at')
       .eq('user_id', userId)
       .eq('media_type', 'movie')
       .not('user_rating', 'is', null);
@@ -59,57 +73,119 @@ export async function getNextRecommendation(
     const ratedMovieIds = (userRatings || []).map(r => r.media_id).filter(Boolean) as string[];
     const allExcludedIds = [...ratedMovieIds, ...excludeIds];
     
-    // Get movies the user liked (rating >= 5 - "Like" or "Love")
-    const likedRatings = (userRatings || []).filter(r => (r.user_rating || 0) >= RATING_THRESHOLD);
+    // Filter ratings that matter (likes and dislikes, exclude neutral)
+    const meaningfulRatings = (userRatings || []).filter(r => 
+      r.user_rating === 1 || r.user_rating === 5 || r.user_rating === 10
+    );
     
     // If user has enough ratings, use similarity algorithm
-    if (likedRatings.length >= MIN_RATINGS_FOR_PERSONALIZATION) {
-      const { data: likedMoviesData } = await supabase
-        .from('movies')
-        .select('genres, director, actors, keywords, original_language')
-        .in('id', likedRatings.map(r => r.media_id));
+    if (meaningfulRatings.length >= MIN_RATINGS_FOR_PERSONALIZATION) {
+      // Phase 1: Calculate weighted preferences with temporal decay
+      interface WeightedRating {
+        media_id: string;
+        weight: number;
+      }
       
-      if (!likedMoviesData || likedMoviesData.length === 0) {
+      const weightedRatings: WeightedRating[] = meaningfulRatings.map(rating => {
+        // Phase 1: Rating-based weight
+        let baseWeight = 0;
+        if (rating.user_rating === 10) {
+          baseWeight = RATING_WEIGHTS.LOVE;
+        } else if (rating.user_rating === 5) {
+          baseWeight = RATING_WEIGHTS.LIKE;
+        } else if (rating.user_rating === 1) {
+          baseWeight = RATING_WEIGHTS.NOT_INTERESTED;
+        }
+        
+        // Phase 3: Temporal decay
+        const ageInDays = (Date.now() - new Date(rating.created_at).getTime()) / (1000 * 60 * 60 * 24);
+        let temporalMultiplier = TEMPORAL_DECAY.OLD;
+        if (ageInDays < 30) {
+          temporalMultiplier = TEMPORAL_DECAY.RECENT;
+        } else if (ageInDays < 90) {
+          temporalMultiplier = TEMPORAL_DECAY.MEDIUM;
+        }
+        
+        return {
+          media_id: rating.media_id,
+          weight: baseWeight * temporalMultiplier
+        };
+      });
+      
+      // Fetch ALL rated movies data (including dislikes for negative signals)
+      const { data: ratedMoviesData } = await supabase
+        .from('movies')
+        .select('id, genres, director, actors, keywords, original_language')
+        .in('id', weightedRatings.map(r => r.media_id));
+      
+      if (!ratedMoviesData || ratedMoviesData.length === 0) {
         return getFallbackRecommendation(allExcludedIds);
       }
 
-      // Analyze user preferences
-      const genreCounts: Record<string, number> = {};
-      const directorCounts: Record<string, number> = {};
-      const actorCounts: Record<string, number> = {};
-      const keywordCounts: Record<string, number> = {};
-      const languageCounts: Record<string, number> = {};
+      // Phase 1: Build weighted preference profiles
+      const genrePreferences: Record<string, number> = {};
+      const directorPreferences: Record<string, number> = {};
+      const actorPreferences: Record<string, number> = {};
+      const keywordPreferences: Record<string, number> = {};
+      const languagePreferences: Record<string, number> = {};
 
-      likedMoviesData.forEach(movie => {
-        // Count genres
+      ratedMoviesData.forEach(movie => {
+        const weightData = weightedRatings.find(r => r.media_id === movie.id);
+        if (!weightData) return;
+        
+        const weight = weightData.weight;
+        
+        // Weighted genre preferences
         (movie.genres || []).forEach((genre: string) => {
-          genreCounts[genre] = (genreCounts[genre] || 0) + 1;
+          genrePreferences[genre] = (genrePreferences[genre] || 0) + weight;
         });
         
-        // Count directors
+        // Weighted director preferences
         if (movie.director) {
-          directorCounts[movie.director] = (directorCounts[movie.director] || 0) + 1;
+          directorPreferences[movie.director] = (directorPreferences[movie.director] || 0) + weight;
         }
         
-        // Count actors
+        // Weighted actor preferences
         if (movie.actors) {
           movie.actors.split(',').forEach((actor: string) => {
             const cleanActor = actor.trim();
             if (cleanActor) {
-              actorCounts[cleanActor] = (actorCounts[cleanActor] || 0) + 1;
+              actorPreferences[cleanActor] = (actorPreferences[cleanActor] || 0) + weight;
             }
           });
         }
         
-        // Count keywords
+        // Weighted keyword preferences
         (movie.keywords || []).forEach((keyword: string) => {
-          keywordCounts[keyword] = (keywordCounts[keyword] || 0) + 1;
+          keywordPreferences[keyword] = (keywordPreferences[keyword] || 0) + weight;
         });
         
-        // Count languages
+        // Weighted language preferences
         if (movie.original_language) {
-          languageCounts[movie.original_language] = (languageCounts[movie.original_language] || 0) + 1;
+          languagePreferences[movie.original_language] = (languagePreferences[movie.original_language] || 0) + weight;
         }
+      });
+      
+      // Phase 2: Calculate TF-IDF for genres
+      const { data: allMoviesGenres } = await supabase
+        .from('movies')
+        .select('genres')
+        .not('genres', 'is', null);
+      
+      const totalMovies = allMoviesGenres?.length || 1;
+      const genreDocumentCounts: Record<string, number> = {};
+      
+      allMoviesGenres?.forEach(movie => {
+        const uniqueGenres = new Set(movie.genres || []);
+        uniqueGenres.forEach(genre => {
+          genreDocumentCounts[genre] = (genreDocumentCounts[genre] || 0) + 1;
+        });
+      });
+      
+      // Calculate IDF scores (rare genres = higher scores)
+      const genreIDF: Record<string, number> = {};
+      Object.keys(genreDocumentCounts).forEach(genre => {
+        genreIDF[genre] = Math.log(totalMovies / genreDocumentCounts[genre]);
       });
 
       // Fetch candidate movies (prioritize IMDb ratings)
@@ -123,13 +199,20 @@ export async function getNextRecommendation(
         query = query.not('id', 'in', `(${allExcludedIds.join(',')})`);
       }
 
-      const { data: candidateMovies } = await query.limit(100);
+      const { data: candidateMovies } = await query.limit(200); // Increased from 100
 
       if (!candidateMovies || candidateMovies.length === 0) {
         return null;
       }
 
-      // Calculate similarity scores
+      // Calculate max weights for normalization
+      const maxGenreWeight = Math.max(...Object.values(genrePreferences).filter(w => w > 0), 1);
+      const maxDirectorWeight = Math.max(...Object.values(directorPreferences).filter(w => w > 0), 1);
+      const maxActorWeight = Math.max(...Object.values(actorPreferences).filter(w => w > 0), 1);
+      const maxKeywordWeight = Math.max(...Object.values(keywordPreferences).filter(w => w > 0), 1);
+      const maxLangWeight = Math.max(...Object.values(languagePreferences).filter(w => w > 0), 1);
+
+      // Calculate similarity scores with weighted preferences
       const moviesWithScores = candidateMovies.map(movie => {
         let score = 0;
         
@@ -139,44 +222,71 @@ export async function getNextRecommendation(
         
         // Boost score for IMDB-verified movies
         if (movie.imdb_rating) {
-          score += 0.5; // Bonus for having IMDB data
+          score += 0.5;
         }
         
-        // Hidden gems detection (high IMDB but low TMDB votes)
+        // Hidden gems detection
         if (movie.imdb_rating >= 7.5 && (movie.vote_count || 0) < 5000) {
-          score += 2.0; // Strong boost for hidden gems
+          score += 2.0;
         }
         
-        // Genre similarity
-        const genreMatches = (movie.genres || []).filter((g: string) => genreCounts[g]).length;
-        const genreWeight = genreMatches / Math.max(Object.keys(genreCounts).length, 1);
-        score += genreWeight * WEIGHTS.GENRE;
+        // Phase 2: TF-IDF Genre scoring
+        let genreScore = 0;
+        (movie.genres || []).forEach((genre: string) => {
+          const preference = genrePreferences[genre];
+          if (preference && preference > 0) {
+            const tf = preference;
+            const idf = genreIDF[genre] || 0;
+            genreScore += tf * idf;
+          }
+        });
+        const normalizedGenreScore = maxGenreWeight > 0 ? genreScore / maxGenreWeight : 0;
+        score += normalizedGenreScore * WEIGHTS.GENRE;
         
-        // Director similarity
-        if (movie.director && directorCounts[movie.director]) {
-          score += WEIGHTS.DIRECTOR;
+        // Weighted director scoring
+        if (movie.director && directorPreferences[movie.director]) {
+          const directorWeight = directorPreferences[movie.director];
+          if (directorWeight > 0) {
+            score += (directorWeight / maxDirectorWeight) * WEIGHTS.DIRECTOR;
+          }
         }
         
-        // Actor similarity
-        let actorMatches = 0;
+        // Weighted actor scoring
+        let actorScore = 0;
         if (movie.actors) {
-          const movieActors = movie.actors.split(',').map((a: string) => a.trim());
-          actorMatches = movieActors.filter((a: string) => actorCounts[a]).length;
+          movie.actors.split(',').forEach((actor: string) => {
+            const cleanActor = actor.trim();
+            const preference = actorPreferences[cleanActor];
+            if (preference && preference > 0) {
+              actorScore += preference;
+            }
+          });
         }
-        const actorWeight = Math.min(actorMatches / 3, 1);
-        score += actorWeight * WEIGHTS.ACTOR;
-        
-        // Keyword similarity
-        const keywordMatches = (movie.keywords || []).filter((k: string) => keywordCounts[k]).length;
-        const keywordWeight = Math.min(keywordMatches / 3, 1);
-        score += keywordWeight * WEIGHTS.KEYWORD;
-        
-        // Language similarity
-        if (movie.original_language && languageCounts[movie.original_language]) {
-          score += WEIGHTS.LANGUAGE;
+        if (maxActorWeight > 0 && actorScore > 0) {
+          score += (actorScore / maxActorWeight) * WEIGHTS.ACTOR;
         }
         
-        // Slight boost for popularity (use IMDB votes if available)
+        // Weighted keyword scoring
+        let keywordScore = 0;
+        (movie.keywords || []).forEach((keyword: string) => {
+          const preference = keywordPreferences[keyword];
+          if (preference && preference > 0) {
+            keywordScore += preference;
+          }
+        });
+        if (maxKeywordWeight > 0 && keywordScore > 0) {
+          score += (keywordScore / maxKeywordWeight) * WEIGHTS.KEYWORD;
+        }
+        
+        // Weighted language scoring
+        if (movie.original_language && languagePreferences[movie.original_language]) {
+          const langWeight = languagePreferences[movie.original_language];
+          if (langWeight > 0) {
+            score += (langWeight / maxLangWeight) * WEIGHTS.LANGUAGE;
+          }
+        }
+        
+        // Slight boost for popularity
         const popularityBoost = Math.min((effectiveVotes || 0) / 10000, 0.1);
         score += popularityBoost;
         
@@ -390,58 +500,106 @@ export async function getSimilarMovies(
 }
 
 async function getNextRecommendationForGuest(
-  guestRatings: { movieId: string; rating: number }[],
+  guestRatings: { movieId: string; rating: number; createdAt?: Date }[],
   excludeIds: string[] = []
 ): Promise<RecommendationMovie | null> {
   try {
     const ratedMovieIds = guestRatings.map(r => r.movieId);
     const allExcludedIds = [...ratedMovieIds, ...excludeIds];
     
-    const likedRatings = guestRatings.filter(r => r.rating >= RATING_THRESHOLD);
+    // Filter meaningful ratings (likes and dislikes)
+    const meaningfulRatings = guestRatings.filter(r => 
+      r.rating === 1 || r.rating === 5 || r.rating === 10
+    );
     
     // If guest has enough ratings, use similarity algorithm
-    if (likedRatings.length >= MIN_RATINGS_FOR_PERSONALIZATION) {
-      const { data: likedMoviesData } = await supabase
-        .from('movies')
-        .select('genres, director, actors, keywords, original_language')
-        .in('id', likedRatings.map(r => r.movieId));
+    if (meaningfulRatings.length >= MIN_RATINGS_FOR_PERSONALIZATION) {
+      // Phase 1: Calculate weighted preferences (guest ratings don't have timestamps, so no temporal decay)
+      interface WeightedRating {
+        movieId: string;
+        weight: number;
+      }
       
-      if (!likedMoviesData || likedMoviesData.length === 0) {
+      const weightedRatings: WeightedRating[] = meaningfulRatings.map(rating => {
+        let weight = 0;
+        if (rating.rating === 10) {
+          weight = RATING_WEIGHTS.LOVE;
+        } else if (rating.rating === 5) {
+          weight = RATING_WEIGHTS.LIKE;
+        } else if (rating.rating === 1) {
+          weight = RATING_WEIGHTS.NOT_INTERESTED;
+        }
+        
+        return { movieId: rating.movieId, weight };
+      });
+      
+      const { data: ratedMoviesData } = await supabase
+        .from('movies')
+        .select('id, genres, director, actors, keywords, original_language')
+        .in('id', weightedRatings.map(r => r.movieId));
+      
+      if (!ratedMoviesData || ratedMoviesData.length === 0) {
         return getFallbackRecommendation(allExcludedIds);
       }
 
-      // Analyze preferences
-      const genreCounts: Record<string, number> = {};
-      const directorCounts: Record<string, number> = {};
-      const actorCounts: Record<string, number> = {};
-      const keywordCounts: Record<string, number> = {};
-      const languageCounts: Record<string, number> = {};
+      // Build weighted preference profiles
+      const genrePreferences: Record<string, number> = {};
+      const directorPreferences: Record<string, number> = {};
+      const actorPreferences: Record<string, number> = {};
+      const keywordPreferences: Record<string, number> = {};
+      const languagePreferences: Record<string, number> = {};
 
-      likedMoviesData.forEach(movie => {
+      ratedMoviesData.forEach(movie => {
+        const weightData = weightedRatings.find(r => r.movieId === movie.id);
+        if (!weightData) return;
+        
+        const weight = weightData.weight;
+        
         (movie.genres || []).forEach((genre: string) => {
-          genreCounts[genre] = (genreCounts[genre] || 0) + 1;
+          genrePreferences[genre] = (genrePreferences[genre] || 0) + weight;
         });
         
         if (movie.director) {
-          directorCounts[movie.director] = (directorCounts[movie.director] || 0) + 1;
+          directorPreferences[movie.director] = (directorPreferences[movie.director] || 0) + weight;
         }
         
         if (movie.actors) {
           movie.actors.split(',').forEach((actor: string) => {
             const cleanActor = actor.trim();
             if (cleanActor) {
-              actorCounts[cleanActor] = (actorCounts[cleanActor] || 0) + 1;
+              actorPreferences[cleanActor] = (actorPreferences[cleanActor] || 0) + weight;
             }
           });
         }
         
         (movie.keywords || []).forEach((keyword: string) => {
-          keywordCounts[keyword] = (keywordCounts[keyword] || 0) + 1;
+          keywordPreferences[keyword] = (keywordPreferences[keyword] || 0) + weight;
         });
         
         if (movie.original_language) {
-          languageCounts[movie.original_language] = (languageCounts[movie.original_language] || 0) + 1;
+          languagePreferences[movie.original_language] = (languagePreferences[movie.original_language] || 0) + weight;
         }
+      });
+      
+      // Phase 2: Calculate TF-IDF for genres
+      const { data: allMoviesGenres } = await supabase
+        .from('movies')
+        .select('genres')
+        .not('genres', 'is', null);
+      
+      const totalMovies = allMoviesGenres?.length || 1;
+      const genreDocumentCounts: Record<string, number> = {};
+      
+      allMoviesGenres?.forEach(movie => {
+        const uniqueGenres = new Set(movie.genres || []);
+        uniqueGenres.forEach(genre => {
+          genreDocumentCounts[genre] = (genreDocumentCounts[genre] || 0) + 1;
+        });
+      });
+      
+      const genreIDF: Record<string, number> = {};
+      Object.keys(genreDocumentCounts).forEach(genre => {
+        genreIDF[genre] = Math.log(totalMovies / genreDocumentCounts[genre]);
       });
 
       // Fetch candidate movies (prioritize IMDb ratings)
@@ -455,38 +613,77 @@ async function getNextRecommendationForGuest(
         query = query.not('id', 'in', `(${allExcludedIds.join(',')})`);
       }
 
-      const { data: candidateMovies } = await query.limit(100);
+      const { data: candidateMovies } = await query.limit(200);
 
       if (!candidateMovies || candidateMovies.length === 0) {
         return null;
       }
 
-      // Calculate similarity scores
+      // Calculate max weights for normalization
+      const maxGenreWeight = Math.max(...Object.values(genrePreferences).filter(w => w > 0), 1);
+      const maxDirectorWeight = Math.max(...Object.values(directorPreferences).filter(w => w > 0), 1);
+      const maxActorWeight = Math.max(...Object.values(actorPreferences).filter(w => w > 0), 1);
+      const maxKeywordWeight = Math.max(...Object.values(keywordPreferences).filter(w => w > 0), 1);
+      const maxLangWeight = Math.max(...Object.values(languagePreferences).filter(w => w > 0), 1);
+
+      // Calculate similarity scores with weighted preferences
       const moviesWithScores = candidateMovies.map(movie => {
         let score = 0;
         
-        const genreMatches = (movie.genres || []).filter((g: string) => genreCounts[g]).length;
-        const genreWeight = genreMatches / Math.max(Object.keys(genreCounts).length, 1);
-        score += genreWeight * WEIGHTS.GENRE;
+        // TF-IDF Genre scoring
+        let genreScore = 0;
+        (movie.genres || []).forEach((genre: string) => {
+          const preference = genrePreferences[genre];
+          if (preference && preference > 0) {
+            const tf = preference;
+            const idf = genreIDF[genre] || 0;
+            genreScore += tf * idf;
+          }
+        });
+        const normalizedGenreScore = maxGenreWeight > 0 ? genreScore / maxGenreWeight : 0;
+        score += normalizedGenreScore * WEIGHTS.GENRE;
         
-        if (movie.director && directorCounts[movie.director]) {
-          score += WEIGHTS.DIRECTOR;
+        // Weighted director scoring
+        if (movie.director && directorPreferences[movie.director]) {
+          const directorWeight = directorPreferences[movie.director];
+          if (directorWeight > 0) {
+            score += (directorWeight / maxDirectorWeight) * WEIGHTS.DIRECTOR;
+          }
         }
         
-        let actorMatches = 0;
+        // Weighted actor scoring
+        let actorScore = 0;
         if (movie.actors) {
-          const movieActors = movie.actors.split(',').map((a: string) => a.trim());
-          actorMatches = movieActors.filter((a: string) => actorCounts[a]).length;
+          movie.actors.split(',').forEach((actor: string) => {
+            const cleanActor = actor.trim();
+            const preference = actorPreferences[cleanActor];
+            if (preference && preference > 0) {
+              actorScore += preference;
+            }
+          });
         }
-        const actorWeight = Math.min(actorMatches / 3, 1);
-        score += actorWeight * WEIGHTS.ACTOR;
+        if (maxActorWeight > 0 && actorScore > 0) {
+          score += (actorScore / maxActorWeight) * WEIGHTS.ACTOR;
+        }
         
-        const keywordMatches = (movie.keywords || []).filter((k: string) => keywordCounts[k]).length;
-        const keywordWeight = Math.min(keywordMatches / 3, 1);
-        score += keywordWeight * WEIGHTS.KEYWORD;
+        // Weighted keyword scoring
+        let keywordScore = 0;
+        (movie.keywords || []).forEach((keyword: string) => {
+          const preference = keywordPreferences[keyword];
+          if (preference && preference > 0) {
+            keywordScore += preference;
+          }
+        });
+        if (maxKeywordWeight > 0 && keywordScore > 0) {
+          score += (keywordScore / maxKeywordWeight) * WEIGHTS.KEYWORD;
+        }
         
-        if (movie.original_language && languageCounts[movie.original_language]) {
-          score += WEIGHTS.LANGUAGE;
+        // Weighted language scoring
+        if (movie.original_language && languagePreferences[movie.original_language]) {
+          const langWeight = languagePreferences[movie.original_language];
+          if (langWeight > 0) {
+            score += (langWeight / maxLangWeight) * WEIGHTS.LANGUAGE;
+          }
         }
         
         const popularityBoost = Math.min((movie.vote_count || 0) / 10000, 0.1);
