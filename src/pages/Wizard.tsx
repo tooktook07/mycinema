@@ -248,6 +248,7 @@ const Wizard = ({ isModal = false, onClose }: WizardProps = {}) => {
               totalRated={totalRated}
               isProcessing={saving}
               processingAction={processingAction}
+              enableViewportTracking={true}
             />
           </div>
         ) : (

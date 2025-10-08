@@ -11,9 +11,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffectiveAuth } from "@/contexts/DevModeContext";
 import { saveGuestRating, getGuestRatings } from "@/lib/guestRatings";
+import { useViewportTracking } from "@/hooks/useViewportTracking";
+
 interface MovieCardProps extends Movie {
   preloadedUserRating?: number | null;
   preloadedInWatchlist?: boolean;
+  enableViewportTracking?: boolean;
   onYearClick?: (year: number) => void;
   onGenreClick?: (genre: string) => void;
   onLanguageClick?: (language: string) => void;
@@ -48,6 +51,7 @@ export const MovieCard = ({
   dataSources,
   preloadedUserRating,
   preloadedInWatchlist,
+  enableViewportTracking = false,
   onYearClick,
   onGenreClick,
   onLanguageClick,
@@ -60,6 +64,7 @@ export const MovieCard = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useEffectiveAuth();
+  const cardRef = useViewportTracking(id, enableViewportTracking);
   
   const [currentRating, setCurrentRating] = useState<number | null>(preloadedUserRating ?? null);
   const [saving, setSaving] = useState(false);
@@ -148,8 +153,8 @@ export const MovieCard = ({
   };
   
   return <TooltipProvider>
-    <Card className="group overflow-hidden transition-all duration-300 hover:shadow-lg">
-      <div 
+    <Card ref={cardRef} className="group overflow-hidden transition-all duration-300 hover:shadow-lg">
+      <div
         className="aspect-[2/3] overflow-hidden relative cursor-pointer"
         onClick={handleMoreInfo}
       >

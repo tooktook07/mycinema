@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getOptimizedImageProps } from "@/lib/imageUtils";
 import { RecommendationMovie } from "@/lib/recommendationEngine";
+import { useViewportTracking } from "@/hooks/useViewportTracking";
 
 interface MovieWizardCardProps {
   movie: RecommendationMovie;
@@ -13,16 +14,18 @@ interface MovieWizardCardProps {
   totalRated: number;
   isProcessing: boolean;
   processingAction: 'skip' | 'not-interested' | 'like' | 'love' | null;
+  enableViewportTracking?: boolean;
 }
 
-export const MovieWizardCard = ({ movie, onRate, onSkip, totalRated, isProcessing, processingAction }: MovieWizardCardProps) => {
+export const MovieWizardCard = ({ movie, onRate, onSkip, totalRated, isProcessing, processingAction, enableViewportTracking = false }: MovieWizardCardProps) => {
   const imageProps = getOptimizedImageProps(movie.poster);
   const hasValidImdbId = movie.imdbId && movie.imdbId.startsWith('tt');
   const imdbUrl = `https://www.imdb.com/title/${movie.imdbId}/`;
   const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(movie.title)}+${movie.year}`;
+  const cardRef = useViewportTracking(movie.id, enableViewportTracking);
 
   return (
-    <Card className="w-full max-w-6xl mx-auto overflow-hidden relative h-[calc(100vh-200px)]">
+    <Card ref={cardRef} className="w-full max-w-6xl mx-auto overflow-hidden relative h-[calc(100vh-200px)]">
       {/* Loading Overlay */}
       {isProcessing && (
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">

@@ -406,9 +406,6 @@ const Index = () => {
             metascore: (movie as any).metascore
           }));
 
-        // Mark these recommendations as shown
-        markMoviesAsShown(topRecommendations.map(r => r.id));
-        
         setRecommendations(topRecommendations);
       } else {
         // Fallback: Show top-rated movies for users/guests with few/no ratings
@@ -494,9 +491,6 @@ const Index = () => {
           metascore: (movie as any).metascore
         }));
 
-        // Mark these recommendations as shown
-        markMoviesAsShown(selected.map(r => r.id));
-        
         setRecommendations(selected);
       }
     } catch (error) {
@@ -674,6 +668,7 @@ const Index = () => {
                         writing={movie.writing} 
                         sound={movie.sound} 
                         keywords={movie.keywords}
+                        enableViewportTracking={true}
                         onOpenDetail={handleOpenDetail}
                       />
                     ))}
