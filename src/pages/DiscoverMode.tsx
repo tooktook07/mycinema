@@ -203,18 +203,17 @@ const DiscoverMode = () => {
   };
 
   const handleTouchEnd = () => {
-    const swipeDistance = Math.abs(touchStart - touchEnd);
+    const screenHeight = window.innerHeight;
+    const topZoneThreshold = screenHeight * 0.3; // Top 30%
+    const bottomZoneStart = screenHeight * 0.5; // Bottom 50%
     
-    // Require minimum swipe distance
-    if (swipeDistance < 50) return;
-    
-    // Swipe up (touchStart > touchEnd) = Next movie
-    if (touchStart - touchEnd > 50) {
-      handleSkip();
-    }
-    // Swipe down (touchEnd > touchStart) = Previous movie
-    else if (touchEnd - touchStart > 50) {
+    // Check if tap started in top 30%
+    if (touchStart <= topZoneThreshold) {
       handlePrevious();
+    }
+    // Check if tap started in bottom 50%
+    else if (touchStart >= bottomZoneStart) {
+      handleSkip();
     }
   };
 
