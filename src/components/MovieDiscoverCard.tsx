@@ -37,7 +37,7 @@ export const MovieDiscoverCard = ({ movie, totalRated, sessionRatings, recentSta
       {/* Bottom Overlay - Movie Info */}
       <div className="absolute bottom-32 left-0 right-0 z-20 px-6 pb-6 safe-area-bottom">
         {/* Movie Title */}
-        <h2 className="text-2xl md:text-3xl font-bold text-white mb-3 drop-shadow-lg leading-tight">
+        <h2 className="text-xl md:text-2xl font-bold text-white mb-3 drop-shadow-lg leading-tight">
           {movie.title}
         </h2>
 
