@@ -15,6 +15,7 @@ import { saveGuestRating, getGuestRatings } from "@/lib/guestRatings";
 interface MovieCardProps extends Movie {
   preloadedUserRating?: number | null;
   preloadedInWatchlist?: boolean;
+  enableViewportTracking?: boolean;
   onYearClick?: (year: number) => void;
   onGenreClick?: (genre: string) => void;
   onLanguageClick?: (language: string) => void;
@@ -22,6 +23,7 @@ interface MovieCardProps extends Movie {
   onDirectorClick?: (director: string) => void;
   onWriterClick?: (writer: string) => void;
   onKeywordClick?: (keyword: string) => void;
+  onOpenDetail?: (movieId: string) => void;
 }
 export const MovieCard = ({
   id,
