@@ -31,11 +31,10 @@ export const Navigation = () => {
       )}>
         <div className="flex items-center justify-between h-12">
           <NavLink to="/" className={cn(
-            "flex items-center gap-2 hover:opacity-80 transition-opacity",
+            "flex items-center hover:opacity-80 transition-opacity",
             isDiscoverPage && "text-white"
           )}>
-            <Film className="h-4 w-4" />
-            <span className="text-sm font-semibold">My Cinema</span>
+            <Film className="h-5 w-5" />
           </NavLink>
           
           <div className="flex items-center gap-1">
@@ -44,7 +43,7 @@ export const Navigation = () => {
               end
               className={({ isActive }) =>
                 cn(
-                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded text-sm transition-colors",
+                  "flex items-center p-2 rounded transition-colors",
                   isDiscoverPage
                     ? isActive
                       ? "bg-white/20 text-white"
@@ -54,16 +53,16 @@ export const Navigation = () => {
                       : "text-muted-foreground hover:text-foreground"
                 )
               }
+              title="Home"
             >
-              <Home className="h-3.5 w-3.5" />
-              <span className={cn("hidden", !isDiscoverPage && "sm:inline")}>Home</span>
+              <Home className="h-4 w-4" />
             </NavLink>
             
             <NavLink
               to="/discover"
               className={({ isActive }) =>
                 cn(
-                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded text-sm transition-colors",
+                  "flex items-center p-2 rounded transition-colors",
                   isDiscoverPage
                     ? isActive
                       ? "bg-white/20 text-white"
@@ -73,16 +72,16 @@ export const Navigation = () => {
                       : "text-muted-foreground hover:text-foreground"
                 )
               }
+              title="Discover"
             >
-              <Sparkles className="h-3.5 w-3.5" />
-              <span className={cn("hidden", !isDiscoverPage && "sm:inline")}>Discover</span>
+              <Sparkles className="h-4 w-4" />
             </NavLink>
             
             <NavLink
               to="/movies"
               className={({ isActive }) =>
                 cn(
-                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded text-sm transition-colors",
+                  "flex items-center p-2 rounded transition-colors",
                   isDiscoverPage
                     ? isActive
                       ? "bg-white/20 text-white"
@@ -92,9 +91,9 @@ export const Navigation = () => {
                       : "text-muted-foreground hover:text-foreground"
                 )
               }
+              title="Movies"
             >
-              <Film className="h-3.5 w-3.5" />
-              <span className={cn("hidden", !isDiscoverPage && "sm:inline")}>Movies</span>
+              <Film className="h-4 w-4" />
             </NavLink>
 
             {user && (
@@ -102,7 +101,7 @@ export const Navigation = () => {
                 to="/watchlist"
                 className={({ isActive }) =>
                   cn(
-                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded text-sm transition-colors",
+                    "flex items-center p-2 rounded transition-colors",
                     isDiscoverPage
                       ? isActive
                         ? "bg-white/20 text-white"
@@ -112,9 +111,9 @@ export const Navigation = () => {
                         : "text-muted-foreground hover:text-foreground"
                   )
                 }
+                title="Watchlist"
               >
-                <Bookmark className="h-3.5 w-3.5" />
-                <span className={cn("hidden", !isDiscoverPage && "sm:inline")}>Watchlist</span>
+                <Bookmark className="h-4 w-4" />
               </NavLink>
             )}
             
@@ -123,7 +122,7 @@ export const Navigation = () => {
                 to="/account"
                 className={({ isActive }) =>
                   cn(
-                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded text-sm transition-colors",
+                    "flex items-center p-2 rounded transition-colors",
                     isDiscoverPage
                       ? isActive
                         ? "bg-white/20 text-white"
@@ -133,9 +132,9 @@ export const Navigation = () => {
                         : "text-muted-foreground hover:text-foreground"
                   )
                 }
+                title="Admin"
               >
-                <Settings className="h-3.5 w-3.5" />
-                <span className={cn("hidden", !isDiscoverPage && "sm:inline")}>Admin</span>
+                <Settings className="h-4 w-4" />
               </NavLink>
             )}
 
@@ -149,14 +148,14 @@ export const Navigation = () => {
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="icon"
                       className={cn(
-                        "flex items-center gap-1.5 px-2.5 py-1.5",
+                        "h-8 w-8",
                         isDiscoverPage && "text-white hover:bg-white/20"
                       )}
+                      title="Profile"
                     >
-                      <User className="h-3.5 w-3.5" />
-                      <span className={cn("hidden", !isDiscoverPage && "sm:inline")}>Profile</span>
+                      <User className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -178,27 +177,27 @@ export const Navigation = () => {
                   <NavLink to="/profile">
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="icon"
                       className={cn(
-                        "flex items-center gap-1.5 px-2.5 py-1.5",
+                        "h-8 w-8",
                         isDiscoverPage && "text-white hover:bg-white/20"
                       )}
+                      title="Profile"
                     >
-                      <User className="h-3.5 w-3.5" />
-                      <span className={cn("hidden", !isDiscoverPage && "sm:inline")}>Profile</span>
+                      <User className="h-4 w-4" />
                     </Button>
                   </NavLink>
                   <NavLink to="/login">
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="icon"
                       className={cn(
-                        "flex items-center gap-1.5 px-2.5 py-1.5",
+                        "h-8 w-8",
                         isDiscoverPage && "text-white hover:bg-white/20"
                       )}
+                      title="Sign In"
                     >
-                      <LogIn className="h-3.5 w-3.5" />
-                      <span className={cn("hidden", !isDiscoverPage && "sm:inline")}>Sign In</span>
+                      <LogIn className="h-4 w-4" />
                     </Button>
                   </NavLink>
                 </>
