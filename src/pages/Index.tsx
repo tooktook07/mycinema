@@ -199,9 +199,9 @@ const Index = () => {
           }
         });
         
-        // Get movies the user liked (rating >= 7.0) with full details
+        // Get movies the user liked (rating 5 or 10) with full details
         const likedRatings = Array.from(ratingMap.entries())
-          .filter(([_, rating]) => rating >= RATING_THRESHOLD)
+          .filter(([_, rating]) => rating === 5 || rating === 10)
           .map(([movieId, _]) => ({ media_id: movieId }));
         
         if (likedRatings.length >= MIN_RATINGS_FOR_PERSONALIZATION) {
@@ -222,9 +222,9 @@ const Index = () => {
             ratingMap.set(r.movieId, r.rating);
           });
           
-          // Get movies the guest liked (rating >= 7.0) with full details
+          // Get movies the guest liked (rating 5 or 10) with full details
           const likedRatings = Array.from(ratingMap.entries())
-            .filter(([_, rating]) => rating >= RATING_THRESHOLD)
+            .filter(([_, rating]) => rating === 5 || rating === 10)
             .map(([movieId, _]) => ({ movieId }));
           
           if (likedRatings.length >= MIN_RATINGS_FOR_PERSONALIZATION) {

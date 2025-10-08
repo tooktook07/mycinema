@@ -45,6 +45,9 @@ export const MovieDetailModal = () => {
   const queryClient = useQueryClient();
   const { user } = useEffectiveAuth();
   
+  // Debug: Log location state
+  console.log('[MovieDetailModal] Mounted with location.state:', location.state);
+  
   const [currentRating, setCurrentRating] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -148,10 +151,15 @@ export const MovieDetailModal = () => {
   };
 
   const handleClose = () => {
+    console.log('[MovieDetailModal] Close clicked, location.state:', location.state);
+    
     if (location.state?.backgroundLocation) {
       const bg = location.state.backgroundLocation;
-      navigate(`${bg.pathname}${bg.search || ''}`, { replace: true });
+      const targetPath = `${bg.pathname}${bg.search || ''}`;
+      console.log('[MovieDetailModal] Navigating to:', targetPath);
+      navigate(targetPath, { replace: true });
     } else {
+      console.log('[MovieDetailModal] No backgroundLocation, going home');
       navigate("/");
     }
   };
@@ -160,7 +168,9 @@ export const MovieDetailModal = () => {
     const moviesList = location.state?.moviesList;
     const currentIndex = location.state?.currentIndex;
     
-    if (moviesList && currentIndex > 0) {
+    console.log('[MovieDetailModal] Previous clicked, state:', { moviesList, currentIndex });
+    
+    if (moviesList && currentIndex !== undefined && currentIndex > 0) {
       const prevMovie = moviesList[currentIndex - 1];
       navigate(`/movie/${prevMovie.id}`, {
         state: {
@@ -176,7 +186,9 @@ export const MovieDetailModal = () => {
     const moviesList = location.state?.moviesList;
     const currentIndex = location.state?.currentIndex;
     
-    if (moviesList && currentIndex < moviesList.length - 1) {
+    console.log('[MovieDetailModal] Next clicked, state:', { moviesList, currentIndex });
+    
+    if (moviesList && currentIndex !== undefined && currentIndex < moviesList.length - 1) {
       const nextMovie = moviesList[currentIndex + 1];
       navigate(`/movie/${nextMovie.id}`, {
         state: {
