@@ -42,13 +42,23 @@ export const PosterStorage = () => {
       const batchSize = 100;
       let offset = 0;
       let totalProcessed = 0;
+      let syncHistoryId: string | null = null;
       
       while (true) {
         const { data, error } = await supabase.functions.invoke('store-posters', {
-          body: { limit: batchSize, offset }
+          body: { 
+            limit: batchSize, 
+            offset,
+            syncHistoryId 
+          }
         });
 
         if (error) throw error;
+
+        // Store sync history ID from first batch
+        if (!syncHistoryId && data.syncHistoryId) {
+          syncHistoryId = data.syncHistoryId;
+        }
 
         if (data.processed === 0) {
           break;

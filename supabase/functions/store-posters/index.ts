@@ -35,9 +35,28 @@ Deno.serve(async (req) => {
       throw new Error('Admin access required');
     }
 
-    const { limit = 100, offset = 0 } = await req.json();
+    const { limit = 100, offset = 0, syncHistoryId } = await req.json();
 
     console.log(`Starting poster download for ${limit} movies, offset ${offset}`);
+
+    // Create or get sync history record
+    let currentSyncId = syncHistoryId;
+    if (!currentSyncId) {
+      const { data: syncRecord, error: syncError } = await supabase
+        .from('sync_history')
+        .insert({
+          user_id: user.id,
+          sync_type: 'poster_storage',
+          status: 'running',
+          sync_mode: false,
+          logs: [`Starting poster storage - batch size: ${limit}, offset: ${offset}`]
+        })
+        .select()
+        .single();
+
+      if (syncError) throw syncError;
+      currentSyncId = syncRecord.id;
+    }
 
     // Get movies without local posters
     const { data: movies, error: moviesError } = await supabase
@@ -50,23 +69,44 @@ Deno.serve(async (req) => {
     if (moviesError) throw moviesError;
 
     if (!movies || movies.length === 0) {
+      // Update sync history as completed
+      if (currentSyncId) {
+        await supabase
+          .from('sync_history')
+          .update({
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            logs: ['No movies to process']
+          })
+          .eq('id', currentSyncId);
+      }
+
       return new Response(
-        JSON.stringify({ message: 'No movies to process', processed: 0 }),
+        JSON.stringify({ 
+          message: 'No movies to process', 
+          processed: 0,
+          syncHistoryId: currentSyncId 
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     let processed = 0;
     let failed = 0;
+    const logs: string[] = [];
 
     for (const movie of movies) {
       try {
-        console.log(`Processing: ${movie.title}`);
+        const logMsg = `Processing: ${movie.title}`;
+        console.log(logMsg);
+        logs.push(logMsg);
         
         // Download the poster
         const posterResponse = await fetch(movie.poster);
         if (!posterResponse.ok) {
-          console.error(`Failed to download poster for ${movie.title}`);
+          const errorMsg = `Failed to download poster for ${movie.title}`;
+          console.error(errorMsg);
+          logs.push(`❌ ${errorMsg}`);
           failed++;
           continue;
         }
@@ -88,7 +128,9 @@ Deno.serve(async (req) => {
           });
 
         if (uploadError) {
-          console.error(`Upload error for ${movie.title}:`, uploadError);
+          const errorMsg = `Upload error for ${movie.title}: ${uploadError.message}`;
+          console.error(errorMsg);
+          logs.push(`❌ ${errorMsg}`);
           failed++;
           continue;
         }
@@ -105,34 +147,58 @@ Deno.serve(async (req) => {
           .eq('id', movie.id);
 
         if (updateError) {
-          console.error(`Update error for ${movie.title}:`, updateError);
+          const errorMsg = `Update error for ${movie.title}: ${updateError.message}`;
+          console.error(errorMsg);
+          logs.push(`❌ ${errorMsg}`);
           failed++;
           continue;
         }
 
         processed++;
-        console.log(`✓ Stored poster for: ${movie.title}`);
+        const successMsg = `✓ Stored poster for: ${movie.title}`;
+        console.log(successMsg);
+        logs.push(successMsg);
       } catch (error) {
-        console.error(`Error processing ${movie.title}:`, error);
+        const errorMsg = `Error processing ${movie.title}: ${(error as Error).message || String(error)}`;
+        console.error(errorMsg);
+        logs.push(`❌ ${errorMsg}`);
         failed++;
       }
     }
 
-    console.log(`Completed: ${processed} processed, ${failed} failed`);
+    const completionMsg = `Completed: ${processed} processed, ${failed} failed`;
+    console.log(completionMsg);
+    logs.push(completionMsg);
+
+    // Update sync history
+    if (currentSyncId) {
+      await supabase
+        .from('sync_history')
+        .update({
+          status: processed > 0 ? 'completed' : 'failed',
+          completed_at: new Date().toISOString(),
+          imported: processed,
+          failed: failed,
+          total_found: movies.length,
+          logs: logs
+        })
+        .eq('id', currentSyncId);
+    }
 
     return new Response(
       JSON.stringify({ 
         processed, 
         failed, 
         total: movies.length,
-        message: `Successfully stored ${processed} posters` 
+        message: `Successfully stored ${processed} posters`,
+        syncHistoryId: currentSyncId
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
     console.error('Error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as Error).message || String(error) }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500 
