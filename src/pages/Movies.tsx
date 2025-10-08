@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Film, Grid, Table as TableIcon } from "lucide-react";
 import { MovieCard } from "@/components/MovieCard";
+import { MovieDetailModal } from "@/components/MovieDetailModal";
 import { FilterPanel } from "@/components/FilterPanel";
 import { MoviesTable } from "@/components/MoviesTable";
 import { QuickFilterChips } from "@/components/QuickFilterChips";
@@ -19,6 +20,10 @@ const Movies = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Modal state
+  const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Debug logging
   useEffect(() => {
@@ -87,6 +92,16 @@ const Movies = () => {
   const handleKeywordClick = (keyword: string) => {
     setAppliedSearchText(keyword);
     setCurrentPage(1);
+  };
+
+  const handleOpenDetail = (movieId: string) => {
+    setSelectedMovieId(movieId);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedMovieId(null);
   };
 
 
@@ -469,30 +484,43 @@ const Movies = () => {
               </p>
             </div> : viewMode === "grid" ? <>
               <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                {movies.map((movie, index) => (
-                  <MovieCard 
-                    key={movie.id}
-                    {...movie} 
-                    onYearClick={handleYearClick} 
-                    onGenreClick={handleGenreClick} 
-                    onLanguageClick={handleLanguageClick} 
-                    onActorClick={handleActorClick} 
-                    onDirectorClick={handleDirectorClick} 
-                    onWriterClick={handleWriterClick} 
-                    onKeywordClick={handleKeywordClick}
-                    moviesList={movies.map(m => ({ id: m.id, title: m.title }))}
-                    currentIndex={index}
-                    pageContext="movies"
-                  />
-                ))}
+                {movies.map((movie, index) => {
+                  const userData = userDataMap[movie.id];
+                  return (
+                    <MovieCard
+                      key={movie.id}
+                      {...movie}
+                      preloadedUserRating={userData?.rating}
+                      preloadedInWatchlist={userData?.inWatchlist}
+                      onYearClick={handleYearClick}
+                      onGenreClick={handleGenreClick}
+                      onLanguageClick={handleLanguageClick}
+                      onActorClick={handleActorClick}
+                      onDirectorClick={handleDirectorClick}
+                      onWriterClick={handleWriterClick}
+                      onKeywordClick={handleKeywordClick}
+                      moviesList={movies.map(m => ({ id: m.id, title: m.title }))}
+                      currentIndex={index}
+                      pageContext="movies"
+                      onOpenDetail={handleOpenDetail}
+                    />
+                  );
+                })}
               </div>
               {renderPagination()}
             </> : <>
-              <MoviesTable movies={movies} title="Movies" />
+              <MoviesTable movies={movies} title="Movies" onOpenDetail={handleOpenDetail} />
               {renderPagination()}
             </>}
         </main>
       </div>
+
+      {/* Movie Detail Modal */}
+      <MovieDetailModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        movieId={selectedMovieId}
+      />
     </div>;
 };
 export default Movies;

@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { MovieCard } from "@/components/MovieCard";
+import { MovieDetailModal } from "@/components/MovieDetailModal";
 import { LastSyncCard } from "@/components/LastSyncCard";
 import { getRecentlyShownMovieIds, markMoviesAsShown } from "@/lib/recentlyShownTracker";
 interface Stats {
@@ -80,6 +81,11 @@ const Index = () => {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
   const [excludedRecommendationIds, setExcludedRecommendationIds] = useState<string[]>([]);
+  
+  // Modal state
+  const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   useEffect(() => {
     fetchStats();
     fetchRecommendations();
@@ -467,6 +473,17 @@ const Index = () => {
     setExcludedRecommendationIds([...excludedRecommendationIds, ...currentIds]);
     await fetchRecommendations([...excludedRecommendationIds, ...currentIds]);
   };
+
+  const handleOpenDetail = (movieId: string) => {
+    setSelectedMovieId(movieId);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedMovieId(null);
+  };
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -596,6 +613,7 @@ const Index = () => {
                         moviesList={recommendations.map(m => ({ id: m.id, title: m.title }))}
                         currentIndex={index}
                         pageContext="home"
+                        onOpenDetail={handleOpenDetail}
                       />
                     ))}
                   </div>
@@ -624,6 +642,13 @@ const Index = () => {
             </CardContent>
         </Card>
       </div>
+
+      {/* Movie Detail Modal */}
+      <MovieDetailModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        movieId={selectedMovieId}
+      />
     </div>;
 };
 export default Index;

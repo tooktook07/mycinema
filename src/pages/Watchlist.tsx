@@ -2,16 +2,20 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { getWatchlistMovies } from "@/lib/watchlistService";
 import { MovieCard } from "@/components/MovieCard";
+import { MovieDetailModal } from "@/components/MovieDetailModal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Bookmark, Film } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { useState } from "react";
 
 const Watchlist = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
+
+  // Modal state
+  const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const { data: movies, isLoading } = useQuery({
     queryKey: ['watchlist', user?.id],
@@ -56,6 +60,16 @@ const Watchlist = () => {
 
   const movieCount = movies?.length || 0;
 
+  const handleOpenDetail = (movieId: string) => {
+    setSelectedMovieId(movieId);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedMovieId(null);
+  };
+
   return (
     <div className="min-h-screen">
       <div className="container mx-auto max-w-7xl px-4 py-8">
@@ -91,11 +105,19 @@ const Watchlist = () => {
                 moviesList={movies.map(m => ({ id: m.id, title: m.title }))}
                 currentIndex={index}
                 pageContext="watchlist"
+                onOpenDetail={handleOpenDetail}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* Movie Detail Modal */}
+      <MovieDetailModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        movieId={selectedMovieId}
+      />
     </div>
   );
 };
