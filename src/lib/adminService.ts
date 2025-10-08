@@ -1,5 +1,29 @@
 import { supabase } from "@/integrations/supabase/client";
 
+// Helper function to verify admin status before executing admin operations
+const verifyAdminAccess = async (): Promise<void> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    throw new Error('Authentication required');
+  }
+
+  const { data, error } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', user.id)
+    .eq('role', 'admin')
+    .maybeSingle();
+
+  if (error) {
+    throw new Error('Failed to verify admin access');
+  }
+
+  if (!data) {
+    throw new Error('Unauthorized: Admin access required');
+  }
+};
+
 export interface UserProfile {
   user_id: string;
   id: string;
@@ -56,6 +80,8 @@ export interface UserStats {
 }
 
 export const getAllUsers = async (filters?: UserFilters): Promise<UserProfile[]> => {
+  await verifyAdminAccess();
+  
   let query = supabase
     .from('profiles')
     .select('*')
@@ -91,6 +117,8 @@ export const getAllUsers = async (filters?: UserFilters): Promise<UserProfile[]>
 };
 
 export const getUserById = async (userId: string): Promise<UserProfile> => {
+  await verifyAdminAccess();
+  
   const { data: profile, error } = await supabase
     .from('profiles')
     .select('*')
@@ -116,6 +144,8 @@ export const updateUserRole = async (
   role: string,
   action: 'add' | 'remove'
 ): Promise<void> => {
+  await verifyAdminAccess();
+  
   if (action === 'add') {
     const { error } = await supabase
       .from('user_roles')
@@ -135,6 +165,8 @@ export const updateUserSubscription = async (
   userId: string,
   subscription: SubscriptionUpdate
 ): Promise<void> => {
+  await verifyAdminAccess();
+  
   const { error } = await supabase
     .from('profiles')
     .update(subscription)
@@ -195,6 +227,8 @@ export const getUserActivityLogs = async (
 };
 
 export const getAllActivityLogs = async (filters?: ActivityFilters): Promise<Activity[]> => {
+  await verifyAdminAccess();
+  
   let query = supabase
     .from('user_activity_logs')
     .select('*')
@@ -222,6 +256,8 @@ export const getAllActivityLogs = async (filters?: ActivityFilters): Promise<Act
 };
 
 export const getUserStats = async (userId: string): Promise<UserStats> => {
+  await verifyAdminAccess();
+  
   const { data, error } = await supabase.rpc('get_user_stats', {
     p_user_id: userId
   });
