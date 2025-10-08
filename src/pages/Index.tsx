@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
@@ -100,10 +100,17 @@ const Index = () => {
   // Modal state
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // Track if recommendations have been loaded to prevent auto-reload on tab switch
+  const recommendationsLoadedRef = useRef(false);
 
   useEffect(() => {
     fetchStats();
-    fetchRecommendations();
+    // Only fetch recommendations once on initial mount
+    if (!recommendationsLoadedRef.current) {
+      fetchRecommendations();
+      recommendationsLoadedRef.current = true;
+    }
   }, [user]);
 
   useEffect(() => {
@@ -574,6 +581,7 @@ const Index = () => {
     toast.success("Viewing history refreshed!");
     setExcludedRecommendationIds([]);
     setTotalMoviesViewed(0);
+    recommendationsLoadedRef.current = true; // Keep loaded state
     await fetchRecommendations([]);
   };
 
