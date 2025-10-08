@@ -34,23 +34,6 @@ export const MovieDiscoverCard = ({ movie, totalRated, sessionRatings, recentSta
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/70" />
       </div>
 
-      {/* Top Overlay - Progress Badge + Stats */}
-      <div className="absolute top-0 left-0 right-0 z-20 p-4 safe-area-top">
-        <div className="flex justify-between items-start">
-          <Badge variant="secondary" className="bg-white/20 text-white border-none backdrop-blur-md">
-            Movie #{totalRated + 1}
-          </Badge>
-          
-          <div className="flex flex-col gap-2 items-end">
-            {sessionRatings > 0 && (
-              <Badge variant="secondary" className="bg-primary/80 text-white border-none backdrop-blur-md">
-                +{sessionRatings} this session
-              </Badge>
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* Bottom Overlay - Movie Info */}
       <div className="absolute bottom-32 left-0 right-0 z-20 px-6 pb-6 safe-area-bottom">
         {/* Movie Title */}
