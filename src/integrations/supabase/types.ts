@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      movie_sync_tracker: {
+        Row: {
+          created_at: string | null
+          cycle_day: number
+          id: string
+          last_processed_at: string | null
+          movies_processed: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          cycle_day: number
+          id?: string
+          last_processed_at?: string | null
+          movies_processed?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          cycle_day?: number
+          id?: string
+          last_processed_at?: string | null
+          movies_processed?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       movies: {
         Row: {
           actors: string | null
@@ -404,9 +431,24 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      automation_health: {
+        Row: {
+          avg_duration_seconds: number | null
+          runs: number | null
+          sync_date: string | null
+          sync_type: string | null
+          total_failed: number | null
+          total_imported: number | null
+          total_updated: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      get_current_sync_day: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       get_effective_rating: {
         Args: { movie: Database["public"]["Tables"]["movies"]["Row"] }
         Returns: number
