@@ -431,20 +431,21 @@ export type Database = {
       }
     }
     Views: {
-      automation_health: {
-        Row: {
-          avg_duration_seconds: number | null
-          runs: number | null
-          sync_date: string | null
-          sync_type: string | null
-          total_failed: number | null
-          total_imported: number | null
-          total_updated: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
+      get_automation_health: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          avg_duration_seconds: number
+          runs: number
+          sync_date: string
+          sync_type: string
+          total_failed: number
+          total_imported: number
+          total_updated: number
+        }[]
+      }
       get_current_sync_day: {
         Args: Record<PropertyKey, never>
         Returns: number

@@ -11,3 +11,6 @@ verify_jwt = true
 
 [functions.enrich-with-omdb]
 verify_jwt = true
+
+[functions.store-posters]
+verify_jwt = true
