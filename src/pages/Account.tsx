@@ -30,7 +30,7 @@ const Account = () => {
   const [minPopularity, setMinPopularity] = useState(0);
   
   // Tab and re-run state
-  const [activeTab, setActiveTab] = useState("sync-movies");
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [autoStart, setAutoStart] = useState(false);
 
   const handleGenreToggle = (genre: string) => {
@@ -141,16 +141,20 @@ const Account = () => {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-9">
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="sync-movies">Sync Movies</TabsTrigger>
             <TabsTrigger value="omdb-enrichment">OMDb Enrichment</TabsTrigger>
             <TabsTrigger value="poster-storage">Poster Storage</TabsTrigger>
-            <TabsTrigger value="sync-history">Sync History</TabsTrigger>
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
             <TabsTrigger value="roles">Roles</TabsTrigger>
             <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="dashboard">
+            <SyncHistoryTab onRerunSync={handleRerunSync} />
+          </TabsContent>
 
           <TabsContent value="sync-movies">
             <SyncMovies
@@ -180,10 +184,6 @@ const Account = () => {
 
           <TabsContent value="poster-storage">
             <PosterStorage />
-          </TabsContent>
-
-          <TabsContent value="sync-history">
-            <SyncHistoryTab onRerunSync={handleRerunSync} />
           </TabsContent>
 
           <TabsContent value="general">
