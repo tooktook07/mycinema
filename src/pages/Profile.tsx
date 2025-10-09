@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Heart, ThumbsDown, Star, AlertTriangle } from 'lucide-react';
+import { Heart, ThumbsDown, Star, AlertTriangle, User } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -206,6 +206,7 @@ export default function Profile() {
   return (
     <div className="container mx-auto max-w-7xl py-8 px-4">
       <div className="flex items-center gap-3 mb-6">
+        <User className="h-8 w-8" />
         <h1 className="text-3xl font-bold">
           {isGuest ? 'Guest Profile' : 'My Profile'}
         </h1>
