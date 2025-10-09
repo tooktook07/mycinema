@@ -46,7 +46,7 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [triggerFilter, setTriggerFilter] = useState<'all' | 'manual' | 'automated'>('all');
-  const [typeFilter, setTypeFilter] = useState<'all' | 'tmdb_import' | 'omdb_enrichment' | 'poster_storage'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'tmdb_import' | 'tmdb_sync' | 'omdb_enrichment' | 'poster_storage' | 'daily_refresh' | 'new_imports'>('all');
   const [automationStats, setAutomationStats] = useState<{
     totalAutomated: number;
     totalManual: number;
@@ -623,6 +623,20 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
               onClick={() => setTypeFilter('poster_storage')}
             >
               🖼️ Posters
+            </Button>
+            <Button
+              size="sm"
+              variant={typeFilter === 'daily_refresh' ? 'default' : 'outline'}
+              onClick={() => setTypeFilter('daily_refresh')}
+            >
+              🔄 Daily Refresh
+            </Button>
+            <Button
+              size="sm"
+              variant={typeFilter === 'new_imports' ? 'default' : 'outline'}
+              onClick={() => setTypeFilter('new_imports')}
+            >
+              ✨ New Imports
             </Button>
           </div>
         </div>
