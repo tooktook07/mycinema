@@ -12,6 +12,10 @@ interface FilterContextType {
   setAppliedSearchText: (text: string) => void;
   appliedPopularityRange: [number, number];
   setAppliedPopularityRange: (range: [number, number]) => void;
+  appliedSortBy: string;
+  setAppliedSortBy: (sortBy: string) => void;
+  appliedSortOrder: string;
+  setAppliedSortOrder: (sortOrder: string) => void;
   resetFilters: () => void;
 }
 
@@ -32,6 +36,8 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
   const appliedPopularityRange: [number, number] = searchParams.get('popularity')
     ? searchParams.get('popularity')!.split('-').map(Number) as [number, number]
     : [0, 1000];
+  const appliedSortBy = searchParams.get('sortBy') || "random";
+  const appliedSortOrder = searchParams.get('sortOrder') || "desc";
 
   // Write to URL params
   const setAppliedGenres = (genres: string[]) => {
@@ -84,6 +90,26 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
     setSearchParams(newParams);
   };
 
+  const setAppliedSortBy = (sortBy: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (sortBy && sortBy !== "random") {
+      newParams.set('sortBy', sortBy);
+    } else {
+      newParams.delete('sortBy');
+    }
+    setSearchParams(newParams);
+  };
+
+  const setAppliedSortOrder = (sortOrder: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (sortOrder && sortOrder !== "desc") {
+      newParams.set('sortOrder', sortOrder);
+    } else {
+      newParams.delete('sortOrder');
+    }
+    setSearchParams(newParams);
+  };
+
   const resetFilters = () => {
     setSearchParams(new URLSearchParams());
   };
@@ -101,6 +127,10 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
         setAppliedSearchText,
         appliedPopularityRange,
         setAppliedPopularityRange,
+        appliedSortBy,
+        setAppliedSortBy,
+        appliedSortOrder,
+        setAppliedSortOrder,
         resetFilters
       }}
     >

@@ -34,9 +34,18 @@ const Movies = () => {
 
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortBy, setSortBy] = useState<"rating" | "year" | "title" | "user_rating">("rating");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [itemsPerPage, setItemsPerPage] = useState(50); // Optimized: reduced from 100
+  
+  // Initialize sort preferences with "random" as default for new users
+  const [sortBy, setSortBy] = useState<"rating" | "year" | "title" | "user_rating" | "random">(() => {
+    const hasVisited = localStorage.getItem('movies_has_visited');
+    if (!hasVisited) {
+      localStorage.setItem('movies_has_visited', 'true');
+      return 'random';
+    }
+    return 'rating';
+  });
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   // Auto-reset sort to "rating" if user logs out while "My Rating" is selected
   useEffect(() => {
@@ -59,8 +68,22 @@ const Movies = () => {
     setAppliedSearchText,
     appliedPopularityRange,
     setAppliedPopularityRange,
+    appliedSortBy,
+    setAppliedSortBy,
+    appliedSortOrder,
+    setAppliedSortOrder,
     resetFilters
   } = useFilters();
+
+  // Sync local state with context
+  useEffect(() => {
+    if (appliedSortBy && appliedSortBy !== sortBy) {
+      setSortBy(appliedSortBy as typeof sortBy);
+    }
+    if (appliedSortOrder && appliedSortOrder !== sortOrder) {
+      setSortOrder(appliedSortOrder as typeof sortOrder);
+    }
+  }, [appliedSortBy, appliedSortOrder]);
   const handleGenreToggle = (genre: string) => {
     setAppliedGenres(appliedGenres.includes(genre) ? appliedGenres.filter(g => g !== genre) : [...appliedGenres, genre]);
     setCurrentPage(1);
@@ -273,6 +296,9 @@ const Movies = () => {
         // Sort by IMDb rating when available, then by TMDB rating
         query = query.order('imdb_rating', { ascending: sortOrder === "asc", nullsFirst: false });
         query = query.order('rating', { ascending: sortOrder === "asc" });
+      } else if (sortBy === 'random') {
+        // For random, we'll shuffle client-side after fetching
+        query = query.order('id', { ascending: true });
       } else {
         query = query.order(sortBy, { ascending: sortOrder === "asc" });
       }
@@ -292,28 +318,43 @@ const Movies = () => {
       }
       
       console.log("[Movies Query] Success - found", count, "movies");
+      
+      let movies = (data || []).map((movie): Movie => ({
+        id: movie.id,
+        title: movie.title,
+        year: movie.year,
+        rating: movie.rating || 0,
+        genre: movie.genres || [],
+        poster: movie.poster || "",
+        plot: movie.plot || "",
+        director: movie.director || "",
+        actors: movie.actors || "",
+        runtime: movie.runtime || "",
+        imdbId: movie.imdb_id,
+        voteCount: movie.vote_count || 0,
+        originalLanguage: movie.original_language || "",
+        writing: movie.writing || "",
+        sound: movie.sound || "",
+        keywords: movie.keywords || [],
+        imdbRating: movie.imdb_rating || undefined,
+        imdbVotes: movie.imdb_votes || undefined,
+        metascore: movie.metascore || undefined
+      }));
+
+      // Apply random shuffle if random sort is selected
+      if (sortBy === 'random') {
+        // Use Fisher-Yates shuffle with a seeded random for consistency within page
+        const seed = currentPage;
+        const shuffled = [...movies];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(((seed * (i + 1)) % 997) / 997 * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        movies = shuffled;
+      }
+      
       return {
-        movies: (data || []).map((movie): Movie => ({
-          id: movie.id,
-          title: movie.title,
-          year: movie.year,
-          rating: movie.rating || 0,
-          genre: movie.genres || [],
-          poster: movie.poster || "",
-          plot: movie.plot || "",
-          director: movie.director || "",
-          actors: movie.actors || "",
-          runtime: movie.runtime || "",
-          imdbId: movie.imdb_id,
-          voteCount: movie.vote_count || 0,
-          originalLanguage: movie.original_language || "",
-          writing: movie.writing || "",
-          sound: movie.sound || "",
-          keywords: movie.keywords || [],
-          imdbRating: movie.imdb_rating || undefined,
-          imdbVotes: movie.imdb_votes || undefined,
-          metascore: movie.metascore || undefined
-        })),
+        movies,
         totalCount: count || 0
       };
     },
@@ -367,12 +408,16 @@ const Movies = () => {
       console.warn("[Movies] Attempted to set user_rating sort without logged in user - defaulting to rating");
       setSortBy("rating");
       setSortOrder("desc");
+      setAppliedSortBy("rating");
+      setAppliedSortOrder("desc");
       setCurrentPage(1);
       return;
     }
     
     setSortBy(field);
     setSortOrder(order);
+    setAppliedSortBy(field);
+    setAppliedSortOrder(order);
     setCurrentPage(1);
   };
   const renderPagination = () => {
@@ -459,6 +504,7 @@ const Movies = () => {
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="random-desc">Random</SelectItem>
                   <SelectItem value="rating-desc">Rating (High to Low)</SelectItem>
                   <SelectItem value="rating-asc">Rating (Low to High)</SelectItem>
                   {user && (
