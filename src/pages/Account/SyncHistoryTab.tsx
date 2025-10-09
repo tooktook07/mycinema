@@ -101,43 +101,19 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
     });
 
     jobs.push({
-      name: 'New Movies Import',
+      name: 'Daily Refresh Pipeline',
       schedule: '0 2 * * *',
       nextRun: getNextOccurrence(2, 0),
-      description: 'Import 2025 movies',
-      emoji: '📥'
+      description: 'Refresh ~120 movies with TMDB, OMDb & posters (30-day cycle)',
+      emoji: '🔄'
     });
 
     jobs.push({
-      name: 'Old Movies Import',
-      schedule: '30 2 * * *',
-      nextRun: getNextOccurrence(2, 30),
-      description: 'Cycle-based import',
-      emoji: '📚'
-    });
-
-    jobs.push({
-      name: 'OMDb Enrichment',
-      schedule: '0 3 * * *',
-      nextRun: getNextOccurrence(3, 0),
-      description: 'Daily enrichment (100 movies)',
-      emoji: '✨'
-    });
-
-    jobs.push({
-      name: 'Poster Storage',
+      name: 'New Movies Pipeline',
       schedule: '30 3 * * *',
       nextRun: getNextOccurrence(3, 30),
-      description: 'Download posters (100 movies)',
-      emoji: '🖼️'
-    });
-
-    jobs.push({
-      name: 'OMDb Refresh',
-      schedule: '0 4 * * 0',
-      nextRun: getNextSunday(4),
-      description: 'Weekly refresh of old data',
-      emoji: '🔁'
+      description: 'Import new releases with full processing',
+      emoji: '✨'
     });
 
     return jobs.sort((a, b) => a.nextRun.getTime() - b.nextRun.getTime());
@@ -373,6 +349,18 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
           emoji: '🖼️',
           label: 'Poster Storage',
           description: 'Downloading and storing movie posters'
+        };
+      case 'daily_refresh':
+        return {
+          emoji: '🔄',
+          label: 'Daily Refresh',
+          description: 'Automated daily refresh of existing movies'
+        };
+      case 'new_imports':
+        return {
+          emoji: '✨',
+          label: 'New Imports',
+          description: 'Automated import of new releases'
         };
       case 'tmdb_import':
       default:
