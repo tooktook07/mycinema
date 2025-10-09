@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Loader2, ChevronDown, AlertCircle, CheckCircle2, XCircle, AlertTriangle, RotateCw, Trash2, StopCircle } from "lucide-react";
+import { Loader2, ChevronDown, AlertCircle, CheckCircle2, XCircle, AlertTriangle, RotateCw, Trash2, StopCircle, Bot, User, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 import { useDevMode } from "@/contexts/DevModeContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -25,21 +26,40 @@ interface SyncHistoryRecord {
   logs: string[];
   status: string;
   error_message: string | null;
+  trigger_source: 'manual' | 'automated';
 }
 
 interface SyncHistoryTabProps {
   onRerunSync: (filters: any) => void;
 }
 
+interface AutomationHealth {
+  sync_type: string;
+  sync_date: string;
+  runs: number;
+  total_imported: number;
+  total_updated: number;
+  total_failed: number;
+  avg_duration_seconds: number;
+}
+
 export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
   const [syncHistory, setSyncHistory] = useState<SyncHistoryRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [triggerFilter, setTriggerFilter] = useState<'all' | 'manual' | 'automated'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'tmdb_import' | 'omdb_enrichment' | 'poster_storage'>('all');
+  const [automationStats, setAutomationStats] = useState<{
+    totalAutomated: number;
+    totalManual: number;
+    automatedSuccessRate: number;
+  }>({ totalAutomated: 0, totalManual: 0, automatedSuccessRate: 0 });
   const { devMode } = useDevMode();
   const { toast } = useToast();
 
   useEffect(() => {
     fetchSyncHistory();
+    fetchAutomationStats();
     
     // Setup realtime subscription
     const channel = supabase
@@ -53,6 +73,7 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
         },
         () => {
           fetchSyncHistory();
+          fetchAutomationStats();
         }
       )
       .subscribe();
@@ -74,13 +95,41 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
         setError(error.message);
         throw error;
       }
-      setSyncHistory(data || []);
+      setSyncHistory((data || []) as SyncHistoryRecord[]);
       setError(null);
     } catch (error: any) {
       console.error("Error fetching sync history:", error);
       setError(error.message || "Failed to fetch sync history");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAutomationStats = async () => {
+    try {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      const { data, error } = await supabase
+        .from("sync_history")
+        .select("trigger_source, status")
+        .gte("created_at", sevenDaysAgo.toISOString());
+
+      if (error) throw error;
+
+      const automated = data?.filter(s => s.trigger_source === 'automated') || [];
+      const manual = data?.filter(s => s.trigger_source === 'manual') || [];
+      const automatedSuccess = automated.filter(s => s.status === 'completed').length;
+
+      setAutomationStats({
+        totalAutomated: automated.length,
+        totalManual: manual.length,
+        automatedSuccessRate: automated.length > 0 
+          ? Math.round((automatedSuccess / automated.length) * 100)
+          : 0
+      });
+    } catch (error: any) {
+      console.error("Error fetching automation stats:", error);
     }
   };
 
@@ -183,6 +232,12 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
           label: 'TMDB Sync',
           description: 'Syncing with TMDB database'
         };
+      case 'poster_storage':
+        return {
+          emoji: '🖼️',
+          label: 'Poster Storage',
+          description: 'Downloading and storing movie posters'
+        };
       case 'tmdb_import':
       default:
         return {
@@ -192,6 +247,12 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
         };
     }
   };
+
+  const filteredHistory = syncHistory.filter(sync => {
+    const matchesTrigger = triggerFilter === 'all' || sync.trigger_source === triggerFilter;
+    const matchesType = typeFilter === 'all' || sync.sync_type === typeFilter;
+    return matchesTrigger && matchesType;
+  });
 
   if (loading) {
     return (
@@ -203,6 +264,102 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
 
   return (
     <div className="space-y-6">
+      {/* Automation Overview Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Automated Syncs</CardTitle>
+            <Bot className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{automationStats.totalAutomated}</div>
+            <p className="text-xs text-muted-foreground">Last 7 days</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Manual Syncs</CardTitle>
+            <User className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{automationStats.totalManual}</div>
+            <p className="text-xs text-muted-foreground">Last 7 days</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{automationStats.automatedSuccessRate}%</div>
+            <p className="text-xs text-muted-foreground">Automated syncs</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-2">
+        <div className="flex gap-2 items-center">
+          <span className="text-sm font-medium">Trigger:</span>
+          <Button
+            size="sm"
+            variant={triggerFilter === 'all' ? 'default' : 'outline'}
+            onClick={() => setTriggerFilter('all')}
+          >
+            All
+          </Button>
+          <Button
+            size="sm"
+            variant={triggerFilter === 'manual' ? 'default' : 'outline'}
+            onClick={() => setTriggerFilter('manual')}
+          >
+            👤 Manual
+          </Button>
+          <Button
+            size="sm"
+            variant={triggerFilter === 'automated' ? 'default' : 'outline'}
+            onClick={() => setTriggerFilter('automated')}
+          >
+            🤖 Automated
+          </Button>
+        </div>
+
+        <div className="flex gap-2 items-center">
+          <span className="text-sm font-medium">Type:</span>
+          <Button
+            size="sm"
+            variant={typeFilter === 'all' ? 'default' : 'outline'}
+            onClick={() => setTypeFilter('all')}
+          >
+            All Types
+          </Button>
+          <Button
+            size="sm"
+            variant={typeFilter === 'tmdb_import' ? 'default' : 'outline'}
+            onClick={() => setTypeFilter('tmdb_import')}
+          >
+            📥 TMDB
+          </Button>
+          <Button
+            size="sm"
+            variant={typeFilter === 'omdb_enrichment' ? 'default' : 'outline'}
+            onClick={() => setTypeFilter('omdb_enrichment')}
+          >
+            ✨ OMDb
+          </Button>
+          <Button
+            size="sm"
+            variant={typeFilter === 'poster_storage' ? 'default' : 'outline'}
+            onClick={() => setTypeFilter('poster_storage')}
+          >
+            🖼️ Posters
+          </Button>
+        </div>
+      </div>
+
       {devMode === 'admin' && (
         <Alert>
           <AlertCircle className="h-4 w-4" />
@@ -225,24 +382,35 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
         </Alert>
       )}
 
-      {syncHistory.length === 0 && !loading && !error ? (
+      {filteredHistory.length === 0 && !loading && !error ? (
         <div className="py-12 text-center space-y-4">
           <div className="text-muted-foreground text-4xl">📊</div>
-          <p className="text-muted-foreground text-base font-medium">No sync history yet</p>
+          <p className="text-muted-foreground text-base font-medium">
+            {triggerFilter !== 'all' || typeFilter !== 'all' 
+              ? 'No syncs match the current filters'
+              : 'No sync history yet'
+            }
+          </p>
           <p className="text-muted-foreground text-sm">
-            Run your first sync from the "Sync Movies" tab to see results here
+            {triggerFilter !== 'all' || typeFilter !== 'all'
+              ? 'Try adjusting the filters to see more results'
+              : 'Run your first sync from the "Sync Movies" tab to see results here'
+            }
           </p>
         </div>
       ) : (
-        syncHistory.map((sync) => (
+        filteredHistory.map((sync) => (
           <div key={sync.id} className="border-b pb-8 last:border-0">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex-1">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="text-base font-medium">
                     {getSyncTypeDisplay(sync.sync_type).emoji} {getSyncTypeDisplay(sync.sync_type).label}
                   </h3>
+                  <Badge variant={sync.trigger_source === 'automated' ? 'secondary' : 'outline'} className="text-xs">
+                    {sync.trigger_source === 'automated' ? '🤖 Automated' : '👤 Manual'}
+                  </Badge>
                   {sync.completed_at && (
                     <Badge variant="outline" className="text-xs">
                       ⏱️ {calculateDuration(sync.created_at, sync.completed_at)}
@@ -284,14 +452,16 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
                 </Button>
               ) : (
                 <>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => onRerunSync(sync.filters)}
-                  >
-                    <RotateCw className="h-3 w-3 mr-1" />
-                    Re-run
-                  </Button>
+                  {sync.sync_type !== 'poster_storage' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onRerunSync(sync.filters)}
+                    >
+                      <RotateCw className="h-3 w-3 mr-1" />
+                      Re-run
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant="outline"
@@ -305,7 +475,7 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
             </div>
 
             {/* Stats Grid */}
-            {sync.sync_type === 'omdb_enrichment' ? (
+            {sync.sync_type === 'omdb_enrichment' || sync.sync_type === 'poster_storage' ? (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                 <div>
                   <div className="text-lg font-semibold">{sync.total_found}</div>
@@ -313,7 +483,9 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
                 </div>
                 <div>
                   <div className="text-lg font-semibold">{sync.imported}</div>
-                  <div className="text-xs text-muted-foreground">Enriched</div>
+                  <div className="text-xs text-muted-foreground">
+                    {sync.sync_type === 'poster_storage' ? 'Downloaded' : 'Enriched'}
+                  </div>
                 </div>
                 <div>
                   <div className="text-lg font-semibold">{sync.skipped}</div>

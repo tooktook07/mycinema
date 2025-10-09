@@ -237,6 +237,7 @@ export type Database = {
           sync_mode: boolean
           sync_type: string
           total_found: number | null
+          trigger_source: string
           updated: number | null
           user_id: string
         }
@@ -255,6 +256,7 @@ export type Database = {
           sync_mode?: boolean
           sync_type?: string
           total_found?: number | null
+          trigger_source?: string
           updated?: number | null
           user_id: string
         }
@@ -273,6 +275,7 @@ export type Database = {
           sync_mode?: boolean
           sync_type?: string
           total_found?: number | null
+          trigger_source?: string
           updated?: number | null
           user_id?: string
         }

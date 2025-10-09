@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { batchSize = 50, forceRefresh = false } = await req.json();
+    const { batchSize = 50, forceRefresh = false, trigger_source = 'manual' } = await req.json();
     const OMDB_API_KEY = Deno.env.get("OMDB_API_KEY");
 
     // Initialize Supabase client with auth
@@ -61,6 +61,7 @@ serve(async (req) => {
         sync_type: 'omdb_enrichment',
         status: 'running',
         filters: { batchSize, forceRefresh },
+        trigger_source,
         total_found: 0,
         imported: 0,
         updated: 0,

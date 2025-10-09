@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
       throw new Error('Admin access required');
     }
 
-    const { limit = 100, offset = 0, syncHistoryId } = await req.json();
+    const { limit = 100, offset = 0, syncHistoryId, trigger_source = 'manual' } = await req.json();
 
     console.log(`Starting poster download for ${limit} movies, offset ${offset}`);
 
@@ -49,6 +49,7 @@ Deno.serve(async (req) => {
           sync_type: 'poster_storage',
           status: 'running',
           sync_mode: false,
+          trigger_source,
           logs: [`Starting poster storage - batch size: ${limit}, offset: ${offset}`]
         })
         .select()

@@ -26,6 +26,7 @@ serve(async (req) => {
       minPopularity = 0,
       syncMode = false,
       maxPages = 25, // Reduced from 50 to 25 pages per sync for safety
+      trigger_source = 'manual', // Track whether sync was triggered manually or by cron
     } = await req.json();
     const TMDB_API_KEY = Deno.env.get("TMDB_API_KEY");
 
@@ -85,6 +86,7 @@ serve(async (req) => {
         sync_mode: syncMode,
         filters,
         status: "running",
+        trigger_source,
       })
       .select()
       .single();
