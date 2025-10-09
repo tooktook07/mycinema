@@ -142,6 +142,8 @@ const Help = () => {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 text-base">
+                  <p className="text-muted-foreground">Start your movie discovery journey here. Learn the basics of how to use the app and what features are available.</p>
+                  
                   <div>
                     <h4 className="font-semibold mb-2">For New Users</h4>
                     <ul className="list-disc pl-6 space-y-2">
@@ -182,6 +184,8 @@ const Help = () => {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 text-base">
+                  <p className="text-muted-foreground">Explore our extensive movie library with powerful filtering and sorting tools. Find exactly what you're looking for or discover something new.</p>
+                  
                   <div>
                     <h4 className="font-semibold mb-2">View Options</h4>
                     <ul className="list-disc pl-6 space-y-2">
@@ -227,7 +231,7 @@ const Help = () => {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 text-base">
-                  <p>A full-screen, immersive experience where you swipe through movies one at a time, perfect for finding your next watch.</p>
+                  <p className="text-muted-foreground">A full-screen, immersive experience where you swipe through movies one at a time, perfect for finding your next watch. Learn how to navigate, rate, and manage your discovery journey.</p>
 
                   <div>
                     <h4 className="font-semibold mb-3">Rating Options</h4>
@@ -341,7 +345,7 @@ const Help = () => {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 text-base">
-                  <p>Your personal collection of movies you want to watch later.</p>
+                  <p className="text-muted-foreground">Your personal collection of movies you want to watch later. Save interesting titles and access them anytime from your watchlist page.</p>
 
                   <div>
                     <h4 className="font-semibold mb-2">How to Add Movies</h4>
@@ -378,6 +382,8 @@ const Help = () => {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 text-base">
+                  <p className="text-muted-foreground">Your ratings power the AI recommendation engine. Understand the three rating types and how each one influences your personalized suggestions.</p>
+                  
                   <h4 className="font-semibold mb-3">Three Rating Types</h4>
                   
                   <div className="grid gap-3">
@@ -438,6 +444,8 @@ const Help = () => {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 text-base">
+                  <p className="text-muted-foreground">You can use most features without creating an account. Here's what's available in Guest Mode and what you'll gain by registering.</p>
+                  
                   <div>
                     <h4 className="font-semibold mb-2">What You Can Do</h4>
                     <ul className="space-y-2">
@@ -504,6 +512,8 @@ const Help = () => {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 text-base">
+                  <p className="text-muted-foreground">Having issues? Find solutions to common problems and learn how to get the most out of the app.</p>
+                  
                   <div className="space-y-4">
                     <div>
                       <h4 className="font-semibold mb-2">"No recommendations appearing"</h4>
@@ -562,6 +572,8 @@ const Help = () => {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 text-base">
+                  <p className="text-muted-foreground">Quick answers to the most common questions about ratings, accounts, privacy, and features.</p>
+                  
                   <div className="space-y-4">
                     <div>
                       <h4 className="font-semibold mb-2">How many movies should I rate to get good recommendations?</h4>
