@@ -1,4 +1,4 @@
-import { Film, Home, Settings, LogIn, LogOut, User, Sparkles, Bookmark } from "lucide-react";
+import { Film, Home, Settings, LogIn, LogOut, User, Sparkles, Bookmark, HelpCircle, Menu } from "lucide-react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -96,26 +96,24 @@ export const Navigation = () => {
               <Film className="h-4 w-4" />
             </NavLink>
 
-            {user && (
-              <NavLink
-                to="/watchlist"
-                className={({ isActive }) =>
-                  cn(
-                    "flex items-center p-2 rounded transition-colors",
-                    isDiscoverPage
-                      ? isActive
-                        ? "bg-white/20 text-white"
-                        : "text-white/70 hover:text-white"
-                      : isActive
-                        ? "bg-foreground text-background"
-                        : "text-muted-foreground hover:text-foreground"
-                  )
-                }
-                title="Watchlist"
-              >
-                <Bookmark className="h-4 w-4" />
-              </NavLink>
-            )}
+            <NavLink
+              to="/watchlist"
+              className={({ isActive }) =>
+                cn(
+                  "flex items-center p-2 rounded transition-colors",
+                  isDiscoverPage
+                    ? isActive
+                      ? "bg-white/20 text-white"
+                      : "text-white/70 hover:text-white"
+                    : isActive
+                      ? "bg-foreground text-background"
+                      : "text-muted-foreground hover:text-foreground"
+                )
+              }
+              title="Watchlist"
+            >
+              <Bookmark className="h-4 w-4" />
+            </NavLink>
             
             {isAdmin && (
               <NavLink
@@ -153,7 +151,7 @@ export const Navigation = () => {
                         "h-8 w-8",
                         isDiscoverPage && "text-white hover:bg-white/20"
                       )}
-                      title="Profile"
+                      title="Account Menu"
                     >
                       <User className="h-4 w-4" />
                     </Button>
@@ -165,6 +163,10 @@ export const Navigation = () => {
                       <User className="h-4 w-4 mr-2" />
                       View Profile
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/help')}>
+                      <HelpCircle className="h-4 w-4 mr-2" />
+                      Help
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={signOut}>
                       <LogOut className="h-4 w-4 mr-2" />
@@ -173,8 +175,8 @@ export const Navigation = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <>
-                  <NavLink to="/profile">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -182,25 +184,27 @@ export const Navigation = () => {
                         "h-8 w-8",
                         isDiscoverPage && "text-white hover:bg-white/20"
                       )}
-                      title="Profile"
+                      title="Menu"
                     >
-                      <User className="h-4 w-4" />
+                      <Menu className="h-4 w-4" />
                     </Button>
-                  </NavLink>
-                  <NavLink to="/login">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={cn(
-                        "h-8 w-8",
-                        isDiscoverPage && "text-white hover:bg-white/20"
-                      )}
-                      title="Sign In"
-                    >
-                      <LogIn className="h-4 w-4" />
-                    </Button>
-                  </NavLink>
-                </>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => navigate('/profile')}>
+                      <User className="h-4 w-4 mr-2" />
+                      Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/help')}>
+                      <HelpCircle className="h-4 w-4 mr-2" />
+                      Help
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => navigate('/login')}>
+                      <LogIn className="h-4 w-4 mr-2" />
+                      Sign In
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
             </div>
           </div>
