@@ -77,15 +77,13 @@ const Watchlist = () => {
   return (
     <div className="min-h-screen">
       <div className="container mx-auto max-w-7xl px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <Bookmark className="h-8 w-8" />
-            <div>
-              <h1 className="text-4xl font-bold">My Watchlist</h1>
-              <p className="text-muted-foreground mt-1">
-                {movieCount} {movieCount === 1 ? 'movie' : 'movies'} saved
-              </p>
-            </div>
+        <div className="flex items-center gap-3 mb-8">
+          <Bookmark className="h-8 w-8" />
+          <div className="flex items-center justify-between flex-1 gap-4">
+            <h1 className="text-4xl font-bold">My Watchlist</h1>
+            <p className="text-muted-foreground whitespace-nowrap">
+              {movieCount} {movieCount === 1 ? 'movie' : 'movies'} saved
+            </p>
           </div>
         </div>
 
