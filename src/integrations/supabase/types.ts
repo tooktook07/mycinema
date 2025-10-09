@@ -476,6 +476,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_omdb_usage: {
+        Args: { usage_date: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"
