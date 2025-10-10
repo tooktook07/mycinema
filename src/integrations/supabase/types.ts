@@ -437,6 +437,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      detect_suspicious_activity: {
+        Args: { p_user_id: string }
+        Returns: {
+          alert_type: string
+          details: Json
+          severity: string
+        }[]
+      }
       get_automation_health: {
         Args: Record<PropertyKey, never>
         Returns: {

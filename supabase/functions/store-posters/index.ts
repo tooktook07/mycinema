@@ -10,6 +10,12 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Capture client IP address for security logging
+  const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0].trim() 
+    || req.headers.get('x-real-ip')
+    || 'unknown';
+  const userAgent = req.headers.get('user-agent') || 'unknown';
+
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -38,6 +44,17 @@ Deno.serve(async (req) => {
     const { limit = 100, offset = 0, syncHistoryId, trigger_source = 'manual' } = await req.json();
 
     console.log(`Starting poster download for ${limit} movies, offset ${offset}`);
+
+    // Log the poster storage activity with IP address
+    await supabase
+      .from('user_activity_logs')
+      .insert({
+        user_id: user.id,
+        action_type: 'poster_storage_started',
+        ip_address: clientIP,
+        user_agent: userAgent,
+        action_details: { limit, offset, trigger_source }
+      });
 
     // Create or get sync history record
     let currentSyncId = syncHistoryId;

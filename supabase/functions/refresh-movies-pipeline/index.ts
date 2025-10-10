@@ -11,6 +11,12 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Capture client IP address for security logging
+  const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0].trim() 
+    || req.headers.get('x-real-ip')
+    || 'unknown';
+  const userAgent = req.headers.get('user-agent') || 'unknown';
+
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -60,6 +66,17 @@ serve(async (req) => {
     };
 
     addLog('🔄 Starting daily refresh pipeline');
+
+    // Log the pipeline activity with IP address
+    await supabase
+      .from('user_activity_logs')
+      .insert({
+        user_id: user.id,
+        action_type: 'daily_refresh_started',
+        ip_address: clientIP,
+        user_agent: userAgent,
+        action_details: { trigger_source: 'automated' }
+      });
 
     // Create sync history record
     const { data: syncHistory, error: syncError } = await supabase

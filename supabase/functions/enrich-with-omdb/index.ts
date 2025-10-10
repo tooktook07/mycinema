@@ -11,6 +11,12 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Capture client IP address for security logging
+  const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0].trim() 
+    || req.headers.get('x-real-ip')
+    || 'unknown';
+  const userAgent = req.headers.get('user-agent') || 'unknown';
+
   try {
     const { batchSize = 50, forceRefresh = false, trigger_source = 'manual' } = await req.json();
     const OMDB_API_KEY = Deno.env.get("OMDB_API_KEY");
@@ -78,6 +84,17 @@ serve(async (req) => {
     }
 
     const syncId = syncRecord?.id;
+
+    // Log the enrichment activity with IP address
+    await supabaseAdmin
+      .from('user_activity_logs')
+      .insert({
+        user_id: user.id,
+        action_type: 'omdb_enrichment_started',
+        ip_address: clientIP,
+        user_agent: userAgent,
+        action_details: { batch_size: batchSize, force_refresh: forceRefresh, trigger_source }
+      });
 
     // Find movies to enrich
     let query = supabaseAdmin

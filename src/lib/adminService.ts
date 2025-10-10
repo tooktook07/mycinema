@@ -182,6 +182,9 @@ export const logUserActivity = async (
   ipAddress?: string,
   userAgent?: string
 ): Promise<void> => {
+  // Add admin verification for defense in depth
+  await verifyAdminAccess();
+  
   const { error } = await supabase
     .from('user_activity_logs')
     .insert({

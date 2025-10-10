@@ -11,6 +11,12 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Capture client IP address for security logging
+  const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0].trim() 
+    || req.headers.get('x-real-ip')
+    || 'unknown';
+  const userAgent = req.headers.get('user-agent') || 'unknown';
+
   let syncId: string | undefined;
 
   try {
@@ -78,6 +84,17 @@ serve(async (req) => {
       minVoteCount,
       minPopularity,
     };
+
+    // Log the sync activity with IP address
+    await supabaseAdmin
+      .from('user_activity_logs')
+      .insert({
+        user_id: userId,
+        action_type: 'movie_sync_started',
+        ip_address: clientIP,
+        user_agent: userAgent,
+        action_details: { sync_mode: syncMode, trigger_source, filters }
+      });
 
     const { data: syncRecord, error: syncError } = await supabaseAdmin
       .from("sync_history")
