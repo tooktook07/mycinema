@@ -135,9 +135,53 @@ serve(async (req) => {
             continue;
           }
 
-          addLog(`Importing: ${detailData.title}`);
+          // Fetch OMDb data BEFORE inserting to apply quality filters
+          let omdbData: any = null;
+          let imdbRating = 0;
+          let imdbVotes = 0;
+          
+          try {
+            const omdbResponse = await fetch(
+              `http://www.omdbapi.com/?i=${imdbId}&apikey=${omdbApiKey}&plot=full`
+            );
 
-          // Prepare movie data
+            if (omdbResponse.ok) {
+              omdbData = await omdbResponse.json();
+              
+              if (omdbData.Response === 'True') {
+                imdbRating = omdbData.imdbRating && omdbData.imdbRating !== 'N/A' 
+                  ? parseFloat(omdbData.imdbRating) 
+                  : 0;
+                imdbVotes = omdbData.imdbVotes && omdbData.imdbVotes !== 'N/A'
+                  ? parseInt(omdbData.imdbVotes.replace(/,/g, ''))
+                  : 0;
+                
+                // Track OMDb API usage
+                const today = new Date().toISOString().split('T')[0];
+                await supabase.rpc('increment_omdb_usage', { usage_date: today });
+              }
+            }
+          } catch (omdbError) {
+            addLog(`⚠ OMDb fetch failed for ${detailData.title}: ${omdbError}`);
+          }
+
+          // Quality check with flexible criteria (IMDB OR TMDB)
+          const tmdbRating = detailData.vote_average || 0;
+          const tmdbVotes = detailData.vote_count || 0;
+
+          // Must meet EITHER IMDB or TMDB thresholds
+          const meetsRatingThreshold = imdbRating >= 6.0 || tmdbRating >= 6.0;
+          const meetsVoteThreshold = imdbVotes >= 1000 || tmdbVotes >= 1000;
+
+          if (!meetsRatingThreshold || !meetsVoteThreshold) {
+            addLog(`⊘ Below quality threshold: ${detailData.title} (IMDB: ${imdbRating}/10 [${imdbVotes.toLocaleString()} votes], TMDB: ${tmdbRating}/10 [${tmdbVotes.toLocaleString()} votes])`);
+            skipped++;
+            continue;
+          }
+
+          addLog(`Importing: ${detailData.title} (IMDB: ${imdbRating}/10, TMDB: ${tmdbRating}/10)`);
+
+          // Prepare movie data with both TMDB and IMDB data
           const posterUrl = detailData.poster_path
             ? `https://image.tmdb.org/t/p/w500${detailData.poster_path}`
             : null;
@@ -164,10 +208,17 @@ serve(async (req) => {
             production_companies: detailData.production_companies || [],
             production_countries: detailData.production_countries || [],
             spoken_languages: detailData.spoken_languages || [],
-            data_sources: { tmdb: true, omdb: false },
+            // Include IMDB data from OMDb
+            imdb_rating: imdbRating > 0 ? imdbRating : null,
+            imdb_votes: imdbVotes > 0 ? imdbVotes : null,
+            metascore: omdbData?.Metascore && omdbData.Metascore !== 'N/A' ? parseInt(omdbData.Metascore) : null,
+            box_office: omdbData?.BoxOffice && omdbData.BoxOffice !== 'N/A' ? omdbData.BoxOffice : null,
+            awards: omdbData?.Awards && omdbData.Awards !== 'N/A' ? omdbData.Awards : null,
+            data_sources: { tmdb: true, omdb: omdbData?.Response === 'True' },
+            last_omdb_fetch: omdbData?.Response === 'True' ? new Date().toISOString() : null,
           };
 
-          // Insert movie
+          // Insert movie with both TMDB and IMDB data
           const { data: newMovie, error: insertError } = await supabase
             .from('movies')
             .insert(movieData)
@@ -182,41 +233,6 @@ serve(async (req) => {
 
           imported++;
           addLog(`✓ Imported: ${detailData.title}`);
-
-          // Immediately enrich with OMDb
-          try {
-            addLog(`Enriching with OMDb: ${detailData.title}`);
-            const omdbResponse = await fetch(
-              `http://www.omdbapi.com/?i=${imdbId}&apikey=${omdbApiKey}&plot=full`
-            );
-
-            if (omdbResponse.ok) {
-              const omdbData = await omdbResponse.json();
-
-              if (omdbData.Response === 'True') {
-                await supabase
-                  .from('movies')
-                  .update({
-                    imdb_rating: omdbData.imdbRating !== 'N/A' ? parseFloat(omdbData.imdbRating) : null,
-                    imdb_votes: omdbData.imdbVotes !== 'N/A' ? parseInt(omdbData.imdbVotes.replace(/,/g, '')) : null,
-                    metascore: omdbData.Metascore !== 'N/A' ? parseInt(omdbData.Metascore) : null,
-                    box_office: omdbData.BoxOffice !== 'N/A' ? omdbData.BoxOffice : null,
-                    awards: omdbData.Awards !== 'N/A' ? omdbData.Awards : null,
-                    data_sources: { tmdb: true, omdb: true },
-                    last_omdb_fetch: new Date().toISOString(),
-                  })
-                  .eq('id', newMovie.id);
-
-                addLog(`✓ Enriched with OMDb: ${detailData.title}`);
-
-                // Track OMDb API usage
-                const today = new Date().toISOString().split('T')[0];
-                await supabase.rpc('increment_omdb_usage', { usage_date: today });
-              }
-            }
-          } catch (omdbError) {
-            addLog(`⚠ OMDb enrichment failed for ${detailData.title}: ${omdbError}`);
-          }
 
           // Immediately download poster
           if (posterUrl) {
