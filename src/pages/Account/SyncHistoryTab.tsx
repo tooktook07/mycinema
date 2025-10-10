@@ -294,6 +294,60 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
     }
   };
 
+  const handleRunDailyRefresh = async () => {
+    try {
+      toast({
+        title: "Starting pipeline",
+        description: "Daily Refresh pipeline is starting...",
+      });
+      
+      const { error } = await supabase.functions.invoke('refresh-movies-pipeline');
+
+      if (error) throw error;
+      
+      toast({
+        title: "Pipeline started",
+        description: "Daily Refresh pipeline has been started successfully",
+      });
+      
+      fetchSyncHistory();
+    } catch (error: any) {
+      console.error('Error running daily refresh:', error);
+      toast({
+        title: "Pipeline failed",
+        description: error.message || "Failed to start Daily Refresh pipeline",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRunNewImports = async () => {
+    try {
+      toast({
+        title: "Starting pipeline",
+        description: "New Movies Import pipeline is starting...",
+      });
+      
+      const { error } = await supabase.functions.invoke('import-new-movies-pipeline');
+
+      if (error) throw error;
+      
+      toast({
+        title: "Pipeline started",
+        description: "New Movies Import pipeline has been started successfully",
+      });
+      
+      fetchSyncHistory();
+    } catch (error: any) {
+      console.error('Error running new imports:', error);
+      toast({
+        title: "Pipeline failed",
+        description: error.message || "Failed to start New Movies Import pipeline",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       completed: "default",
@@ -407,6 +461,38 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
 
   return (
     <div className="space-y-6">
+      {/* Manual Pipeline Controls */}
+      <Card className="border-primary/50 bg-primary/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5" />
+            Manual Pipeline Controls
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Manually trigger automation pipelines to catch up on missed runs
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-4">
+            <Button
+              onClick={handleRunDailyRefresh}
+              className="flex items-center gap-2"
+            >
+              <RotateCw className="h-4 w-4" />
+              Run Daily Refresh Now
+            </Button>
+            <Button
+              onClick={handleRunNewImports}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              Run New Imports Now
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Next Scheduled Job - Prominent Display */}
       {nextJob && (
         <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
