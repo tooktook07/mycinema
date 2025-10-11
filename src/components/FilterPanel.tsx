@@ -54,7 +54,7 @@ export const FilterPanel = ({
   const [isOpen, setIsOpen] = useState(() => {
     const saved = localStorage.getItem('filterPanelOpen');
     if (saved !== null) return JSON.parse(saved);
-    return !isMobile; // Collapsed on mobile, expanded on desktop by default
+    return false; // Collapsed by default
   });
 
   // Persist collapse state
@@ -62,13 +62,6 @@ export const FilterPanel = ({
     localStorage.setItem('filterPanelOpen', JSON.stringify(isOpen));
   }, [isOpen]);
 
-  // Update isOpen when screen size changes (only if no saved preference)
-  useEffect(() => {
-    const saved = localStorage.getItem('filterPanelOpen');
-    if (saved === null) {
-      setIsOpen(!isMobile);
-    }
-  }, [isMobile]);
 
   // Debounce search input
   useEffect(() => {
@@ -90,9 +83,9 @@ export const FilterPanel = ({
 
   return (
     <div className="space-y-4 rounded-lg border border-border bg-card p-4 md:p-5 shadow-lg">
-      {/* Header - Always Visible */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
+      {/* Header with Search - Always Visible */}
+      <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
+        <div className="flex items-center gap-2 shrink-0">
           <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
             <Filter className="h-5 w-5" />
             Filters
@@ -106,36 +99,19 @@ export const FilterPanel = ({
             variant="ghost"
             size="sm"
             onClick={() => setIsOpen(!isOpen)}
-            className="ml-2"
             aria-label={isOpen ? "Collapse filters" : "Expand filters"}
             aria-expanded={isOpen}
           >
             <ChevronDown className={cn("h-4 w-4 transition-transform duration-200", isOpen && "rotate-180")} />
           </Button>
         </div>
-        {selectedCount > 0 && (
-          <Button 
-            variant="destructive" 
-            size="sm"
-            onClick={onReset}
-            className="font-semibold"
-          >
-            Reset All
-          </Button>
-        )}
-      </div>
-
-      {/* Search Section - Always Visible */}
-      <div className="mb-3">
-        <Label className="text-sm font-semibold text-foreground">Search</Label>
-        <p className="text-xs text-muted-foreground mt-1 mb-2 hidden sm:block">
-          Search movies, actors, directors...
-        </p>
-        <div className="relative">
+        
+        {/* Search Input */}
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Type to search..."
+            placeholder="Search movies, actors, directors..."
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
             className="pl-10 pr-10 h-10"
@@ -151,6 +127,18 @@ export const FilterPanel = ({
             </Button>
           )}
         </div>
+
+        {/* Reset Button */}
+        {selectedCount > 0 && (
+          <Button 
+            variant="destructive" 
+            size="sm"
+            onClick={onReset}
+            className="font-semibold shrink-0"
+          >
+            Reset All
+          </Button>
+        )}
       </div>
 
       {/* Collapsible Filter Sections */}
