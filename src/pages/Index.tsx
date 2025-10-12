@@ -82,7 +82,7 @@ interface Recommendation {
 }
 const RATING_THRESHOLD = 7.0; // User's liked movies threshold
 const CANDIDATE_RATING_THRESHOLD = 6.5; // Minimum quality for recommendations
-const RECOMMENDATIONS_COUNT = 12;
+const RECOMMENDATIONS_COUNT = 40;
 const MIN_RATINGS_FOR_PERSONALIZATION = 5; // Minimum ratings needed for similarity algorithm
 
 // Similarity weights
