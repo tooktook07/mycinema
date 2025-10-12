@@ -24,6 +24,10 @@ import Watchlist from "./pages/Watchlist";
 import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
 import MovieDetail from "./pages/MovieDetail";
+import GenreArchive from "./pages/GenreArchive";
+import PersonArchive from "./pages/PersonArchive";
+import KeywordArchive from "./pages/KeywordArchive";
+import YearArchive from "./pages/YearArchive";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +39,10 @@ const AppRoutes = () => {
         <Route path="/" element={<Index />} />
         <Route path="/movies" element={<Movies />} />
         <Route path="/movie/:slug" element={<MovieDetail />} />
+        <Route path="/genre/:genreName" element={<GenreArchive />} />
+        <Route path="/person/:personName" element={<PersonArchive />} />
+        <Route path="/keyword/:keyword" element={<KeywordArchive />} />
+        <Route path="/year/:year" element={<YearArchive />} />
         <Route path="/discover" element={<DiscoverMode />} />
         <Route path="/watchlist" element={<Watchlist />} />
         <Route path="/signup" element={<SignUp />} />

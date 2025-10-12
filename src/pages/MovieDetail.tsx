@@ -36,7 +36,7 @@ import { useEffectiveAuth } from "@/contexts/DevModeContext";
 import { saveGuestRating, getGuestRatings } from "@/lib/guestRatings";
 import { getSimilarMovies } from "@/lib/recommendationEngine";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { parseMovieSlug, getMovieUrl } from "@/lib/urlUtils";
+import { parseMovieSlug, getMovieUrl, getGenreUrl, getPersonUrl, getKeywordUrl, getYearUrl } from "@/lib/urlUtils";
 
 const MovieDetail = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -287,10 +287,12 @@ const MovieDetail = () => {
 
                 {/* Quick Info Badges */}
                 <div className="flex flex-wrap gap-2 mb-4">
-                  <Badge variant="secondary" className="text-sm px-3 py-1">
-                    <Calendar className="h-4 w-4 mr-1" />
-                    {movie.year}
-                  </Badge>
+                  <Link to={getYearUrl(movie.year)}>
+                    <Badge variant="secondary" className="text-sm px-3 py-1 hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors">
+                      <Calendar className="h-4 w-4 mr-1" />
+                      {movie.year}
+                    </Badge>
+                  </Link>
                   {movie.runtime && (
                     <Badge variant="secondary" className="text-sm px-3 py-1">
                       <Film className="h-4 w-4 mr-1" />
@@ -401,9 +403,11 @@ const MovieDetail = () => {
                     </h4>
                     <div className="flex flex-wrap gap-2">
                       {movie.genres.map((g) => (
-                        <Badge key={g} variant="secondary">
-                          {g}
-                        </Badge>
+                        <Link key={g} to={getGenreUrl(g)}>
+                          <Badge variant="secondary" className="hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors">
+                            {g}
+                          </Badge>
+                        </Link>
                       ))}
                     </div>
                   </Card>
@@ -544,9 +548,11 @@ const MovieDetail = () => {
                     </h4>
                     <div className="flex flex-wrap gap-1">
                       {movie.director.split(",").map((d) => (
-                        <Badge key={d.trim()} variant="secondary">
-                          {d.trim()}
-                        </Badge>
+                        <Link key={d.trim()} to={getPersonUrl(d.trim())}>
+                          <Badge variant="secondary" className="hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors">
+                            {d.trim()}
+                          </Badge>
+                        </Link>
                       ))}
                     </div>
                   </Card>
@@ -560,9 +566,11 @@ const MovieDetail = () => {
                     </h4>
                     <div className="flex flex-wrap gap-1">
                       {movie.writing.split(",").map((writer) => (
-                        <Badge key={writer.trim()} variant="secondary">
-                          {writer.trim()}
-                        </Badge>
+                        <Link key={writer.trim()} to={getPersonUrl(writer.trim())}>
+                          <Badge variant="secondary" className="hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors">
+                            {writer.trim()}
+                          </Badge>
+                        </Link>
                       ))}
                     </div>
                   </Card>
@@ -579,9 +587,11 @@ const MovieDetail = () => {
                         .split(",")
                         .slice(0, 15)
                         .map((actor) => (
-                          <Badge key={actor.trim()} variant="outline">
-                            {actor.trim()}
-                          </Badge>
+                          <Link key={actor.trim()} to={getPersonUrl(actor.trim())}>
+                            <Badge variant="outline" className="hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors">
+                              {actor.trim()}
+                            </Badge>
+                          </Link>
                         ))}
                     </div>
                   </Card>
@@ -614,9 +624,11 @@ const MovieDetail = () => {
                     </h4>
                     <div className="flex flex-wrap gap-1">
                       {movie.keywords.slice(0, 20).map((keyword) => (
-                        <Badge key={keyword} variant="outline" className="text-xs">
-                          {keyword}
-                        </Badge>
+                        <Link key={keyword} to={getKeywordUrl(keyword)}>
+                          <Badge variant="outline" className="text-xs hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors">
+                            {keyword}
+                          </Badge>
+                        </Link>
                       ))}
                     </div>
                   </Card>
