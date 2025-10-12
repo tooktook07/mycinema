@@ -19,23 +19,24 @@ const GenreArchive = () => {
   const { data: movies, isLoading } = useQuery({
     queryKey: ["genreMovies", decodedGenreName],
     queryFn: async () => {
-      // Normalize function to handle hyphens and spaces in genre names
-      const normalize = (str: string) => str.toLowerCase().replace(/[-\s]/g, '');
-      const normalizedSearch = normalize(decodedGenreName);
-      
+      // Fetch movies with a reasonable limit to avoid timeout
       const { data, error } = await supabase
         .from("movies")
         .select("*")
         .not("genres", "is", null)
         .order("imdb_rating", { ascending: false, nullsFirst: false })
-        .limit(5000);
+        .limit(2000);
 
       if (error) {
         console.error("Genre query error:", error);
         throw error;
       }
       
-      // Filter with normalized comparison to match "Sci-Fi", "Sci Fi", "SciFi"
+      // Normalize function to handle hyphens, spaces, and case in genre names
+      const normalize = (str: string) => str.toLowerCase().replace(/[-\s]/g, '');
+      const normalizedSearch = normalize(decodedGenreName);
+      
+      // Filter with normalized comparison to match "Sci-Fi", "Sci Fi", "SciFi", "Drama", "drama"
       const filtered = data?.filter(movie => 
         movie.genres?.some((g: string) => 
           normalize(g) === normalizedSearch
