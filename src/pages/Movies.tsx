@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Film, Grid, Table as TableIcon } from "lucide-react";
 import { MovieCard } from "@/components/MovieCard";
 import { MovieDetailModal } from "@/components/MovieDetailModal";
@@ -13,12 +13,14 @@ import { useQuery } from "@tanstack/react-query";
 import { Movie } from "@/data/types";
 import { useFilters } from "@/contexts/FilterContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 
 const Movies = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   // Modal state
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
@@ -33,7 +35,13 @@ const Movies = () => {
   }, []);
 
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
-  const [currentPage, setCurrentPage] = useState(1);
+  
+  // Initialize currentPage from URL parameter
+  const [currentPage, setCurrentPage] = useState(() => {
+    const pageParam = searchParams.get('page');
+    return pageParam ? parseInt(pageParam, 10) : 1;
+  });
+  
   const [itemsPerPage, setItemsPerPage] = useState(50); // Optimized: reduced from 100
   
   // Initialize sort preferences with "random" as default for new users
@@ -400,6 +408,48 @@ const Movies = () => {
   useEffect(() => {
     console.log("[Movies] Query state:", { isLoading, isError, error, totalCount, moviesCount: movies.length });
   }, [isLoading, isError, error, totalCount, movies.length]);
+
+  // Enhancement 4: Update URL when page changes
+  useEffect(() => {
+    const newParams = new URLSearchParams(searchParams);
+    if (currentPage > 1) {
+      newParams.set('page', currentPage.toString());
+    } else {
+      newParams.delete('page');
+    }
+    setSearchParams(newParams, { replace: true });
+  }, [currentPage]);
+
+  // Enhancement 5: Smooth scroll to top when page changes
+  useEffect(() => {
+    if (resultsRef.current && !isLoading) {
+      resultsRef.current.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
+      });
+    }
+  }, [currentPage]);
+
+  // Enhancement 1: Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input/textarea
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      
+      if (e.key === 'ArrowLeft' && currentPage > 1) {
+        e.preventDefault();
+        setCurrentPage(currentPage - 1);
+      } else if (e.key === 'ArrowRight' && currentPage < totalPages) {
+        e.preventDefault();
+        setCurrentPage(currentPage + 1);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentPage, totalPages]);
   const handleSortChange = (value: string) => {
     const [field, order] = value.split("-") as [typeof sortBy, typeof sortOrder];
     
@@ -490,12 +540,18 @@ const Movies = () => {
         </div>
 
         {/* Results */}
-        <main>
+        <main ref={resultsRef}>
           <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
             <div>
               <h2 className="text-2xl font-semibold text-foreground">Movies</h2>
+              {/* Enhancement 2: Show more context */}
               <p className="text-muted-foreground">
-                {isLoading ? "Loading..." : `${totalCount} ${totalCount === 1 ? "result" : "results"} found`}
+                {isLoading 
+                  ? "Loading..." 
+                  : totalCount > 0 
+                    ? `Showing ${(currentPage - 1) * itemsPerPage + 1}-${Math.min(currentPage * itemsPerPage, totalCount)} of ${totalCount} ${totalCount === 1 ? "movie" : "movies"}` 
+                    : "No results found"
+                }
               </p>
             </div>
             <div className="flex gap-2 items-center flex-wrap">
@@ -543,7 +599,10 @@ const Movies = () => {
             </div>
           </div>
 
-          {isLoading ? <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {/* Enhancement 3: Top pagination */}
+          {!isLoading && movies.length > 0 && renderPagination()}
+
+          {isLoading && movies.length === 0 ? <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-[400px] rounded-lg" />)}
             </div> : error ? <div className="flex flex-col items-center justify-center py-20 text-center">
               <Film className="h-16 w-16 text-muted-foreground/50 mb-4" />
@@ -570,29 +629,46 @@ const Movies = () => {
                 Try adjusting your filters to discover more content
               </p>
             </div> : viewMode === "grid" ? <>
-              <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                {movies.map((movie, index) => {
-                  const userData = userDataMap[movie.id];
-                  return (
-                    <MovieCard
-                      key={movie.id}
-                      {...movie}
-                      preloadedUserRating={userData?.rating}
-                      preloadedInWatchlist={userData?.inWatchlist}
-                      onYearClick={handleYearClick}
-                      onGenreClick={handleGenreClick}
-                      onActorClick={handleActorClick}
-                      onDirectorClick={handleDirectorClick}
-                      onWriterClick={handleWriterClick}
-                      onKeywordClick={handleKeywordClick}
-                      onOpenDetail={handleOpenDetail}
-                    />
-                  );
-                })}
+              {/* Enhancement 6: Loading state improvement with skeleton overlay */}
+              <div className="relative">
+                <div className={`grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 transition-opacity ${isLoading ? "opacity-30" : ""}`}>
+                  {movies.map((movie, index) => {
+                    const userData = userDataMap[movie.id];
+                    return (
+                      <MovieCard
+                        key={movie.id}
+                        {...movie}
+                        preloadedUserRating={userData?.rating}
+                        preloadedInWatchlist={userData?.inWatchlist}
+                        onYearClick={handleYearClick}
+                        onGenreClick={handleGenreClick}
+                        onActorClick={handleActorClick}
+                        onDirectorClick={handleDirectorClick}
+                        onWriterClick={handleWriterClick}
+                        onKeywordClick={handleKeywordClick}
+                        onOpenDetail={handleOpenDetail}
+                      />
+                    );
+                  })}
+                </div>
+                
+                {/* Overlay skeleton when loading */}
+                {isLoading && movies.length > 0 && (
+                  <div className="absolute inset-0 grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 pointer-events-none">
+                    {[...Array(Math.min(itemsPerPage, 12))].map((_, i) => (
+                      <Skeleton key={i} className="h-[400px] rounded-lg" />
+                    ))}
+                  </div>
+                )}
               </div>
+              {/* Enhancement 3: Bottom pagination */}
               {renderPagination()}
             </> : <>
-              <MoviesTable movies={movies} title="Movies" onOpenDetail={handleOpenDetail} />
+              {/* Table view with loading overlay */}
+              <div className={`transition-opacity ${isLoading ? "opacity-30" : ""}`}>
+                <MoviesTable movies={movies} title="Movies" onOpenDetail={handleOpenDetail} />
+              </div>
+              {/* Enhancement 3: Bottom pagination */}
               {renderPagination()}
             </>}
         </main>
