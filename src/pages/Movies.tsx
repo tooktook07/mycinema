@@ -465,12 +465,24 @@ const Movies = () => {
         <Pagination>
           <PaginationContent>
             <PaginationItem>
-              <PaginationPrevious onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)} className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+              <PaginationPrevious 
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (currentPage > 1) setCurrentPage(currentPage - 1);
+                }} 
+                className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} 
+              />
             </PaginationItem>
             
             {startPage > 1 && <>
                 <PaginationItem>
-                  <PaginationLink onClick={() => setCurrentPage(1)} className="cursor-pointer">
+                  <PaginationLink 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setCurrentPage(1);
+                    }} 
+                    className="cursor-pointer"
+                  >
                     1
                   </PaginationLink>
                 </PaginationItem>
@@ -480,7 +492,14 @@ const Movies = () => {
               </>}
 
             {pages.map(page => <PaginationItem key={page}>
-                <PaginationLink onClick={() => setCurrentPage(page)} isActive={currentPage === page} className="cursor-pointer">
+                <PaginationLink 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setCurrentPage(page);
+                  }} 
+                  isActive={currentPage === page} 
+                  className="cursor-pointer"
+                >
                   {page}
                 </PaginationLink>
               </PaginationItem>)}
@@ -490,14 +509,26 @@ const Movies = () => {
                     <PaginationEllipsis />
                   </PaginationItem>}
                 <PaginationItem>
-                  <PaginationLink onClick={() => setCurrentPage(totalPages)} className="cursor-pointer">
+                  <PaginationLink 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setCurrentPage(totalPages);
+                    }} 
+                    className="cursor-pointer"
+                  >
                     {totalPages}
                   </PaginationLink>
                 </PaginationItem>
               </>}
 
             <PaginationItem>
-              <PaginationNext onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)} className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+              <PaginationNext 
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+                }} 
+                className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} 
+              />
             </PaginationItem>
           </PaginationContent>
         </Pagination>
