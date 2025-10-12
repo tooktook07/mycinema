@@ -100,6 +100,7 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [excludedRecommendationIds, setExcludedRecommendationIds] = useState<string[]>([]);
   const [totalMoviesViewed, setTotalMoviesViewed] = useState(0);
   const [totalAvailableMovies, setTotalAvailableMovies] = useState(0);
@@ -607,9 +608,11 @@ const Index = () => {
   };
 
   const handleShowMoreRecommendations = async () => {
+    setIsLoadingMore(true);
     const currentIds = recommendations.map((r) => r.id);
     setExcludedRecommendationIds([...excludedRecommendationIds, ...currentIds]);
     await fetchRecommendations([...excludedRecommendationIds, ...currentIds], true);
+    setIsLoadingMore(false);
   };
 
   const handleRefreshRecommendations = async () => {
@@ -794,7 +797,7 @@ const Index = () => {
             </p>
           </div>
 
-          {loadingRecommendations ? (
+          {loadingRecommendations && !isLoadingMore ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-center space-y-2">
                 <Loader2 className="h-8 w-8 animate-spin mx-auto" />
@@ -860,6 +863,14 @@ const Index = () => {
                   />
                 ))}
               </div>
+              
+              {/* Loading indicator at the end while loading more */}
+              {isLoadingMore && (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                  <span className="text-sm text-muted-foreground">Loading more movies...</span>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -885,11 +896,11 @@ const Index = () => {
               <div className="flex justify-center">
                 <Button
                   onClick={handleShowMoreRecommendations}
-                  disabled={loadingRecommendations}
+                  disabled={loadingRecommendations || isLoadingMore}
                   size="lg"
                   className="min-w-[280px]"
                 >
-                  {loadingRecommendations ? (
+                  {isLoadingMore ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       Loading More...
