@@ -249,7 +249,7 @@ const Index = () => {
       setLoading(false);
     }
   };
-  const fetchRecommendations = async (excludeIds: string[] = []) => {
+  const fetchRecommendations = async (excludeIds: string[] = [], append: boolean = false) => {
     setLoadingRecommendations(true);
     try {
       // Get recently shown movies to exclude
@@ -485,7 +485,7 @@ const Index = () => {
           metascore: (movie as any).metascore,
         }));
 
-        setRecommendations(topRecommendations);
+        setRecommendations((prev) => append ? [...prev, ...topRecommendations] : topRecommendations);
         setTotalMoviesViewed((prev) => prev + topRecommendations.length);
 
         // Calculate total available movies
@@ -588,7 +588,7 @@ const Index = () => {
           metascore: (movie as any).metascore,
         }));
 
-        setRecommendations(selected);
+        setRecommendations((prev) => append ? [...prev, ...selected] : selected);
         setTotalMoviesViewed((prev) => prev + selected.length);
 
         // Calculate total available movies
@@ -609,7 +609,7 @@ const Index = () => {
   const handleShowMoreRecommendations = async () => {
     const currentIds = recommendations.map((r) => r.id);
     setExcludedRecommendationIds([...excludedRecommendationIds, ...currentIds]);
-    await fetchRecommendations([...excludedRecommendationIds, ...currentIds]);
+    await fetchRecommendations([...excludedRecommendationIds, ...currentIds], true);
   };
 
   const handleRefreshRecommendations = async () => {
