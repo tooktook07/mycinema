@@ -300,7 +300,7 @@ const Movies = () => {
         </div>
 
         {isLoading && offset === 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {Array.from({ length: 48 }).map((_, i) => (
               <Skeleton key={i} className="aspect-[2/3] rounded-lg" />
             ))}
@@ -327,7 +327,7 @@ const Movies = () => {
 
         {displayedMovies.length > 0 && (
           <>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {displayedMovies.map((movie) => (
                 <MovieCard
                   key={movie.id}
