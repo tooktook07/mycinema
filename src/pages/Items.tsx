@@ -9,7 +9,15 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, X } from "lucide-react";
+import { Search, X, Info } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const ITEMS_PER_PAGE = 48;
 
@@ -165,19 +173,108 @@ const Items = () => {
               placeholder="Search by title, actors, director, plot... (or try year:2020, imdb:8+)"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              className="pl-11 pr-10 h-11"
+              className="pl-11 pr-20 h-11"
             />
-            {searchText && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
-                onClick={() => setSearchText("")}
-                aria-label="Clear search"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
+            <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              {searchText && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={() => setSearchText("")}
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    aria-label="Search help"
+                  >
+                    <Info className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Search Cheatsheet</DialogTitle>
+                    <DialogDescription>
+                      Use these patterns to search for movies with precision
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  <div className="space-y-6 mt-4">
+                    <div>
+                      <h3 className="font-semibold mb-2">Simple Text Search</h3>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Search across title, actors, director, and plot
+                      </p>
+                      <div className="space-y-1">
+                        <code className="block bg-muted px-3 py-2 rounded text-sm">Inception</code>
+                        <code className="block bg-muted px-3 py-2 rounded text-sm">Tom Hanks</code>
+                        <code className="block bg-muted px-3 py-2 rounded text-sm">space adventure</code>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="font-semibold mb-2">Structured Search</h3>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Use field:value patterns for precise filtering
+                      </p>
+                      
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-sm font-medium mb-1">Year</p>
+                          <code className="block bg-muted px-3 py-2 rounded text-sm">year:2020</code>
+                        </div>
+                        
+                        <div>
+                          <p className="text-sm font-medium mb-1">Director</p>
+                          <code className="block bg-muted px-3 py-2 rounded text-sm">director:Christopher Nolan</code>
+                          <code className="block bg-muted px-3 py-2 rounded text-sm mt-1">director:Nolan</code>
+                        </div>
+                        
+                        <div>
+                          <p className="text-sm font-medium mb-1">Actor</p>
+                          <code className="block bg-muted px-3 py-2 rounded text-sm">actor:Leonardo DiCaprio</code>
+                          <code className="block bg-muted px-3 py-2 rounded text-sm mt-1">actor:DiCaprio</code>
+                        </div>
+                        
+                        <div>
+                          <p className="text-sm font-medium mb-1">Genre</p>
+                          <code className="block bg-muted px-3 py-2 rounded text-sm">genre:Action</code>
+                          <code className="block bg-muted px-3 py-2 rounded text-sm mt-1">genre:Sci-Fi</code>
+                        </div>
+                        
+                        <div>
+                          <p className="text-sm font-medium mb-1">IMDb Rating (minimum)</p>
+                          <code className="block bg-muted px-3 py-2 rounded text-sm">imdb:8+</code>
+                          <code className="block bg-muted px-3 py-2 rounded text-sm mt-1">imdb:7.5</code>
+                        </div>
+                        
+                        <div>
+                          <p className="text-sm font-medium mb-1">General Rating (minimum)</p>
+                          <code className="block bg-muted px-3 py-2 rounded text-sm">rating:8</code>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border-t pt-4">
+                      <h3 className="font-semibold mb-2">Tips</h3>
+                      <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                        <li>Use simple text search for general queries</li>
+                        <li>Use structured patterns for precise filtering</li>
+                        <li>Partial names work: "Nolan" finds "Christopher Nolan"</li>
+                        <li>Rating searches show movies with that rating or higher</li>
+                      </ul>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
           
           {/* Search Hint Chips */}
