@@ -22,7 +22,7 @@ const PersonArchive = () => {
   const [displayedMovies, setDisplayedMovies] = useState<any[]>([]);
   const [offset, setOffset] = useState(0);
 
-  const { data, isLoading, isFetched } = useQuery({
+  const { data, isLoading, isFetched, isPlaceholderData } = useQuery({
     queryKey: ["personMovies", decodedPersonName, offset],
     queryFn: async () => {
       const from = offset;
@@ -41,6 +41,7 @@ const PersonArchive = () => {
       return { movies: data || [], hasMore };
     },
     enabled: !!decodedPersonName,
+    placeholderData: (previousData) => previousData,
   });
 
   // Get total count
@@ -60,10 +61,10 @@ const PersonArchive = () => {
   });
 
   useEffect(() => {
-    if (data?.movies) {
+    if (data?.movies && !isPlaceholderData) {
       setDisplayedMovies(prev => offset === 0 ? data.movies : [...prev, ...data.movies]);
     }
-  }, [data?.movies, offset]);
+  }, [data?.movies, offset, isPlaceholderData]);
 
   // Categorize movies by role
   const directorMovies = displayedMovies?.filter(m => m.director?.toLowerCase().includes(decodedPersonName.toLowerCase())) || [];
@@ -186,12 +187,12 @@ const PersonArchive = () => {
           <div className="mt-8 flex justify-center">
             <Button
               onClick={handleLoadMore}
-              disabled={isLoading}
+              disabled={isLoading && offset > 0}
               size="lg"
               variant="outline"
               className="min-w-[200px]"
             >
-              {isLoading ? "Loading..." : "Load More"}
+              {isLoading && offset > 0 ? "Loading..." : "Load More"}
             </Button>
           </div>
         )}

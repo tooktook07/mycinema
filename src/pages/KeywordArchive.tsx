@@ -183,12 +183,12 @@ const KeywordArchive = () => {
               <div className="mt-8 flex justify-center">
                 <Button
                   onClick={handleLoadMore}
-                  disabled={isLoading}
+                  disabled={isLoading && offset > 0}
                   size="lg"
                   variant="outline"
                   className="min-w-[200px]"
                 >
-                  {isLoading ? "Loading..." : "Load More"}
+                  {isLoading && offset > 0 ? "Loading..." : "Load More"}
                 </Button>
               </div>
             )}

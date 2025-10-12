@@ -19,7 +19,7 @@ const YearArchive = () => {
   const [displayedMovies, setDisplayedMovies] = useState<any[]>([]);
   const [offset, setOffset] = useState(0);
 
-  const { data, isLoading, isFetched } = useQuery({
+  const { data, isLoading, isFetched, isPlaceholderData } = useQuery({
     queryKey: ["yearMovies", yearNumber, offset],
     queryFn: async () => {
       const from = offset;
@@ -38,6 +38,7 @@ const YearArchive = () => {
       return { movies: data || [], hasMore };
     },
     enabled: yearNumber > 0,
+    placeholderData: (previousData) => previousData,
   });
 
   // Get total count
@@ -57,10 +58,10 @@ const YearArchive = () => {
   });
 
   useEffect(() => {
-    if (data?.movies) {
+    if (data?.movies && !isPlaceholderData) {
       setDisplayedMovies(prev => offset === 0 ? data.movies : [...prev, ...data.movies]);
     }
-  }, [data?.movies, offset]);
+  }, [data?.movies, offset, isPlaceholderData]);
 
   // Calculate average rating
   const avgRating = displayedMovies && displayedMovies.length > 0
@@ -129,12 +130,12 @@ const YearArchive = () => {
               <div className="mt-8 flex justify-center">
                 <Button
                   onClick={handleLoadMore}
-                  disabled={isLoading}
+                  disabled={isLoading && offset > 0}
                   size="lg"
                   variant="outline"
                   className="min-w-[200px]"
                 >
-                  {isLoading ? "Loading..." : "Load More"}
+                  {isLoading && offset > 0 ? "Loading..." : "Load More"}
                 </Button>
               </div>
             )}

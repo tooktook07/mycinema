@@ -29,7 +29,7 @@ const GenreArchive = () => {
   const [offset, setOffset] = useState(0);
   const isInitialMount = useRef(true);
 
-  const { data, isLoading, isFetched } = useQuery({
+  const { data, isLoading, isFetched, isPlaceholderData } = useQuery({
     queryKey: ["genreMovies", decodedGenreName, offset],
     queryFn: async () => {
       const from = offset;
@@ -104,6 +104,7 @@ const GenreArchive = () => {
       return { movies: paginatedData, hasMore };
     },
     enabled: !!decodedGenreName,
+    placeholderData: (previousData) => previousData,
   });
 
   // Get total count with case-insensitive matching
@@ -139,7 +140,8 @@ const GenreArchive = () => {
       hasData: !!data?.movies,
       movieCount: data?.movies?.length,
       offset,
-      currentDisplayed: displayedMovies.length
+      currentDisplayed: displayedMovies.length,
+      isPlaceholderData
     });
 
     // Skip clearing on initial mount to prevent race condition
@@ -152,7 +154,7 @@ const GenreArchive = () => {
       return;
     }
 
-    if (data?.movies) {
+    if (data?.movies && !isPlaceholderData) {
       if (offset === 0) {
         console.log("✅ Resetting displayed movies:", data.movies.length);
         setDisplayedMovies(data.movies);
@@ -161,7 +163,7 @@ const GenreArchive = () => {
         setDisplayedMovies(prev => [...prev, ...data.movies]);
       }
     }
-  }, [data?.movies, offset]);
+  }, [data?.movies, offset, isPlaceholderData]);
 
   const handleOpenDetail = (movieId: string) => {
     setSelectedMovieId(movieId);
@@ -225,12 +227,12 @@ const GenreArchive = () => {
               <div className="mt-8 flex justify-center">
                 <Button
                   onClick={handleLoadMore}
-                  disabled={isLoading}
+                  disabled={isLoading && offset > 0}
                   size="lg"
                   variant="outline"
                   className="min-w-[200px]"
                 >
-                  {isLoading ? "Loading..." : "Load More"}
+                  {isLoading && offset > 0 ? "Loading..." : "Load More"}
                 </Button>
               </div>
             )}
