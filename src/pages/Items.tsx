@@ -14,14 +14,14 @@ import { Search, X } from "lucide-react";
 const ITEMS_PER_PAGE = 48;
 
 const SEARCH_SUGGESTIONS = [
-  "year:2020",
-  "director:Nolan",
-  "imdb:8+",
-  "genre:Action",
-  "actor:DiCaprio",
-  "genre:Sci-Fi",
-  "year:2019",
-  "imdb:7+",
+  "Inception",
+  "Nolan",
+  "DiCaprio",
+  "Action",
+  "Sci-Fi",
+  "Comedy",
+  "Thriller",
+  "Drama",
 ];
 
 const Items = () => {
@@ -162,7 +162,7 @@ const Items = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Try: year:2020, director:Nolan, imdb:8+, genre:Action, or any text..."
+              placeholder="Search by title, actors, director, plot... (or try year:2020, imdb:8+)"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               className="pl-11 pr-10 h-11"
