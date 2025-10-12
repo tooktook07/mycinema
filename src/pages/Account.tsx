@@ -12,6 +12,7 @@ import { RoleManagement } from "./Account/RoleManagement";
 import { SubscriptionManagement } from "./Account/SubscriptionManagement";
 import { OMDbEnrichment } from "./Account/OMDbEnrichment";
 import { PosterStorage } from "./Account/PosterStorage";
+import { MovieManagement } from "./Account/MovieManagement";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Account = () => {
@@ -140,8 +141,9 @@ const Account = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-9">
+          <TabsList className="grid w-full grid-cols-10">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="movies">Movies</TabsTrigger>
             <TabsTrigger value="sync-movies">Sync Movies</TabsTrigger>
             <TabsTrigger value="omdb-enrichment">OMDb Enrichment</TabsTrigger>
             <TabsTrigger value="poster-storage">Poster Storage</TabsTrigger>
@@ -154,6 +156,10 @@ const Account = () => {
 
           <TabsContent value="dashboard">
             <SyncHistoryTab onRerunSync={handleRerunSync} />
+          </TabsContent>
+
+          <TabsContent value="movies">
+            <MovieManagement />
           </TabsContent>
 
           <TabsContent value="sync-movies">
