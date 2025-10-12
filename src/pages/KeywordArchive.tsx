@@ -6,10 +6,12 @@ import { MovieCard } from "@/components/MovieCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { MovieDetailModal } from "@/components/MovieDetailModal";
+import { decodeArchiveSlug, toTitleCase } from "@/lib/urlUtils";
 
 const KeywordArchive = () => {
   const { keyword } = useParams<{ keyword: string }>();
-  const decodedKeyword = keyword ? decodeURIComponent(keyword) : "";
+  const decodedKeyword = keyword ? decodeArchiveSlug(keyword) : "";
+  const displayKeyword = toTitleCase(decodedKeyword);
   
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -17,14 +19,22 @@ const KeywordArchive = () => {
   const { data: movies, isLoading } = useQuery({
     queryKey: ["keywordMovies", decodedKeyword],
     queryFn: async () => {
+      // Since keywords are stored with original casing, we need case-insensitive matching
       const { data, error } = await supabase
         .from("movies")
         .select("*")
-        .contains("keywords", [decodedKeyword])
         .order("imdb_rating", { ascending: false, nullsFirst: false });
 
       if (error) throw error;
-      return data || [];
+      
+      // Filter client-side for case-insensitive keyword matching
+      const filtered = data?.filter(movie => 
+        movie.keywords?.some((k: string) => 
+          k.toLowerCase() === decodedKeyword.toLowerCase()
+        )
+      ) || [];
+      
+      return filtered;
     },
     enabled: !!decodedKeyword,
   });
@@ -41,8 +51,8 @@ const KeywordArchive = () => {
   if (isLoading) {
     return (
       <ArchiveLayout
-        title={`Movies tagged: ${decodedKeyword}`}
-        breadcrumbs={[{ label: decodedKeyword, href: `/keyword/${keyword}` }]}
+        title={`Movies tagged: ${displayKeyword}`}
+        breadcrumbs={[{ label: displayKeyword, href: `/keyword/${keyword}` }]}
         movieCount={0}
       >
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -57,9 +67,9 @@ const KeywordArchive = () => {
   return (
     <>
       <ArchiveLayout
-        title={`Movies tagged: ${decodedKeyword}`}
+        title={`Movies tagged: ${displayKeyword}`}
         description={`Discover movies with the ${decodedKeyword} theme`}
-        breadcrumbs={[{ label: decodedKeyword, href: `/keyword/${keyword}` }]}
+        breadcrumbs={[{ label: displayKeyword, href: `/keyword/${keyword}` }]}
         movieCount={movies?.length || 0}
       >
         {movies && movies.length > 0 ? (

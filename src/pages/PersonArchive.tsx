@@ -7,10 +7,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { MovieDetailModal } from "@/components/MovieDetailModal";
+import { decodeArchiveSlug, toTitleCase } from "@/lib/urlUtils";
 
 const PersonArchive = () => {
   const { personName } = useParams<{ personName: string }>();
-  const decodedPersonName = personName ? decodeURIComponent(personName) : "";
+  const decodedPersonName = personName ? decodeArchiveSlug(personName) : "";
+  const displayName = toTitleCase(decodedPersonName);
   
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -76,8 +78,8 @@ const PersonArchive = () => {
   if (isLoading) {
     return (
       <ArchiveLayout
-        title={decodedPersonName}
-        breadcrumbs={[{ label: decodedPersonName, href: `/person/${personName}` }]}
+        title={displayName}
+        breadcrumbs={[{ label: displayName, href: `/person/${personName}` }]}
         movieCount={0}
       >
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -98,9 +100,9 @@ const PersonArchive = () => {
   return (
     <>
       <ArchiveLayout
-        title={decodedPersonName}
+        title={displayName}
         description="Filmography"
-        breadcrumbs={[{ label: decodedPersonName, href: `/person/${personName}` }]}
+        breadcrumbs={[{ label: displayName, href: `/person/${personName}` }]}
         movieCount={movies?.length || 0}
       >
         <Tabs defaultValue={defaultTab} className="w-full">

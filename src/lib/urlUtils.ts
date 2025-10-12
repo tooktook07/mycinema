@@ -27,17 +27,39 @@ export const getMovieUrl = (title: string, year: number): string => {
   return `/movie/${createMovieSlug(title, year)}`;
 };
 
+// Helper to convert text to URL-safe slug (lowercase with dashes)
+const toUrlSlug = (text: string): string => {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')      // Replace spaces with dashes
+    .replace(/[^\w-]/g, '');   // Remove non-word chars except dashes
+};
+
+// Helper to convert URL slug back to searchable text
+const fromUrlSlug = (slug: string): string => {
+  return slug.replace(/-/g, ' ');
+};
+
+// Helper to capitalize first letter of each word for display
+export const toTitleCase = (text: string): string => {
+  return text
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+};
+
 // Archive page URLs
 export const getGenreUrl = (genre: string): string => {
-  return `/genre/${encodeURIComponent(genre)}`;
+  return `/genre/${toUrlSlug(genre)}`;
 };
 
 export const getPersonUrl = (name: string): string => {
-  return `/person/${encodeURIComponent(name.trim())}`;
+  return `/person/${toUrlSlug(name.trim())}`;
 };
 
 export const getKeywordUrl = (keyword: string): string => {
-  return `/keyword/${encodeURIComponent(keyword)}`;
+  return `/keyword/${toUrlSlug(keyword)}`;
 };
 
 export const getYearUrl = (year: number): string => {
@@ -45,18 +67,23 @@ export const getYearUrl = (year: number): string => {
 };
 
 export const getCompanyUrl = (company: string): string => {
-  return `/company/${encodeURIComponent(company)}`;
+  return `/company/${toUrlSlug(company)}`;
 };
 
 export const getCountryUrl = (country: string): string => {
-  return `/country/${encodeURIComponent(country)}`;
+  return `/country/${toUrlSlug(country)}`;
 };
 
 export const getLanguageUrl = (language: string): string => {
-  return `/language/${encodeURIComponent(language)}`;
+  return `/language/${toUrlSlug(language)}`;
 };
 
 export const getDecadeUrl = (year: number): string => {
   const decade = Math.floor(year / 10) * 10;
   return `/decade/${decade}s`;
+};
+
+// Decode URL slugs back to original text for database queries
+export const decodeArchiveSlug = (slug: string): string => {
+  return fromUrlSlug(decodeURIComponent(slug));
 };

@@ -6,10 +6,12 @@ import { MovieCard } from "@/components/MovieCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { MovieDetailModal } from "@/components/MovieDetailModal";
+import { decodeArchiveSlug, toTitleCase } from "@/lib/urlUtils";
 
 const GenreArchive = () => {
   const { genreName } = useParams<{ genreName: string }>();
-  const decodedGenreName = genreName ? decodeURIComponent(genreName) : "";
+  const decodedGenreName = genreName ? decodeArchiveSlug(genreName) : "";
+  const displayName = toTitleCase(decodedGenreName);
   
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -17,14 +19,22 @@ const GenreArchive = () => {
   const { data: movies, isLoading } = useQuery({
     queryKey: ["genreMovies", decodedGenreName],
     queryFn: async () => {
+      // Since genres are stored with proper casing, we need case-insensitive matching
       const { data, error } = await supabase
         .from("movies")
         .select("*")
-        .contains("genres", [decodedGenreName])
         .order("imdb_rating", { ascending: false, nullsFirst: false });
 
       if (error) throw error;
-      return data || [];
+      
+      // Filter client-side for case-insensitive genre matching
+      const filtered = data?.filter(movie => 
+        movie.genres?.some((g: string) => 
+          g.toLowerCase() === decodedGenreName.toLowerCase()
+        )
+      ) || [];
+      
+      return filtered;
     },
     enabled: !!decodedGenreName,
   });
@@ -41,8 +51,8 @@ const GenreArchive = () => {
   if (isLoading) {
     return (
       <ArchiveLayout
-        title={`${decodedGenreName} Movies`}
-        breadcrumbs={[{ label: decodedGenreName, href: `/genre/${genreName}` }]}
+        title={`${displayName} Movies`}
+        breadcrumbs={[{ label: displayName, href: `/genre/${genreName}` }]}
         movieCount={0}
       >
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -57,9 +67,9 @@ const GenreArchive = () => {
   return (
     <>
       <ArchiveLayout
-        title={`${decodedGenreName} Movies`}
+        title={`${displayName} Movies`}
         description={`Explore all ${decodedGenreName.toLowerCase()} movies in our collection`}
-        breadcrumbs={[{ label: decodedGenreName, href: `/genre/${genreName}` }]}
+        breadcrumbs={[{ label: displayName, href: `/genre/${genreName}` }]}
         movieCount={movies?.length || 0}
       >
         {movies && movies.length > 0 ? (
