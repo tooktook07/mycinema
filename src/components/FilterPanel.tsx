@@ -147,7 +147,7 @@ export const FilterPanel = ({
           <Accordion type="multiple" defaultValue={["genres", "rating", "year"]} className="space-y-2">
             {/* Genres Section */}
             <AccordionItem value="genres" className="border rounded-lg px-4">
-              <AccordionTrigger className="text-sm font-semibold hover:no-underline pb-3 pt-0">
+              <AccordionTrigger className="text-sm font-semibold hover:no-underline py-3">
                 Genres
               </AccordionTrigger>
               <AccordionContent className="pb-3">
@@ -178,7 +178,7 @@ export const FilterPanel = ({
 
             {/* Rating Section */}
             <AccordionItem value="rating" className="border rounded-lg px-4">
-              <AccordionTrigger className="text-sm font-semibold hover:no-underline pb-3 pt-0">
+              <AccordionTrigger className="text-sm font-semibold hover:no-underline py-3">
                 <div className="flex items-center justify-between w-full pr-4">
                   <span>IMDb Rating</span>
                   <Badge variant="secondary" className="text-xs font-bold">
@@ -210,7 +210,7 @@ export const FilterPanel = ({
 
             {/* Year Section */}
             <AccordionItem value="year" className="border rounded-lg px-4">
-              <AccordionTrigger className="text-sm font-semibold hover:no-underline pb-3 pt-0">
+              <AccordionTrigger className="text-sm font-semibold hover:no-underline py-3">
                 Release Year
               </AccordionTrigger>
               <AccordionContent className="pb-4">
