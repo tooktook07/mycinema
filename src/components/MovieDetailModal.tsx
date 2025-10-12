@@ -448,8 +448,8 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                 />
               )}
               
-              {/* Gradient Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+              {/* Stronger Gradient Overlay with blur backdrop */}
+              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/90 to-background/30 backdrop-blur-[2px]" />
               
               {/* Title & Info Overlay */}
               <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6">
