@@ -450,23 +450,25 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                 
                 {/* Title & Info */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start gap-1 mb-1.5">
-                    <h2 className="text-sm sm:text-2xl font-bold leading-tight line-clamp-2 flex-1">{movie.title}</h2>
-                    {relevanceReason && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-5 w-5 sm:h-6 sm:w-6 shrink-0">
-                              <Info className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs text-xs">
-                            <p className="font-semibold mb-1">Why this movie?</p>
-                            <p>{relevanceReason}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
+                  <div className="mb-1.5">
+                    <div className="inline-flex items-center gap-1 flex-wrap">
+                      <h2 className="text-sm sm:text-2xl font-bold leading-tight">{movie.title}</h2>
+                      {relevanceReason && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-5 w-5 sm:h-6 sm:w-6 shrink-0">
+                                <Info className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs text-xs">
+                              <p className="font-semibold mb-1">Why this movie?</p>
+                              <p>{relevanceReason}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </div>
                   </div>
                   
                   {movie.tagline && (
