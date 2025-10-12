@@ -4,10 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArchiveLayout } from "@/components/ArchiveLayout";
 import { MovieCard } from "@/components/MovieCard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MovieDetailModal } from "@/components/MovieDetailModal";
 import { decodeArchiveSlug, toTitleCase } from "@/lib/urlUtils";
+
+const MOVIES_PER_PAGE = 48;
 
 const PersonArchive = () => {
   const { personName } = useParams<{ personName: string }>();
@@ -16,26 +19,56 @@ const PersonArchive = () => {
   
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [displayedMovies, setDisplayedMovies] = useState<any[]>([]);
+  const [offset, setOffset] = useState(0);
 
-  const { data: movies, isLoading } = useQuery({
-    queryKey: ["personMovies", decodedPersonName],
+  const { data, isLoading } = useQuery({
+    queryKey: ["personMovies", decodedPersonName, offset],
     queryFn: async () => {
+      const from = offset;
+      const to = from + MOVIES_PER_PAGE - 1;
+
       const { data, error } = await supabase
         .from("movies")
-        .select("*")
+        .select("id, title, year, rating, imdb_rating, imdb_votes, genres, poster, local_poster_url, imdb_id, director, actors, writing")
         .or(`director.ilike.%${decodedPersonName}%,actors.ilike.%${decodedPersonName}%,writing.ilike.%${decodedPersonName}%`)
-        .order("year", { ascending: false });
+        .order("year", { ascending: false })
+        .range(from, to);
 
       if (error) throw error;
-      return data || [];
+
+      const hasMore = data?.length === MOVIES_PER_PAGE;
+      return { movies: data || [], hasMore };
     },
     enabled: !!decodedPersonName,
   });
 
+  // Get total count
+  const { data: countData } = useQuery({
+    queryKey: ["personMoviesCount", decodedPersonName],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("movies")
+        .select("*", { count: "exact", head: true })
+        .or(`director.ilike.%${decodedPersonName}%,actors.ilike.%${decodedPersonName}%,writing.ilike.%${decodedPersonName}%`);
+
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!decodedPersonName,
+    staleTime: 60000,
+  });
+
+  useEffect(() => {
+    if (data?.movies) {
+      setDisplayedMovies(prev => offset === 0 ? data.movies : [...prev, ...data.movies]);
+    }
+  }, [data?.movies, offset]);
+
   // Categorize movies by role
-  const directorMovies = movies?.filter(m => m.director?.toLowerCase().includes(decodedPersonName.toLowerCase())) || [];
-  const actorMovies = movies?.filter(m => m.actors?.toLowerCase().includes(decodedPersonName.toLowerCase())) || [];
-  const writerMovies = movies?.filter(m => m.writing?.toLowerCase().includes(decodedPersonName.toLowerCase())) || [];
+  const directorMovies = displayedMovies?.filter(m => m.director?.toLowerCase().includes(decodedPersonName.toLowerCase())) || [];
+  const actorMovies = displayedMovies?.filter(m => m.actors?.toLowerCase().includes(decodedPersonName.toLowerCase())) || [];
+  const writerMovies = displayedMovies?.filter(m => m.writing?.toLowerCase().includes(decodedPersonName.toLowerCase())) || [];
 
   const handleOpenDetail = (movieId: string) => {
     setSelectedMovieId(movieId);
@@ -45,6 +78,12 @@ const PersonArchive = () => {
   const handleNavigateToMovie = (movieId: string) => {
     setSelectedMovieId(movieId);
   };
+
+  const handleLoadMore = () => {
+    setOffset(prev => prev + MOVIES_PER_PAGE);
+  };
+
+  const hasMore = data?.hasMore || false;
 
   const renderMovieGrid = (moviesList: any[]) => {
     if (moviesList.length === 0) {
@@ -75,7 +114,7 @@ const PersonArchive = () => {
     );
   };
 
-  if (isLoading) {
+  if (isLoading && offset === 0) {
     return (
       <ArchiveLayout
         title={displayName}
@@ -103,7 +142,7 @@ const PersonArchive = () => {
         title={displayName}
         description="Filmography"
         breadcrumbs={[{ label: displayName, href: `/person/${personName}` }]}
-        movieCount={movies?.length || 0}
+        movieCount={countData || displayedMovies.length}
       >
         <Tabs defaultValue={defaultTab} className="w-full">
           <TabsList className="mb-6">
@@ -142,6 +181,20 @@ const PersonArchive = () => {
             </TabsContent>
           )}
         </Tabs>
+
+        {hasMore && (
+          <div className="mt-8 flex justify-center">
+            <Button
+              onClick={handleLoadMore}
+              disabled={isLoading}
+              size="lg"
+              variant="outline"
+              className="min-w-[200px]"
+            >
+              {isLoading ? "Loading..." : "Load More"}
+            </Button>
+          </div>
+        )}
       </ArchiveLayout>
 
       <MovieDetailModal
