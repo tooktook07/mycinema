@@ -103,63 +103,77 @@ const Movies = () => {
       setSortOrder(appliedSortOrder as typeof sortOrder);
     }
   }, [appliedSortBy, appliedSortOrder]);
+  // Helper to update filters and reset page in one call
+  const updateFiltersAndResetPage = (updates: Record<string, any>) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('page'); // Always reset to page 1 on filter changes
+    
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null || value === undefined) {
+        newParams.delete(key);
+      } else if (Array.isArray(value)) {
+        if (value.length > 0) {
+          newParams.set(key, value.join(','));
+        } else {
+          newParams.delete(key);
+        }
+      } else {
+        newParams.set(key, value.toString());
+      }
+    });
+    
+    setSearchParams(newParams, { replace: true });
+  };
+
   const handleGenreToggle = (genre: string) => {
-    setAppliedGenres(appliedGenres.includes(genre) ? appliedGenres.filter(g => g !== genre) : [...appliedGenres, genre]);
-    handlePageChange(1);
+    const newGenres = appliedGenres.includes(genre) ? appliedGenres.filter(g => g !== genre) : [...appliedGenres, genre];
+    updateFiltersAndResetPage({ genres: newGenres.length > 0 ? newGenres.join(',') : null });
   };
+  
   const handleResetFilters = () => {
-    resetFilters();
-    handlePageChange(1);
+    setSearchParams(new URLSearchParams(), { replace: true });
   };
+  
   const handleYearClick = (year: number) => {
-    setAppliedYearRange([year, year]);
-    handlePageChange(1);
+    updateFiltersAndResetPage({ year: `${year}-${year}` });
   };
+  
   const handleGenreClick = (genre: string) => {
-    setAppliedGenres([genre]);
-    handlePageChange(1);
+    updateFiltersAndResetPage({ genres: genre });
   };
+  
   const handleActorClick = (actor: string) => {
-    setAppliedSearchText(actor);
-    handlePageChange(1);
+    updateFiltersAndResetPage({ search: actor });
   };
+  
   const handleDirectorClick = (director: string) => {
-    setAppliedSearchText(director);
-    handlePageChange(1);
+    updateFiltersAndResetPage({ search: director });
   };
+  
   const handleWriterClick = (writer: string) => {
-    setAppliedSearchText(writer);
-    handlePageChange(1);
+    updateFiltersAndResetPage({ search: writer });
   };
+  
   const handleKeywordClick = (keyword: string) => {
-    setAppliedSearchText(keyword);
-    handlePageChange(1);
+    updateFiltersAndResetPage({ search: keyword });
   };
 
   const handlePopularityClick = (min: number, max: number) => {
-    setAppliedPopularityRange([min, max]);
-    handlePageChange(1);
+    updateFiltersAndResetPage({ popularity: `${min}-${max}` });
   };
 
   const handleAwardClick = (awardType: string) => {
-    setAppliedSearchText(awardType);
-    handlePageChange(1);
+    updateFiltersAndResetPage({ search: awardType });
   };
 
   const handleMixedClick = (type: string) => {
     if (type === "critical") {
-      // High rating (8+) + low popularity (<20) = Critical Darlings
-      setAppliedRatingRange([8, 10]);
-      setAppliedPopularityRange([0, 20]);
+      updateFiltersAndResetPage({ rating: '8-10', popularity: '0-20' });
     } else if (type === "audience") {
-      // High rating (7+) + high popularity (50+) = Audience Favorites
-      setAppliedRatingRange([7, 10]);
-      setAppliedPopularityRange([50, 1000]);
+      updateFiltersAndResetPage({ rating: '7-10', popularity: '50-1000' });
     } else if (type === "boxoffice") {
-      // Search for high revenue movies
-      setAppliedSearchText("revenue");
+      updateFiltersAndResetPage({ search: 'revenue' });
     }
-    handlePageChange(1);
   };
 
 
@@ -437,17 +451,13 @@ const Movies = () => {
       console.warn("[Movies] Attempted to set user_rating sort without logged in user - defaulting to rating");
       setSortBy("rating");
       setSortOrder("desc");
-      setAppliedSortBy("rating");
-      setAppliedSortOrder("desc");
-      handlePageChange(1);
+      updateFiltersAndResetPage({ sortBy: 'rating', sortOrder: 'desc' });
       return;
     }
     
     setSortBy(field);
     setSortOrder(order);
-    setAppliedSortBy(field);
-    setAppliedSortOrder(order);
-    handlePageChange(1);
+    updateFiltersAndResetPage({ sortBy: field, sortOrder: order });
   };
   const renderPagination = () => {
     if (totalPages <= 1) return null;
@@ -539,16 +549,27 @@ const Movies = () => {
       <div className="container mx-auto max-w-7xl px-4 py-8">
         {/* Filters */}
         <div className="mb-8">
-          <FilterPanel selectedGenres={appliedGenres} onGenreToggle={handleGenreToggle} ratingRange={appliedRatingRange} onRatingRangeChange={range => {
-          setAppliedRatingRange(range);
-          handlePageChange(1);
-        }} yearRange={appliedYearRange} onYearRangeChange={range => {
-          setAppliedYearRange(range);
-          handlePageChange(1);
-        }} searchText={appliedSearchText} onSearchTextChange={text => {
-          setAppliedSearchText(text);
-          handlePageChange(1);
-        }} onReset={handleResetFilters} />
+          <FilterPanel 
+            selectedGenres={appliedGenres} 
+            onGenreToggle={handleGenreToggle} 
+            ratingRange={appliedRatingRange} 
+            onRatingRangeChange={(range) => {
+              updateFiltersAndResetPage({ 
+                rating: range[0] !== 0 || range[1] !== 10 ? `${range[0]}-${range[1]}` : null 
+              });
+            }} 
+            yearRange={appliedYearRange} 
+            onYearRangeChange={(range) => {
+              updateFiltersAndResetPage({ 
+                year: range[0] !== 1900 || range[1] !== 2030 ? `${range[0]}-${range[1]}` : null 
+              });
+            }} 
+            searchText={appliedSearchText} 
+            onSearchTextChange={(text) => {
+              updateFiltersAndResetPage({ search: text || null });
+            }} 
+            onReset={handleResetFilters} 
+          />
         </div>
 
         {/* Results */}
@@ -587,10 +608,12 @@ const Movies = () => {
                   <SelectItem value="title-desc">Title (Z to A)</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={itemsPerPage.toString()} onValueChange={value => {
-              setItemsPerPage(parseInt(value));
-              handlePageChange(1);
-            }}>
+              <Select value={itemsPerPage.toString()} onValueChange={(value) => {
+                setItemsPerPage(parseInt(value));
+                const newParams = new URLSearchParams(searchParams);
+                newParams.delete('page'); // Reset to page 1
+                setSearchParams(newParams, { replace: true });
+              }}>
                 <SelectTrigger className="w-[130px]">
                   <SelectValue placeholder="Per page" />
                 </SelectTrigger>
