@@ -94,7 +94,7 @@ const Watchlist = () => {
             <p className="text-muted-foreground mb-6 max-w-md">
               Start adding movies to your watchlist to keep track of what you want to watch!
             </p>
-            <Button onClick={() => navigate('/items')}>
+            <Button onClick={() => navigate('/movies')}>
               Browse Movies
             </Button>
           </div>

@@ -19,7 +19,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-const ITEMS_PER_PAGE = 48;
+const MOVIES_PER_PAGE = 48;
 
 const SEARCH_SUGGESTIONS = [
   "Inception",
@@ -32,7 +32,7 @@ const SEARCH_SUGGESTIONS = [
   "Drama",
 ];
 
-const Items = () => {
+const Movies = () => {
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [displayedMovies, setDisplayedMovies] = useState<any[]>([]);
@@ -52,11 +52,11 @@ const Items = () => {
   }, [searchText]);
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["items", offset, debouncedSearch],
+    queryKey: ["movies", offset, debouncedSearch],
     enabled: !authLoading,
     queryFn: async () => {
       const from = offset;
-      const to = from + ITEMS_PER_PAGE - 1;
+      const to = from + MOVIES_PER_PAGE - 1;
 
       let query = supabase
         .from("movies")
@@ -148,7 +148,7 @@ const Items = () => {
   const hasMore = displayedMovies.length < totalCount;
 
   const handleLoadMore = () => {
-    setOffset(prev => prev + ITEMS_PER_PAGE);
+    setOffset(prev => prev + MOVIES_PER_PAGE);
   };
 
   const handleOpenDetail = (movieId: string) => {
@@ -293,7 +293,7 @@ const Items = () => {
         </div>
 
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold">All Items</h1>
+          <h1 className="text-3xl font-bold">All Movies</h1>
           <p className="text-muted-foreground">
             Showing {displayedMovies.length} of {totalCount} {totalCount === 1 ? "movie" : "movies"}
           </p>
@@ -309,13 +309,13 @@ const Items = () => {
 
         {error && (
           <Card className="p-8 text-center">
-            <p className="text-destructive">Error loading items: {error.message}</p>
+            <p className="text-destructive">Error loading movies: {error.message}</p>
           </Card>
         )}
 
         {!isLoading && displayedMovies.length === 0 && !searchText && (
           <Card className="p-8 text-center">
-            <p className="text-muted-foreground">No items found</p>
+            <p className="text-muted-foreground">No movies found</p>
           </Card>
         )}
 
@@ -377,4 +377,4 @@ const Items = () => {
   );
 };
 
-export default Items;
+export default Movies;
