@@ -19,31 +19,41 @@ const GenreArchive = () => {
   const { data: movies, isLoading } = useQuery({
     queryKey: ["genreMovies", decodedGenreName],
     queryFn: async () => {
-      // Fetch movies with a reasonable limit to avoid timeout
-      const { data, error } = await supabase
+      // Try exact match first (most common case)
+      let { data, error } = await supabase
         .from("movies")
-        .select("*")
-        .not("genres", "is", null)
+        .select("id, title, year, rating, imdb_rating, imdb_votes, genres, poster, local_poster_url, imdb_id")
+        .contains("genres", [decodedGenreName])
         .order("imdb_rating", { ascending: false, nullsFirst: false })
-        .limit(2000);
+        .limit(500);
 
       if (error) {
         console.error("Genre query error:", error);
         throw error;
       }
       
-      // Normalize function to handle hyphens, spaces, and case in genre names
-      const normalize = (str: string) => str.toLowerCase().replace(/[-\s]/g, '');
-      const normalizedSearch = normalize(decodedGenreName);
+      // If no exact match, try normalized matching for variations like "Sci-Fi" vs "SciFi"
+      if (!data || data.length === 0) {
+        const { data: allGenreMovies, error: fallbackError } = await supabase
+          .from("movies")
+          .select("id, title, year, rating, imdb_rating, imdb_votes, genres, poster, local_poster_url, imdb_id")
+          .not("genres", "is", null)
+          .order("imdb_rating", { ascending: false, nullsFirst: false })
+          .limit(1000);
+
+        if (fallbackError) throw fallbackError;
+        
+        const normalize = (str: string) => str.toLowerCase().replace(/[-\s]/g, '');
+        const normalizedSearch = normalize(decodedGenreName);
+        
+        data = allGenreMovies?.filter(movie => 
+          movie.genres?.some((g: string) => 
+            normalize(g) === normalizedSearch
+          )
+        ) || [];
+      }
       
-      // Filter with normalized comparison to match "Sci-Fi", "Sci Fi", "SciFi", "Drama", "drama"
-      const filtered = data?.filter(movie => 
-        movie.genres?.some((g: string) => 
-          normalize(g) === normalizedSearch
-        )
-      ) || [];
-      
-      return filtered;
+      return data || [];
     },
     enabled: !!decodedGenreName,
   });

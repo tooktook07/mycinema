@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useEffectiveAuth } from "@/contexts/DevModeContext";
 import { MovieCard } from "@/components/MovieCard";
 import { MovieDetailModal } from "@/components/MovieDetailModal";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -36,32 +37,38 @@ const Movies = () => {
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [displayedMovies, setDisplayedMovies] = useState<any[]>([]);
-  const [offset, setOffset] = useState(0);
+  const [lastCursor, setLastCursor] = useState<string | null>(null);
   const [searchText, setSearchText] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [userRatingsMap, setUserRatingsMap] = useState<Record<string, number>>({});
   const { loading: authLoading } = useAuth();
+  const { user } = useEffectiveAuth();
 
   // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchText);
-      setOffset(0); // Reset offset when search changes
+      setLastCursor(null); // Reset cursor when search changes
       setDisplayedMovies([]); // Clear displayed movies
     }, 300);
     return () => clearTimeout(timer);
   }, [searchText]);
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["movies", offset, debouncedSearch],
+    queryKey: ["movies", lastCursor, debouncedSearch],
     enabled: !authLoading,
     queryFn: async () => {
-      const from = offset;
-      const to = from + MOVIES_PER_PAGE - 1;
-
+      // Select only needed columns for better performance
       let query = supabase
         .from("movies")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .select("id, title, year, rating, imdb_rating, imdb_votes, genres, poster, local_poster_url, imdb_id, created_at")
+        .order("created_at", { ascending: false })
+        .limit(MOVIES_PER_PAGE);
+
+      // Cursor-based pagination: fetch movies older than lastCursor
+      if (lastCursor) {
+        query = query.lt("created_at", lastCursor);
+      }
 
       // Apply search filter
       if (debouncedSearch) {
@@ -119,7 +126,7 @@ const Movies = () => {
           hasStructuredSearch = true;
         }
 
-        // If no structured pattern found, do simple text search (title, actors, director, plot only)
+        // If no structured pattern found, do simple text search
         if (!hasStructuredSearch) {
           const searchPattern = `%${debouncedSearch}%`;
           query = query.or(
@@ -128,35 +135,59 @@ const Movies = () => {
         }
       }
 
-      query = query.range(from, to);
+      const { data: moviesData, error: moviesError } = await query;
 
-      const { data, error } = await query;
+      if (moviesError) throw moviesError;
 
-      if (error) throw error;
+      // Batch load user ratings for all movies in this page
+      let ratingsData: Record<string, number> = {};
+      if (user && moviesData && moviesData.length > 0) {
+        const movieIds = moviesData.map(m => m.id);
+        const { data: ratings, error: ratingsError } = await supabase
+          .from('user_ratings')
+          .select('media_id, user_rating')
+          .eq('user_id', user.id)
+          .eq('media_type', 'movie')
+          .in('media_id', movieIds);
+
+        if (!ratingsError && ratings) {
+          ratingsData = ratings.reduce((acc, r) => {
+            if (r.user_rating) acc[r.media_id] = r.user_rating;
+            return acc;
+          }, {} as Record<string, number>);
+        }
+      }
       
-      // Estimate total: if we got a full page, assume there are more movies
-      // Show a reasonable upper estimate instead of exact count
-      const hasMore = data?.length === MOVIES_PER_PAGE;
-      const estimatedTotal = hasMore 
-        ? offset + MOVIES_PER_PAGE + MOVIES_PER_PAGE // Current page + at least one more page
-        : offset + (data?.length || 0); // Last page
+      const hasMore = moviesData?.length === MOVIES_PER_PAGE;
+      const newCursor = hasMore && moviesData.length > 0 
+        ? moviesData[moviesData.length - 1].created_at 
+        : null;
       
-      return { movies: data || [], totalCount: estimatedTotal };
+      return { 
+        movies: moviesData || [], 
+        hasMore,
+        newCursor,
+        ratingsMap: ratingsData
+      };
     },
   });
 
   // Append new movies to displayed movies when data changes
   useEffect(() => {
     if (data?.movies) {
-      setDisplayedMovies(prev => offset === 0 ? data.movies : [...prev, ...data.movies]);
+      setDisplayedMovies(prev => lastCursor === null ? data.movies : [...prev, ...data.movies]);
+      if (data.ratingsMap) {
+        setUserRatingsMap(prev => ({ ...prev, ...data.ratingsMap }));
+      }
     }
-  }, [data?.movies, offset]);
+  }, [data?.movies, data?.ratingsMap, lastCursor]);
 
-  const totalCount = data?.totalCount || 0;
-  const hasMore = displayedMovies.length < totalCount;
+  const hasMore = data?.hasMore || false;
 
   const handleLoadMore = () => {
-    setOffset(prev => prev + MOVIES_PER_PAGE);
+    if (data?.newCursor) {
+      setLastCursor(data.newCursor);
+    }
   };
 
   const handleOpenDetail = (movieId: string) => {
@@ -303,11 +334,12 @@ const Movies = () => {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold">Movies</h1>
           <p className="text-muted-foreground">
-            Showing {displayedMovies.length} of {totalCount} {totalCount === 1 ? "movie" : "movies"}
+            {displayedMovies.length > 0 && `Showing ${displayedMovies.length} ${displayedMovies.length === 1 ? "movie" : "movies"}`}
+            {hasMore && " • Load more to see additional results"}
           </p>
         </div>
 
-        {isLoading && offset === 0 && (
+        {isLoading && lastCursor === null && (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {Array.from({ length: 48 }).map((_, i) => (
               <Skeleton key={i} className="aspect-[2/3] rounded-lg" />
@@ -347,12 +379,9 @@ const Movies = () => {
                   poster={movie.poster || ""}
                   local_poster_url={movie.local_poster_url}
                   imdbId={movie.imdb_id}
-                  plot={movie.plot}
-                  director={movie.director}
-                  actors={movie.actors}
-                  runtime={movie.runtime}
                   imdbRating={movie.imdb_rating}
                   imdbVotes={movie.imdb_votes}
+                  preloadedUserRating={userRatingsMap[movie.id] ?? null}
                   onOpenDetail={handleOpenDetail}
                 />
               ))}

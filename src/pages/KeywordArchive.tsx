@@ -19,30 +19,41 @@ const KeywordArchive = () => {
   const { data: movies, isLoading } = useQuery({
     queryKey: ["keywordMovies", decodedKeyword],
     queryFn: async () => {
-      // Normalize function to handle hyphens and spaces in keyword names
-      const normalize = (str: string) => str.toLowerCase().replace(/[-\s]/g, '');
-      const normalizedSearch = normalize(decodedKeyword);
-      
-      const { data, error } = await supabase
+      // Try exact match first (most common case)
+      let { data, error } = await supabase
         .from("movies")
-        .select("*")
-        .not("keywords", "is", null)
+        .select("id, title, year, rating, imdb_rating, imdb_votes, genres, poster, local_poster_url, imdb_id")
+        .contains("keywords", [decodedKeyword])
         .order("imdb_rating", { ascending: false, nullsFirst: false })
-        .limit(5000);
+        .limit(500);
 
       if (error) {
         console.error("Keyword query error:", error);
         throw error;
       }
       
-      // Filter with normalized comparison to match variations with/without hyphens
-      const filtered = data?.filter(movie => 
-        movie.keywords?.some((k: string) => 
-          normalize(k) === normalizedSearch
-        )
-      ) || [];
+      // If no exact match, try normalized matching for variations
+      if (!data || data.length === 0) {
+        const { data: allKeywordMovies, error: fallbackError } = await supabase
+          .from("movies")
+          .select("id, title, year, rating, imdb_rating, imdb_votes, genres, poster, local_poster_url, imdb_id, keywords")
+          .not("keywords", "is", null)
+          .order("imdb_rating", { ascending: false, nullsFirst: false })
+          .limit(1000);
+
+        if (fallbackError) throw fallbackError;
+        
+        const normalize = (str: string) => str.toLowerCase().replace(/[-\s]/g, '');
+        const normalizedSearch = normalize(decodedKeyword);
+        
+        data = allKeywordMovies?.filter(movie => 
+          movie.keywords?.some((k: string) => 
+            normalize(k) === normalizedSearch
+          )
+        ).map(({ keywords, ...movie }) => movie) || [];
+      }
       
-      return filtered;
+      return data || [];
     },
     enabled: !!decodedKeyword,
   });
