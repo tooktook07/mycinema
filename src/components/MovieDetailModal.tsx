@@ -419,7 +419,7 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-6xl max-h-[95vh] p-0 gap-0 overflow-hidden">
+      <DialogContent className="w-[95vw] max-w-6xl max-h-[95vh] p-0 gap-0">
         {isLoading ? (
           <div className="p-6 space-y-4">
             <Skeleton className="h-8 w-3/4" />
@@ -434,7 +434,7 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
         ) : movie ? (
           <>
             {/* Hero Section with Poster */}
-            <div className="relative overflow-hidden bg-gradient-to-b from-background/50 to-background pb-20 md:pb-0">
+            <div className="relative overflow-hidden bg-gradient-to-b from-background/50 to-background">
               {imageProps && (
                 <img
                   {...imageProps}
@@ -540,8 +540,8 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                         )}
                       </div>
 
-                      {/* Action Buttons - Hidden on mobile, shown in sticky bar */}
-                      <div className="hidden md:flex flex-wrap gap-2 w-full md:w-auto">
+                      {/* Action Buttons */}
+                      <div className="flex flex-wrap gap-2 w-full md:w-auto">
                         {hasValidImdbId && (
                           <Button variant="outline" size="sm" asChild>
                             <a href={imdbUrl} target="_blank" rel="noopener noreferrer">
@@ -653,103 +653,6 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
-
-              {/* Sticky Action Bar for Mobile */}
-              <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t p-3 flex gap-2 justify-between items-center z-50">
-                <div className="flex gap-2">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button 
-                          size="icon" 
-                          variant={currentRating === 1 ? "default" : "outline"}
-                          onClick={() => handleRate(1)}
-                          disabled={saving}
-                          className="h-9 w-9"
-                        >
-                          <ThumbsDown className={`h-4 w-4 ${currentRating === 1 ? 'fill-current' : ''}`} />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Not for me</TooltipContent>
-                    </Tooltip>
-                    
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button 
-                          size="icon" 
-                          variant={currentRating === 5 ? "default" : "outline"}
-                          onClick={() => handleRate(5)}
-                          disabled={saving}
-                          className="h-9 w-9"
-                        >
-                          <ThumbsUp className={`h-4 w-4 ${currentRating === 5 ? 'fill-current' : ''}`} />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>I liked this</TooltipContent>
-                    </Tooltip>
-                    
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button 
-                          size="icon" 
-                          variant={currentRating === 10 ? "default" : "outline"}
-                          onClick={() => handleRate(10)}
-                          disabled={saving}
-                          className="h-9 w-9"
-                        >
-                          <Heart className={`h-4 w-4 ${currentRating === 10 ? 'fill-current' : ''}`} />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Love this!</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  
-                  <MovieWatchlist 
-                    movieId={movie.id} 
-                    movieTitle={movie.title} 
-                    iconOnly={true}
-                    onAddToWatchlist={handleNextSimilarMovie}
-                  />
-                </div>
-
-                <div className="flex gap-2">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button 
-                          size="icon" 
-                          variant="outline"
-                          onClick={handlePreviousMovie}
-                          disabled={!canGoBack}
-                        >
-                          <ArrowLeft className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {canGoBack ? "Previous" : "No previous"}
-                      </TooltipContent>
-                    </Tooltip>
-
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button 
-                          size="icon" 
-                          variant="default"
-                          onClick={handleNextSimilarMovie}
-                          disabled={loadingNextMovie}
-                        >
-                          {loadingNextMovie ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Sparkles className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Next Similar</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
                 </div>
               </div>
             </div>
