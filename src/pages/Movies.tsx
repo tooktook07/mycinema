@@ -85,37 +85,41 @@ const Movies = () => {
     }
   }, [user, sortBy]);
 
+  // Convert URL params to stable string for memoization - prevents race conditions
+  const searchParamsString = searchParams.toString();
+
   // Read filter values directly from URL with stable references (useMemo prevents array recreation)
   const appliedGenres = useMemo(() => {
     const genresParam = searchParams.get('genres');
     return genresParam ? genresParam.split(',').filter(Boolean) : [];
-  }, [searchParams.get('genres')]);
+  }, [searchParamsString]);
 
   const appliedRatingRange = useMemo((): [number, number] => {
     const ratingParam = searchParams.get('rating');
     return ratingParam 
       ? ratingParam.split('-').map(Number) as [number, number]
       : [0, 10];
-  }, [searchParams.get('rating')]);
+  }, [searchParamsString]);
 
   const appliedYearRange = useMemo((): [number, number] => {
     const yearParam = searchParams.get('year');
     return yearParam 
       ? yearParam.split('-').map(Number) as [number, number]
       : [1900, 2030];
-  }, [searchParams.get('year')]);
+  }, [searchParamsString]);
 
   const appliedSearchText = useMemo(() => {
     return searchParams.get('search') || "";
-  }, [searchParams.get('search')]);
+  }, [searchParamsString]);
 
   const appliedPopularityRange = useMemo((): [number, number] => {
     const popularityParam = searchParams.get('popularity');
     return popularityParam 
       ? popularityParam.split('-').map(Number) as [number, number]
       : [0, 1000];
-  }, [searchParams.get('popularity')]);
-  // Debug: Log when memoized filter values change
+  }, [searchParamsString]);
+
+  // Debug: Log when URL changes trigger filter updates
   useEffect(() => {
     console.log("[Movies] Filter values updated:", {
       genres: appliedGenres,
@@ -124,7 +128,7 @@ const Movies = () => {
       search: appliedSearchText,
       popularity: appliedPopularityRange
     });
-  }, [appliedGenres, appliedRatingRange, appliedYearRange, appliedSearchText, appliedPopularityRange]);
+  }, [searchParamsString]);
 
   // Helper to update filters and reset page in one call
   const updateFiltersAndResetPage = (updates: Record<string, any>) => {
