@@ -784,7 +784,7 @@ const Index = () => {
         {/* Recommendations for all users */}
         <div className="space-y-6">
           <div className="space-y-2">
-            <h2 className="text-2xl font-semibold leading-none tracking-tight flex items-center gap-2">
+            <h2 className="text-lg sm:text-2xl font-semibold leading-none tracking-tight flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-yellow-500" />
               AI Recommendations For You
             </h2>
