@@ -42,15 +42,6 @@ const Movies = () => {
     return pageParam ? parseInt(pageParam, 10) : 1;
   });
   
-  // Sync currentPage with URL parameter changes
-  useEffect(() => {
-    const pageParam = searchParams.get('page');
-    const urlPage = pageParam ? parseInt(pageParam, 10) : 1;
-    if (urlPage !== currentPage) {
-      setCurrentPage(urlPage);
-    }
-  }, [searchParams]);
-  
   const [itemsPerPage, setItemsPerPage] = useState(50); // Optimized: reduced from 100
   
   // Initialize sort preferences with "random" as default for new users
