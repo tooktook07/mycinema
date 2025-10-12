@@ -16,6 +16,13 @@ const GenreArchive = () => {
   const decodedGenreName = genre ? decodeArchiveSlug(genre) : "";
   const displayGenreName = toTitleCase(decodedGenreName);
   
+  console.log("🔍 GenreArchive Debug:", {
+    urlParam: genre,
+    decoded: decodedGenreName,
+    titleCase: toTitleCase(decodedGenreName),
+    display: displayGenreName
+  });
+  
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [displayedMovies, setDisplayedMovies] = useState<any[]>([]);
@@ -27,22 +34,35 @@ const GenreArchive = () => {
     queryFn: async () => {
       const from = offset;
       const to = from + MOVIES_PER_PAGE - 1;
+      const searchGenre = toTitleCase(decodedGenreName);
+
+      console.log("🔍 Query attempt:", { searchGenre, from, to });
 
       // Try exact match with .contains() using TitleCase for performance
       const { data: exactMatch, error: exactError } = await supabase
         .from("movies")
         .select("id, title, year, rating, imdb_rating, imdb_votes, genres, poster, local_poster_url, imdb_id")
-        .contains("genres", [toTitleCase(decodedGenreName)])
+        .contains("genres", [searchGenre])
         .order("imdb_rating", { ascending: false, nullsFirst: false })
         .range(from, to);
+
+      console.log("🔍 Exact match result:", { 
+        error: exactError, 
+        count: exactMatch?.length,
+        firstMovie: exactMatch?.[0]?.title,
+        sampleGenres: exactMatch?.[0]?.genres
+      });
 
       if (!exactError && exactMatch && exactMatch.length > 0) {
         // Exact match found, use it with proper pagination
         const hasMore = exactMatch.length === MOVIES_PER_PAGE;
+        console.log("✅ Using exact match", { count: exactMatch.length, hasMore });
         return { movies: exactMatch, hasMore };
       }
 
       // Fallback to client-side filtering for edge cases
+      console.log("⚠️ Exact match failed, falling back to client-side filter");
+      
       const { data: allData, error } = await supabase
         .from("movies")
         .select("id, title, year, rating, imdb_rating, imdb_votes, genres, poster, local_poster_url, imdb_id")
@@ -51,13 +71,20 @@ const GenreArchive = () => {
         .range(0, 999);
 
       if (error) {
-        console.error("Genre query error:", error);
+        console.error("❌ Genre query error:", error);
         throw error;
       }
+
+      console.log("🔍 Fetched movies for filtering:", { 
+        total: allData?.length,
+        sampleGenres: allData?.slice(0, 3).map(m => ({ title: m.title, genres: m.genres }))
+      });
 
       // Filter client-side with case-insensitive and normalized matching
       const normalize = (str: string) => str.toLowerCase().replace(/[-\s]/g, '');
       const normalizedSearch = normalize(decodedGenreName);
+      
+      console.log("🔍 Normalized search:", normalizedSearch);
       
       const filtered = allData?.filter(movie => 
         movie.genres?.some((g: string) => 
@@ -65,9 +92,15 @@ const GenreArchive = () => {
         )
       ) || [];
 
+      console.log("🔍 Client-side filter result:", { 
+        matched: filtered.length,
+        sampleTitles: filtered.slice(0, 5).map(m => m.title)
+      });
+
       const paginatedData = filtered.slice(from, to + 1);
       const hasMore = filtered.length > to + 1;
       
+      console.log("✅ Returning paginated data:", { count: paginatedData.length, hasMore });
       return { movies: paginatedData, hasMore };
     },
     enabled: !!decodedGenreName,
@@ -101,10 +134,19 @@ const GenreArchive = () => {
   });
 
   useEffect(() => {
+    console.log("🔍 useEffect triggered:", { 
+      isInitialMount: isInitialMount.current,
+      hasData: !!data?.movies,
+      movieCount: data?.movies?.length,
+      offset,
+      currentDisplayed: displayedMovies.length
+    });
+
     // Skip clearing on initial mount to prevent race condition
     if (isInitialMount.current) {
       isInitialMount.current = false;
       if (data?.movies) {
+        console.log("✅ Setting initial movies:", data.movies.length);
         setDisplayedMovies(data.movies);
       }
       return;
@@ -112,8 +154,10 @@ const GenreArchive = () => {
 
     if (data?.movies) {
       if (offset === 0) {
+        console.log("✅ Resetting displayed movies:", data.movies.length);
         setDisplayedMovies(data.movies);
       } else {
+        console.log("✅ Appending movies:", data.movies.length);
         setDisplayedMovies(prev => [...prev, ...data.movies]);
       }
     }
