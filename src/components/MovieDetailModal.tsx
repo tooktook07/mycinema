@@ -438,155 +438,153 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
           </div>
         ) : movie ? (
           <ScrollArea className="h-full">
-            {/* Hero Poster Section */}
-            <div className="relative h-[50vh] min-h-[300px] max-h-[500px]">
-              {imageProps && (
-                <img
-                  {...imageProps}
-                  alt={movie.title}
-                  className="w-full h-full object-cover"
-                />
-              )}
-              
-              {/* Stronger Gradient Overlay with blur backdrop */}
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/90 to-background/30 backdrop-blur-[2px]" />
-              
-              {/* Title & Info Overlay */}
-              <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6">
-                <div className="flex items-start justify-between gap-2 mb-3">
-                  <div className="flex-1">
-                    <h2 className="text-2xl sm:text-3xl font-bold mb-1 leading-tight">{movie.title}</h2>
-                    {movie.tagline && (
-                      <p className="text-sm text-muted-foreground italic line-clamp-2">"{movie.tagline}"</p>
+            {/* Portrait Poster & Header Section */}
+            <div className="p-3 sm:p-6">
+              <div className="flex gap-3 sm:gap-4 mb-3 sm:mb-4">
+                {/* Portrait Poster */}
+                {imageProps && (
+                  <div className="w-24 sm:w-32 flex-shrink-0">
+                    <img
+                      {...imageProps}
+                      alt={movie.title}
+                      className="w-full rounded-lg shadow-lg"
+                    />
+                  </div>
+                )}
+                
+                {/* Title & Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-1 mb-2">
+                    <h2 className="text-base sm:text-2xl font-bold leading-tight">{movie.title}</h2>
+                    {relevanceReason && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 sm:h-8 sm:w-8 shrink-0">
+                              <Info className="h-3 w-3 sm:h-4 sm:w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs text-xs">
+                            <p className="font-semibold mb-1">Why this movie?</p>
+                            <p>{relevanceReason}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     )}
                   </div>
-                  {relevanceReason && (
+                  
+                  {movie.tagline && (
+                    <p className="text-xs sm:text-sm text-muted-foreground italic line-clamp-2 mb-2">"{movie.tagline}"</p>
+                  )}
+
+                  {/* Quick Info Badges */}
+                  <div className="flex flex-wrap gap-1 sm:gap-1.5 mb-2 sm:mb-3">
+                    <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0 sm:px-2 sm:py-0.5 h-5 sm:h-auto">
+                      <Calendar className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
+                      {movie.year}
+                    </Badge>
+                    {movie.runtime && (
+                      <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0 sm:px-2 sm:py-0.5 h-5 sm:h-auto">
+                        <Film className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
+                        {movie.runtime}
+                      </Badge>
+                    )}
+                    {(movie.imdb_rating || movie.rating) && (
+                      <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0 sm:px-2 sm:py-0.5 h-5 sm:h-auto">
+                        <Star className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1 fill-yellow-500 text-yellow-500" />
+                        {movie.imdb_rating || movie.rating}/10
+                      </Badge>
+                    )}
+                    {movie.original_language && (
+                      <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0 sm:px-2 sm:py-0.5 h-5 sm:h-auto">
+                        <Globe className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
+                        {movie.original_language.toUpperCase()}
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-wrap gap-1 sm:gap-2">
                     <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                            <Info className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                          <p className="font-semibold mb-1">Why this movie?</p>
-                          <p className="text-sm">{relevanceReason}</p>
-                        </TooltipContent>
-                      </Tooltip>
+                      <div className="flex gap-1 sm:gap-2 flex-1">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              size="sm"
+                              variant={currentRating === 1 ? "default" : "secondary"}
+                              onClick={() => handleRate(1)}
+                              disabled={saving}
+                              className="flex-1 h-7 sm:h-9 text-[10px] sm:text-sm px-1.5 sm:px-3"
+                            >
+                              <ThumbsDown className={`h-3 w-3 sm:h-4 sm:w-4 sm:mr-2 ${currentRating === 1 ? 'fill-current' : ''}`} />
+                              <span className="hidden sm:inline">Not for me</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent className="text-xs">Not for me</TooltipContent>
+                        </Tooltip>
+                        
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              size="sm"
+                              variant={currentRating === 5 ? "default" : "secondary"}
+                              onClick={() => handleRate(5)}
+                              disabled={saving}
+                              className="flex-1 h-7 sm:h-9 text-[10px] sm:text-sm px-1.5 sm:px-3"
+                            >
+                              <ThumbsUp className={`h-3 w-3 sm:h-4 sm:w-4 sm:mr-2 ${currentRating === 5 ? 'fill-current' : ''}`} />
+                              <span className="hidden sm:inline">I like it</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent className="text-xs">I like it</TooltipContent>
+                        </Tooltip>
+                        
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              size="sm"
+                              variant={currentRating === 10 ? "default" : "secondary"}
+                              onClick={() => handleRate(10)}
+                              disabled={saving}
+                              className="flex-1 h-7 sm:h-9 text-[10px] sm:text-sm px-1.5 sm:px-3"
+                            >
+                              <Heart className={`h-3 w-3 sm:h-4 sm:w-4 sm:mr-2 ${currentRating === 10 ? 'fill-current' : ''}`} />
+                              <span className="hidden sm:inline">Love it!</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent className="text-xs">Love it!</TooltipContent>
+                        </Tooltip>
+                      </div>
+                      
+                      <MovieWatchlist 
+                        movieId={movie.id} 
+                        movieTitle={movie.title} 
+                        iconOnly={false}
+                        onAddToWatchlist={handleNextSimilarMovie}
+                      />
                     </TooltipProvider>
-                  )}
-                </div>
-
-                {/* Quick Info Badges */}
-                <div className="flex flex-wrap gap-2 mb-3">
-                  <Badge variant="secondary" className="text-xs">
-                    <Calendar className="h-3 w-3 mr-1" />
-                    {movie.year}
-                  </Badge>
-                  {movie.runtime && (
-                    <Badge variant="secondary" className="text-xs">
-                      <Film className="h-3 w-3 mr-1" />
-                      {movie.runtime}
-                    </Badge>
-                  )}
-                  {(movie.imdb_rating || movie.rating) && (
-                    <Badge variant="secondary" className="text-xs">
-                      <Star className="h-3 w-3 mr-1 fill-yellow-500 text-yellow-500" />
-                      {movie.imdb_rating || movie.rating}/10
-                    </Badge>
-                  )}
-                  {movie.original_language && (
-                    <Badge variant="secondary" className="text-xs">
-                      <Globe className="h-3 w-3 mr-1" />
-                      {movie.original_language.toUpperCase()}
-                    </Badge>
-                  )}
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex flex-wrap gap-2">
-                  <TooltipProvider>
-                    <div className="flex gap-2 flex-1">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button 
-                            size="sm"
-                            variant={currentRating === 1 ? "default" : "secondary"}
-                            onClick={() => handleRate(1)}
-                            disabled={saving}
-                            className="flex-1 sm:flex-none"
-                          >
-                            <ThumbsDown className={`h-4 w-4 sm:mr-2 ${currentRating === 1 ? 'fill-current' : ''}`} />
-                            <span className="hidden sm:inline">Not for me</span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Not for me</TooltipContent>
-                      </Tooltip>
-                      
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button 
-                            size="sm"
-                            variant={currentRating === 5 ? "default" : "secondary"}
-                            onClick={() => handleRate(5)}
-                            disabled={saving}
-                            className="flex-1 sm:flex-none"
-                          >
-                            <ThumbsUp className={`h-4 w-4 sm:mr-2 ${currentRating === 5 ? 'fill-current' : ''}`} />
-                            <span className="hidden sm:inline">I like it</span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>I like it</TooltipContent>
-                      </Tooltip>
-                      
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button 
-                            size="sm"
-                            variant={currentRating === 10 ? "default" : "secondary"}
-                            onClick={() => handleRate(10)}
-                            disabled={saving}
-                            className="flex-1 sm:flex-none"
-                          >
-                            <Heart className={`h-4 w-4 sm:mr-2 ${currentRating === 10 ? 'fill-current' : ''}`} />
-                            <span className="hidden sm:inline">Love it!</span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Love it!</TooltipContent>
-                      </Tooltip>
-                    </div>
-                    
-                    <MovieWatchlist 
-                      movieId={movie.id} 
-                      movieTitle={movie.title} 
-                      iconOnly={false}
-                      onAddToWatchlist={handleNextSimilarMovie}
-                    />
-                  </TooltipProvider>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Content Section */}
-            <div className="p-4 sm:p-6">
               {/* Plot */}
               {movie.plot && (
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-2">Overview</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{movie.plot}</p>
+                <div className="mb-3 sm:mb-4">
+                  <h3 className="text-sm sm:text-base font-semibold mb-1.5 sm:mb-2">Overview</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">{movie.plot}</p>
                 </div>
               )}
 
               {/* Navigation Buttons */}
-              <div className="flex gap-2 mb-6">
+              <div className="flex gap-1.5 sm:gap-2 mb-3 sm:mb-4">
                 <Button 
                   variant="outline"
                   size="sm"
                   onClick={handlePreviousMovie}
                   disabled={!canGoBack}
-                  className="flex-1"
+                  className="flex-1 h-7 sm:h-9 text-[10px] sm:text-sm px-2 sm:px-4"
                 >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   Previous
                 </Button>
                 <Button 
@@ -594,12 +592,12 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                   size="sm"
                   onClick={handleNextSimilarMovie}
                   disabled={loadingNextMovie}
-                  className="flex-1"
+                  className="flex-1 h-7 sm:h-9 text-[10px] sm:text-sm px-2 sm:px-4"
                 >
                   {loadingNextMovie ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin" />
                   ) : (
-                    <Sparkles className="h-4 w-4 mr-2" />
+                    <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   )}
                   Next Similar
                 </Button>
@@ -607,41 +605,41 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
 
               {/* Tabs for Organized Content */}
               <Tabs defaultValue="details" className="w-full">
-                <TabsList className="w-full grid grid-cols-3 mb-4">
-                  <TabsTrigger value="details">Details</TabsTrigger>
-                  <TabsTrigger value="cast">Cast & Crew</TabsTrigger>
-                  <TabsTrigger value="more">More</TabsTrigger>
+                <TabsList className="w-full grid grid-cols-3 mb-3 sm:mb-4 h-8 sm:h-10">
+                  <TabsTrigger value="details" className="text-[10px] sm:text-sm px-2 sm:px-4">Details</TabsTrigger>
+                  <TabsTrigger value="cast" className="text-[10px] sm:text-sm px-2 sm:px-4">Cast</TabsTrigger>
+                  <TabsTrigger value="more" className="text-[10px] sm:text-sm px-2 sm:px-4">More</TabsTrigger>
                 </TabsList>
 
                 {/* Details Tab */}
-                <TabsContent value="details" className="space-y-4">
+                <TabsContent value="details" className="space-y-2 sm:space-y-3">
                   {/* Genres */}
                   {movie.genres && movie.genres.length > 0 && (
-                    <Card className="p-4">
-                      <h4 className="text-sm font-semibold mb-2 text-muted-foreground uppercase tracking-wide">Genres</h4>
-                      <div className="flex flex-wrap gap-1.5">
+                    <Card className="p-2 sm:p-3">
+                      <h4 className="text-[10px] sm:text-xs font-semibold mb-1.5 sm:mb-2 text-muted-foreground uppercase tracking-wide">Genres</h4>
+                      <div className="flex flex-wrap gap-1">
                         {movie.genres.map((g) => (
-                          <Badge key={g} variant="secondary">{g}</Badge>
+                          <Badge key={g} variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0 h-5 sm:h-auto">{g}</Badge>
                         ))}
                       </div>
                     </Card>
                   )}
 
                   {/* External Links */}
-                  <Card className="p-4">
-                    <h4 className="text-sm font-semibold mb-2 text-muted-foreground uppercase tracking-wide">Links</h4>
-                    <div className="flex flex-wrap gap-2">
+                  <Card className="p-2 sm:p-3">
+                    <h4 className="text-[10px] sm:text-xs font-semibold mb-1.5 sm:mb-2 text-muted-foreground uppercase tracking-wide">Links</h4>
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
                       {hasValidImdbId && (
-                        <Button variant="outline" size="sm" asChild className="flex-1 sm:flex-none">
+                        <Button variant="outline" size="sm" asChild className="flex-1 sm:flex-none h-7 sm:h-9 text-[10px] sm:text-sm px-2 sm:px-3">
                           <a href={imdbUrl} target="_blank" rel="noopener noreferrer">
-                            <ExternalLink className="h-3 w-3 mr-1" />
+                            <ExternalLink className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1" />
                             IMDb
                           </a>
                         </Button>
                       )}
-                      <Button variant="outline" size="sm" asChild className="flex-1 sm:flex-none">
+                      <Button variant="outline" size="sm" asChild className="flex-1 sm:flex-none h-7 sm:h-9 text-[10px] sm:text-sm px-2 sm:px-3">
                         <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer nofollow">
-                          <Search className="h-3 w-3 mr-1" />
+                          <Search className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1" />
                           Google
                         </a>
                       </Button>
@@ -650,39 +648,39 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
 
                   {/* Awards */}
                   {movie.awards && movie.awards !== "N/A" && (
-                    <Card className="p-4 bg-gradient-to-br from-yellow-500/5 to-orange-500/5">
-                      <h4 className="text-sm font-semibold mb-2 text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                        <Award className="h-4 w-4" />
+                    <Card className="p-2 sm:p-3 bg-gradient-to-br from-yellow-500/5 to-orange-500/5">
+                      <h4 className="text-[10px] sm:text-xs font-semibold mb-1.5 sm:mb-2 text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                        <Award className="h-3 w-3 sm:h-4 sm:w-4" />
                         Awards
                       </h4>
-                      <p className="text-sm">{movie.awards}</p>
+                      <p className="text-[10px] sm:text-sm">{movie.awards}</p>
                     </Card>
                   )}
 
                   {/* Financial Info */}
                   {(movie.budget || movie.revenue || movie.box_office) && (
-                    <Card className="p-4">
-                      <h4 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                        <DollarSign className="h-4 w-4" />
+                    <Card className="p-2 sm:p-3">
+                      <h4 className="text-[10px] sm:text-xs font-semibold mb-2 text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                        <DollarSign className="h-3 w-3 sm:h-4 sm:w-4" />
                         Box Office
                       </h4>
-                      <div className="space-y-2">
+                      <div className="space-y-1 sm:space-y-1.5">
                         {movie.budget && (
                           <div className="flex justify-between items-center">
-                            <span className="text-sm text-muted-foreground">Budget</span>
-                            <span className="text-sm font-semibold">{formatCurrency(movie.budget)}</span>
+                            <span className="text-[10px] sm:text-xs text-muted-foreground">Budget</span>
+                            <span className="text-[10px] sm:text-xs font-semibold">{formatCurrency(movie.budget)}</span>
                           </div>
                         )}
                         {movie.revenue && (
                           <div className="flex justify-between items-center">
-                            <span className="text-sm text-muted-foreground">Revenue</span>
-                            <span className="text-sm font-semibold">{formatCurrency(movie.revenue)}</span>
+                            <span className="text-[10px] sm:text-xs text-muted-foreground">Revenue</span>
+                            <span className="text-[10px] sm:text-xs font-semibold">{formatCurrency(movie.revenue)}</span>
                           </div>
                         )}
                         {movie.box_office && (
                           <div className="flex justify-between items-center">
-                            <span className="text-sm text-muted-foreground">Box Office</span>
-                            <span className="text-sm font-semibold">{movie.box_office}</span>
+                            <span className="text-[10px] sm:text-xs text-muted-foreground">Box Office</span>
+                            <span className="text-[10px] sm:text-xs font-semibold">{movie.box_office}</span>
                           </div>
                         )}
                       </div>
@@ -691,18 +689,18 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
 
                   {/* Watch Providers */}
                   {watchProviders && (watchProviders.flatrate.length > 0 || watchProviders.rent.length > 0 || watchProviders.buy.length > 0) && (
-                    <Card className="p-4">
-                      <h4 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                        <Play className="h-4 w-4" />
+                    <Card className="p-2 sm:p-3">
+                      <h4 className="text-[10px] sm:text-xs font-semibold mb-2 text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                        <Play className="h-3 w-3 sm:h-4 sm:w-4" />
                         Where to Watch
                       </h4>
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         {watchProviders.flatrate.length > 0 && (
                           <div>
-                            <p className="text-xs text-muted-foreground mb-2">Streaming</p>
-                            <div className="flex flex-wrap gap-2">
+                            <p className="text-[9px] sm:text-xs text-muted-foreground mb-1">Streaming</p>
+                            <div className="flex flex-wrap gap-1">
                               {watchProviders.flatrate.map((provider: any) => (
-                                <div key={provider.provider_id} className="flex items-center gap-1 text-xs bg-muted rounded-md px-2 py-1">
+                                <div key={provider.provider_id} className="flex items-center gap-0.5 text-[9px] sm:text-xs bg-muted rounded px-1.5 py-0.5">
                                   {provider.provider_name}
                                 </div>
                               ))}
@@ -711,10 +709,10 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                         )}
                         {watchProviders.rent.length > 0 && (
                           <div>
-                            <p className="text-xs text-muted-foreground mb-2">Rent</p>
-                            <div className="flex flex-wrap gap-2">
+                            <p className="text-[9px] sm:text-xs text-muted-foreground mb-1">Rent</p>
+                            <div className="flex flex-wrap gap-1">
                               {watchProviders.rent.map((provider: any) => (
-                                <div key={provider.provider_id} className="flex items-center gap-1 text-xs bg-muted rounded-md px-2 py-1">
+                                <div key={provider.provider_id} className="flex items-center gap-0.5 text-[9px] sm:text-xs bg-muted rounded px-1.5 py-0.5">
                                   {provider.provider_name}
                                 </div>
                               ))}
@@ -723,10 +721,10 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                         )}
                         {watchProviders.buy.length > 0 && (
                           <div>
-                            <p className="text-xs text-muted-foreground mb-2">Buy</p>
-                            <div className="flex flex-wrap gap-2">
+                            <p className="text-[9px] sm:text-xs text-muted-foreground mb-1">Buy</p>
+                            <div className="flex flex-wrap gap-1">
                               {watchProviders.buy.map((provider: any) => (
-                                <div key={provider.provider_id} className="flex items-center gap-1 text-xs bg-muted rounded-md px-2 py-1">
+                                <div key={provider.provider_id} className="flex items-center gap-0.5 text-[9px] sm:text-xs bg-muted rounded px-1.5 py-0.5">
                                   {provider.provider_name}
                                 </div>
                               ))}
@@ -739,14 +737,14 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                 </TabsContent>
 
                 {/* Cast & Crew Tab */}
-                <TabsContent value="cast" className="space-y-4">
+                <TabsContent value="cast" className="space-y-2 sm:space-y-3">
                   {/* Director */}
                   {movie.director && (
-                    <Card className="p-4">
-                      <h4 className="text-sm font-semibold mb-2 text-muted-foreground uppercase tracking-wide">Director</h4>
-                      <div className="flex flex-wrap gap-1.5">
+                    <Card className="p-2 sm:p-3">
+                      <h4 className="text-[10px] sm:text-xs font-semibold mb-1.5 sm:mb-2 text-muted-foreground uppercase tracking-wide">Director</h4>
+                      <div className="flex flex-wrap gap-1">
                         {movie.director.split(",").map((d) => (
-                          <Badge key={d.trim()} variant="secondary">{d.trim()}</Badge>
+                          <Badge key={d.trim()} variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0 h-5 sm:h-auto">{d.trim()}</Badge>
                         ))}
                       </div>
                     </Card>
@@ -754,11 +752,11 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
 
                   {/* Writers */}
                   {movie.writing && (
-                    <Card className="p-4">
-                      <h4 className="text-sm font-semibold mb-2 text-muted-foreground uppercase tracking-wide">Writers</h4>
-                      <div className="flex flex-wrap gap-1.5">
+                    <Card className="p-2 sm:p-3">
+                      <h4 className="text-[10px] sm:text-xs font-semibold mb-1.5 sm:mb-2 text-muted-foreground uppercase tracking-wide">Writers</h4>
+                      <div className="flex flex-wrap gap-1">
                         {movie.writing.split(",").map((writer) => (
-                          <Badge key={writer.trim()} variant="secondary">{writer.trim()}</Badge>
+                          <Badge key={writer.trim()} variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0 h-5 sm:h-auto">{writer.trim()}</Badge>
                         ))}
                       </div>
                     </Card>
@@ -766,11 +764,11 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
 
                   {/* Cast */}
                   {movie.actors && (
-                    <Card className="p-4">
-                      <h4 className="text-sm font-semibold mb-2 text-muted-foreground uppercase tracking-wide">Cast</h4>
-                      <div className="flex flex-wrap gap-1.5">
+                    <Card className="p-2 sm:p-3">
+                      <h4 className="text-[10px] sm:text-xs font-semibold mb-1.5 sm:mb-2 text-muted-foreground uppercase tracking-wide">Cast</h4>
+                      <div className="flex flex-wrap gap-1">
                         {movie.actors.split(",").slice(0, 15).map((actor) => (
-                          <Badge key={actor.trim()} variant="outline">{actor.trim()}</Badge>
+                          <Badge key={actor.trim()} variant="outline" className="text-[10px] sm:text-xs px-1.5 py-0 h-5 sm:h-auto">{actor.trim()}</Badge>
                         ))}
                       </div>
                     </Card>
@@ -778,11 +776,11 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
 
                   {/* Sound */}
                   {movie.sound && (
-                    <Card className="p-4">
-                      <h4 className="text-sm font-semibold mb-2 text-muted-foreground uppercase tracking-wide">Sound Department</h4>
-                      <div className="flex flex-wrap gap-1.5">
+                    <Card className="p-2 sm:p-3">
+                      <h4 className="text-[10px] sm:text-xs font-semibold mb-1.5 sm:mb-2 text-muted-foreground uppercase tracking-wide">Sound</h4>
+                      <div className="flex flex-wrap gap-1">
                         {movie.sound.split(",").slice(0, 10).map((person) => (
-                          <Badge key={person.trim()} variant="outline" className="text-xs">{person.trim()}</Badge>
+                          <Badge key={person.trim()} variant="outline" className="text-[9px] sm:text-xs px-1.5 py-0 h-4 sm:h-5">{person.trim()}</Badge>
                         ))}
                       </div>
                     </Card>
@@ -790,14 +788,14 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                 </TabsContent>
 
                 {/* More Tab */}
-                <TabsContent value="more" className="space-y-4">
+                <TabsContent value="more" className="space-y-2 sm:space-y-3">
                   {/* Keywords */}
                   {movie.keywords && movie.keywords.length > 0 && (
-                    <Card className="p-4">
-                      <h4 className="text-sm font-semibold mb-2 text-muted-foreground uppercase tracking-wide">Keywords</h4>
-                      <div className="flex flex-wrap gap-1.5">
+                    <Card className="p-2 sm:p-3">
+                      <h4 className="text-[10px] sm:text-xs font-semibold mb-1.5 sm:mb-2 text-muted-foreground uppercase tracking-wide">Keywords</h4>
+                      <div className="flex flex-wrap gap-1">
                         {movie.keywords.map((keyword) => (
-                          <Badge key={keyword} variant="outline" className="text-xs">{keyword}</Badge>
+                          <Badge key={keyword} variant="outline" className="text-[9px] sm:text-xs px-1.5 py-0 h-4 sm:h-5">{keyword}</Badge>
                         ))}
                       </div>
                     </Card>
@@ -805,41 +803,41 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
 
                   {/* Production */}
                   {movie.production_companies && Array.isArray(movie.production_companies) && movie.production_companies.length > 0 && (
-                    <Card className="p-4">
-                      <h4 className="text-sm font-semibold mb-2 text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                        <Briefcase className="h-4 w-4" />
-                        Production Companies
+                    <Card className="p-2 sm:p-3">
+                      <h4 className="text-[10px] sm:text-xs font-semibold mb-1.5 sm:mb-2 text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                        <Briefcase className="h-3 w-3 sm:h-4 sm:w-4" />
+                        Production
                       </h4>
-                      <div className="flex flex-wrap gap-1.5">
+                      <div className="flex flex-wrap gap-1">
                         {movie.production_companies.map((company: any, idx: number) => (
-                          <Badge key={idx} variant="outline" className="text-xs">{company.name || company}</Badge>
+                          <Badge key={idx} variant="outline" className="text-[9px] sm:text-xs px-1.5 py-0 h-4 sm:h-5">{company.name || company}</Badge>
                         ))}
                       </div>
                     </Card>
                   )}
 
                   {/* Countries & Languages */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                     {movie.production_countries && Array.isArray(movie.production_countries) && movie.production_countries.length > 0 && (
-                      <Card className="p-4">
-                        <h4 className="text-sm font-semibold mb-2 text-muted-foreground uppercase tracking-wide">Countries</h4>
-                        <div className="flex flex-wrap gap-1.5">
+                      <Card className="p-2 sm:p-3">
+                        <h4 className="text-[10px] sm:text-xs font-semibold mb-1.5 sm:mb-2 text-muted-foreground uppercase tracking-wide">Countries</h4>
+                        <div className="flex flex-wrap gap-1">
                           {movie.production_countries.map((country: any, idx: number) => (
-                            <Badge key={idx} variant="outline" className="text-xs">{country.name || country}</Badge>
+                            <Badge key={idx} variant="outline" className="text-[9px] sm:text-xs px-1.5 py-0 h-4 sm:h-5">{country.name || country}</Badge>
                           ))}
                         </div>
                       </Card>
                     )}
 
                     {movie.spoken_languages && Array.isArray(movie.spoken_languages) && movie.spoken_languages.length > 0 && (
-                      <Card className="p-4">
-                        <h4 className="text-sm font-semibold mb-2 text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                          <Languages className="h-4 w-4" />
+                      <Card className="p-2 sm:p-3">
+                        <h4 className="text-[10px] sm:text-xs font-semibold mb-1.5 sm:mb-2 text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                          <Languages className="h-3 w-3 sm:h-4 sm:w-4" />
                           Languages
                         </h4>
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="flex flex-wrap gap-1">
                           {movie.spoken_languages.map((lang: any, idx: number) => (
-                            <Badge key={idx} variant="outline" className="text-xs">{lang.english_name || lang.name || lang}</Badge>
+                            <Badge key={idx} variant="outline" className="text-[9px] sm:text-xs px-1.5 py-0 h-4 sm:h-5">{lang.english_name || lang.name || lang}</Badge>
                           ))}
                         </div>
                       </Card>
@@ -850,14 +848,14 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
 
               {/* Similar Movies */}
               {similarMovies && similarMovies.length > 0 && (
-                <div className="mt-6">
-                  <h3 className="text-lg font-semibold mb-3">Similar Movies</h3>
+                <div className="mt-3 sm:mt-4">
+                  <h3 className="text-sm sm:text-base font-semibold mb-2 sm:mb-3">Similar Movies</h3>
                   <Carousel className="w-full">
-                    <CarouselContent>
+                    <CarouselContent className="-ml-1 sm:-ml-2">
                       {similarMovies.slice(0, 6).map((similar) => {
                         const similarImageProps = getOptimizedImageProps(similar.poster, similar.local_poster_url);
                         return (
-                          <CarouselItem key={similar.id} className="basis-1/2 sm:basis-1/3">
+                          <CarouselItem key={similar.id} className="basis-1/3 sm:basis-1/4 pl-1 sm:pl-2">
                             <Card 
                               className="cursor-pointer hover:ring-2 hover:ring-primary transition-all overflow-hidden"
                               onClick={() => onNavigateToMovie?.(similar.id)}
