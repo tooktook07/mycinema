@@ -5,7 +5,7 @@ import { ArchiveLayout } from "@/components/ArchiveLayout";
 import { MovieCard } from "@/components/MovieCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MovieDetailModal } from "@/components/MovieDetailModal";
 import { decodeArchiveSlug, toTitleCase } from "@/lib/urlUtils";
 
@@ -20,38 +20,29 @@ const GenreArchive = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [displayedMovies, setDisplayedMovies] = useState<any[]>([]);
   const [offset, setOffset] = useState(0);
-
-  // State to cache all filtered movie IDs
-  const [allFilteredMovies, setAllFilteredMovies] = useState<any[]>([]);
+  const isInitialMount = useRef(true);
 
   const { data, isLoading, isFetched } = useQuery({
     queryKey: ["genreMovies", decodedGenreName, offset],
     queryFn: async () => {
-      // If we already have filtered movies cached and offset > 0, paginate from cache
-      if (offset > 0 && allFilteredMovies.length > 0) {
-        const from = offset;
-        const to = from + MOVIES_PER_PAGE - 1;
-        const paginatedData = allFilteredMovies.slice(from, to + 1);
-        const hasMore = allFilteredMovies.length > to + 1;
-        return { movies: paginatedData, hasMore };
-      }
+      const from = offset;
+      const to = from + MOVIES_PER_PAGE - 1;
 
-      // First try exact match with .contains() for performance
+      // Try exact match with .contains() using TitleCase for performance
       const { data: exactMatch, error: exactError } = await supabase
         .from("movies")
         .select("id, title, year, rating, imdb_rating, imdb_votes, genres, poster, local_poster_url, imdb_id")
         .contains("genres", [toTitleCase(decodedGenreName)])
         .order("imdb_rating", { ascending: false, nullsFirst: false })
-        .range(0, 999);
+        .range(from, to);
 
       if (!exactError && exactMatch && exactMatch.length > 0) {
-        // Exact match found, use it
-        const paginatedData = exactMatch.slice(0, MOVIES_PER_PAGE);
-        const hasMore = exactMatch.length > MOVIES_PER_PAGE;
-        return { movies: paginatedData, hasMore, allFiltered: exactMatch };
+        // Exact match found, use it with proper pagination
+        const hasMore = exactMatch.length === MOVIES_PER_PAGE;
+        return { movies: exactMatch, hasMore };
       }
 
-      // Fallback to client-side filtering for case-insensitive matching
+      // Fallback to client-side filtering for edge cases
       const { data: allData, error } = await supabase
         .from("movies")
         .select("id, title, year, rating, imdb_rating, imdb_votes, genres, poster, local_poster_url, imdb_id")
@@ -74,10 +65,10 @@ const GenreArchive = () => {
         )
       ) || [];
 
-      const paginatedData = filtered.slice(0, MOVIES_PER_PAGE);
-      const hasMore = filtered.length > MOVIES_PER_PAGE;
+      const paginatedData = filtered.slice(from, to + 1);
+      const hasMore = filtered.length > to + 1;
       
-      return { movies: paginatedData, hasMore, allFiltered: filtered };
+      return { movies: paginatedData, hasMore };
     },
     enabled: !!decodedGenreName,
   });
@@ -110,13 +101,18 @@ const GenreArchive = () => {
   });
 
   useEffect(() => {
+    // Skip clearing on initial mount to prevent race condition
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      if (data?.movies) {
+        setDisplayedMovies(data.movies);
+      }
+      return;
+    }
+
     if (data?.movies) {
       if (offset === 0) {
         setDisplayedMovies(data.movies);
-        // Cache all filtered movies on first load
-        if (data.allFiltered) {
-          setAllFilteredMovies(data.allFiltered);
-        }
       } else {
         setDisplayedMovies(prev => [...prev, ...data.movies]);
       }
