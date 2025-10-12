@@ -42,6 +42,26 @@ const Movies = () => {
     return pageParam ? parseInt(pageParam, 10) : 1;
   })();
   
+  // Derive sortBy and sortOrder from URL (single source of truth)
+  const sortBy = (() => {
+    const sortByParam = searchParams.get('sortBy');
+    if (sortByParam && ['rating', 'year', 'title', 'user_rating', 'random'].includes(sortByParam)) {
+      return sortByParam as "rating" | "year" | "title" | "user_rating" | "random";
+    }
+    // Default to random for new users, rating for returning users
+    const hasVisited = localStorage.getItem('movies_has_visited');
+    if (!hasVisited) {
+      localStorage.setItem('movies_has_visited', 'true');
+      return 'random';
+    }
+    return 'random'; // Use URL default from FilterContext
+  })();
+  
+  const sortOrder = (() => {
+    const sortOrderParam = searchParams.get('sortOrder');
+    return (sortOrderParam === 'asc' || sortOrderParam === 'desc') ? sortOrderParam : 'desc';
+  })();
+  
   const [itemsPerPage, setItemsPerPage] = useState(50); // Optimized: reduced from 100
   
   // Helper function to update page in URL
@@ -54,24 +74,15 @@ const Movies = () => {
     }
     setSearchParams(newParams, { replace: true });
   };
-  
-  // Initialize sort preferences with "random" as default for new users
-  const [sortBy, setSortBy] = useState<"rating" | "year" | "title" | "user_rating" | "random">(() => {
-    const hasVisited = localStorage.getItem('movies_has_visited');
-    if (!hasVisited) {
-      localStorage.setItem('movies_has_visited', 'true');
-      return 'random';
-    }
-    return 'rating';
-  });
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   // Auto-reset sort to "rating" if user logs out while "My Rating" is selected
   useEffect(() => {
     if (!user && sortBy === "user_rating") {
       console.log("[Movies] User logged out with user_rating sort active - resetting to rating");
-      setSortBy("rating");
-      setSortOrder("desc");
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set('sortBy', 'rating');
+      newParams.set('sortOrder', 'desc');
+      setSearchParams(newParams, { replace: true });
     }
   }, [user, sortBy]);
 
@@ -94,15 +105,7 @@ const Movies = () => {
     resetFilters
   } = useFilters();
 
-  // Sync local state with context
-  useEffect(() => {
-    if (appliedSortBy && appliedSortBy !== sortBy) {
-      setSortBy(appliedSortBy as typeof sortBy);
-    }
-    if (appliedSortOrder && appliedSortOrder !== sortOrder) {
-      setSortOrder(appliedSortOrder as typeof sortOrder);
-    }
-  }, [appliedSortBy, appliedSortOrder]);
+  // No need to sync - sortBy and sortOrder are now derived from URL
   // Helper to update filters and reset page in one call
   const updateFiltersAndResetPage = (updates: Record<string, any>) => {
     const newParams = new URLSearchParams(searchParams);
@@ -449,14 +452,10 @@ const Movies = () => {
     // Defensive validation: prevent user_rating sort when not logged in
     if (field === "user_rating" && !user) {
       console.warn("[Movies] Attempted to set user_rating sort without logged in user - defaulting to rating");
-      setSortBy("rating");
-      setSortOrder("desc");
       updateFiltersAndResetPage({ sortBy: 'rating', sortOrder: 'desc' });
       return;
     }
     
-    setSortBy(field);
-    setSortOrder(order);
     updateFiltersAndResetPage({ sortBy: field, sortOrder: order });
   };
   const renderPagination = () => {
