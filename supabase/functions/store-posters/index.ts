@@ -10,7 +10,6 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Capture client IP address for security logging
   const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0].trim() 
     || req.headers.get('x-real-ip')
     || 'unknown';
@@ -26,7 +25,6 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Verify user is admin
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     
@@ -43,9 +41,8 @@ Deno.serve(async (req) => {
 
     const { limit = 100, offset = 0, syncHistoryId, trigger_source = 'manual' } = await req.json();
 
-    console.log(`Starting poster download for ${limit} movies, offset ${offset}`);
+    console.log(`Starting optimized poster download for ${limit} movies, offset ${offset}`);
 
-    // Log the poster storage activity with IP address
     await supabase
       .from('user_activity_logs')
       .insert({
@@ -53,10 +50,9 @@ Deno.serve(async (req) => {
         action_type: 'poster_storage_started',
         ip_address: clientIP,
         user_agent: userAgent,
-        action_details: { limit, offset, trigger_source }
+        action_details: { limit, offset, trigger_source, optimization: 'w342' }
       });
 
-    // Create or get sync history record
     let currentSyncId = syncHistoryId;
     if (!currentSyncId) {
       const { data: syncRecord, error: syncError } = await supabase
@@ -67,7 +63,7 @@ Deno.serve(async (req) => {
           status: 'running',
           sync_mode: false,
           trigger_source,
-          logs: [`Starting poster storage - batch size: ${limit}, offset: ${offset}`]
+          logs: [`Starting optimized poster storage - batch size: ${limit}, offset: ${offset}`]
         })
         .select()
         .single();
@@ -76,7 +72,6 @@ Deno.serve(async (req) => {
       currentSyncId = syncRecord.id;
     }
 
-    // Get movies without local posters
     const { data: movies, error: moviesError } = await supabase
       .from('movies')
       .select('id, poster, title, imdb_id')
@@ -87,7 +82,6 @@ Deno.serve(async (req) => {
     if (moviesError) throw moviesError;
 
     if (!movies || movies.length === 0) {
-      // Update sync history as completed
       if (currentSyncId) {
         await supabase
           .from('sync_history')
@@ -111,6 +105,7 @@ Deno.serve(async (req) => {
 
     let processed = 0;
     let failed = 0;
+    let optimized = 0;
     const logs: string[] = [];
 
     for (const movie of movies) {
@@ -119,8 +114,16 @@ Deno.serve(async (req) => {
         console.log(logMsg);
         logs.push(logMsg);
         
-        // Download the poster
-        const posterResponse = await fetch(movie.poster);
+        // Optimize poster URL to use smaller w342 size (perfect for display at 292px width)
+        let optimizedPosterUrl = movie.poster;
+        if (movie.poster.includes('image.tmdb.org/t/p/')) {
+          // Replace any size with w342 for optimal file size
+          optimizedPosterUrl = movie.poster.replace(/\/w\d+\//, '/w342/');
+          optimized++;
+        }
+        
+        // Download the optimized poster
+        const posterResponse = await fetch(optimizedPosterUrl);
         if (!posterResponse.ok) {
           const errorMsg = `Failed to download poster for ${movie.title}`;
           console.error(errorMsg);
@@ -132,16 +135,17 @@ Deno.serve(async (req) => {
         const posterBlob = await posterResponse.blob();
         const posterBuffer = await posterBlob.arrayBuffer();
         
-        // Generate filename
-        const fileExt = movie.poster.includes('.jpg') ? 'jpg' : 'png';
+        // Use original format (TMDB images are already well-compressed JPEGs)
+        const contentType = posterBlob.type;
+        const fileExt = contentType.includes('png') ? 'png' : 'jpg';
+        
         const fileName = `${movie.imdb_id || movie.id}.${fileExt}`;
         const filePath = `${fileName}`;
 
-        // Upload to storage
         const { error: uploadError } = await supabase.storage
           .from('movie-posters')
           .upload(filePath, posterBuffer, {
-            contentType: posterBlob.type,
+            contentType: contentType,
             upsert: true,
           });
 
@@ -153,12 +157,10 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Get public URL
         const { data: urlData } = supabase.storage
           .from('movie-posters')
           .getPublicUrl(filePath);
 
-        // Update movie record
         const { error: updateError } = await supabase
           .from('movies')
           .update({ local_poster_url: urlData.publicUrl })
@@ -173,7 +175,7 @@ Deno.serve(async (req) => {
         }
 
         processed++;
-        const successMsg = `✓ Stored poster for: ${movie.title}`;
+        const successMsg = `✓ Stored optimized poster (w342) for: ${movie.title}`;
         console.log(successMsg);
         logs.push(successMsg);
       } catch (error) {
@@ -184,11 +186,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    const completionMsg = `Completed: ${processed} processed, ${failed} failed`;
+    const completionMsg = `Completed: ${processed} processed (${optimized} size-optimized), ${failed} failed`;
     console.log(completionMsg);
     logs.push(completionMsg);
 
-    // Update sync history
     if (currentSyncId) {
       await supabase
         .from('sync_history')
@@ -206,9 +207,10 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         processed, 
-        failed, 
+        failed,
+        optimized,
         total: movies.length,
-        message: `Successfully stored ${processed} posters`,
+        message: `Successfully stored ${processed} posters (w342 optimized)`,
         syncHistoryId: currentSyncId
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
