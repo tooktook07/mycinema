@@ -13,6 +13,32 @@ serve(async (req) => {
 
   try {
     const { imdbId, type } = await req.json(); // type: 'movie' or 'series'
+
+    // Validate imdbId
+    if (!imdbId) {
+      return new Response(
+        JSON.stringify({ error: "imdbId is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate imdbId format (tt followed by 7-8 digits)
+    const imdbIdRegex = /^tt\d{7,8}$/;
+    if (!imdbIdRegex.test(imdbId)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid imdbId format. Expected format: tt1234567" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate type if provided
+    if (type && !['movie', 'series'].includes(type)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid type. Must be 'movie' or 'series'" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const OMDB_API_KEY = Deno.env.get("OMDB_API_KEY");
 
     if (!OMDB_API_KEY) {
