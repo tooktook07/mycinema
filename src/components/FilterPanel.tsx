@@ -143,7 +143,7 @@ export const FilterPanel = ({
 
       {/* Collapsible Filter Sections */}
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <CollapsibleContent className={cn("space-y-4", "data-[state=closed]:mt-0")}>
+        <CollapsibleContent className="space-y-4">
           <Accordion type="multiple" defaultValue={["genres", "rating", "year"]} className="space-y-2">
             {/* Genres Section */}
             <AccordionItem value="genres" className="border rounded-lg px-4">
