@@ -14,14 +14,13 @@ import { Search, X } from "lucide-react";
 const ITEMS_PER_PAGE = 48;
 
 const SEARCH_SUGGESTIONS = [
-  "Action",
-  "2020",
-  "IMDb 8+",
+  "year:2020",
+  "director:Nolan",
+  "imdb:8+",
+  "genre:Action",
+  "actor:Tom Hanks",
   "Oscar",
-  "Christopher Nolan",
-  "Sci-Fi",
-  "120 min",
-  "Drama",
+  "Inception",
 ];
 
 const Items = () => {
@@ -57,29 +56,80 @@ const Items = () => {
 
       // Apply search filter
       if (debouncedSearch) {
-        const searchPattern = `%${debouncedSearch}%`;
-        const searchConditions = [
-          `title.ilike.${searchPattern}`,
-          `actors.ilike.${searchPattern}`,
-          `director.ilike.${searchPattern}`,
-          `plot.ilike.${searchPattern}`,
-          `year::text.ilike.${searchPattern}`,
-          `runtime.ilike.${searchPattern}`,
-          `awards.ilike.${searchPattern}`,
-          `tagline.ilike.${searchPattern}`,
-          `writing.ilike.${searchPattern}`,
-          `sound.ilike.${searchPattern}`,
-          `original_language.ilike.${searchPattern}`,
-          `status.ilike.${searchPattern}`,
-          `imdb_rating::text.ilike.${searchPattern}`,
-          `metascore::text.ilike.${searchPattern}`,
-        ];
-        
-        // Add array field searches (genres and keywords)
-        searchConditions.push(`genres.cs.{${debouncedSearch}}`);
-        searchConditions.push(`keywords.cs.{${debouncedSearch}}`);
-        
-        query = query.or(searchConditions.join(','));
+        // Check for structured search patterns (field:value)
+        const structuredPatterns = {
+          year: /^year:(\d{4})$/i,
+          director: /^director:(.+)$/i,
+          actor: /^actor:(.+)$/i,
+          genre: /^genre:(.+)$/i,
+          imdb: /^imdb:(\d+\.?\d*)\+?$/i,
+          rating: /^rating:(\d+\.?\d*)\+?$/i,
+        };
+
+        let hasStructuredSearch = false;
+
+        // Check for year pattern
+        const yearMatch = debouncedSearch.match(structuredPatterns.year);
+        if (yearMatch) {
+          query = query.eq('year', parseInt(yearMatch[1]));
+          hasStructuredSearch = true;
+        }
+
+        // Check for director pattern
+        const directorMatch = debouncedSearch.match(structuredPatterns.director);
+        if (directorMatch) {
+          query = query.ilike('director', `%${directorMatch[1]}%`);
+          hasStructuredSearch = true;
+        }
+
+        // Check for actor pattern
+        const actorMatch = debouncedSearch.match(structuredPatterns.actor);
+        if (actorMatch) {
+          query = query.ilike('actors', `%${actorMatch[1]}%`);
+          hasStructuredSearch = true;
+        }
+
+        // Check for genre pattern
+        const genreMatch = debouncedSearch.match(structuredPatterns.genre);
+        if (genreMatch) {
+          query = query.contains('genres', [genreMatch[1]]);
+          hasStructuredSearch = true;
+        }
+
+        // Check for IMDb rating pattern
+        const imdbMatch = debouncedSearch.match(structuredPatterns.imdb);
+        if (imdbMatch) {
+          query = query.gte('imdb_rating', parseFloat(imdbMatch[1]));
+          hasStructuredSearch = true;
+        }
+
+        // Check for general rating pattern
+        const ratingMatch = debouncedSearch.match(structuredPatterns.rating);
+        if (ratingMatch && !imdbMatch) {
+          query = query.gte('rating', parseFloat(ratingMatch[1]));
+          hasStructuredSearch = true;
+        }
+
+        // If no structured pattern found, do general text search
+        if (!hasStructuredSearch) {
+          const searchPattern = `%${debouncedSearch}%`;
+          const searchConditions = [
+            `title.ilike.${searchPattern}`,
+            `actors.ilike.${searchPattern}`,
+            `director.ilike.${searchPattern}`,
+            `plot.ilike.${searchPattern}`,
+            `year::text.ilike.${searchPattern}`,
+            `runtime.ilike.${searchPattern}`,
+            `awards.ilike.${searchPattern}`,
+            `tagline.ilike.${searchPattern}`,
+            `writing.ilike.${searchPattern}`,
+            `sound.ilike.${searchPattern}`,
+            `original_language.ilike.${searchPattern}`,
+            `status.ilike.${searchPattern}`,
+          ];
+          
+          query = query.or(searchConditions.join(','));
+        }
       }
 
       query = query.range(from, to);
@@ -124,7 +174,7 @@ const Items = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Search by title, year, genre, actors, director, IMDb rating, awards..."
+              placeholder="Try: year:2020, director:Nolan, imdb:8+, genre:Action, or any text..."
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               className="pl-11 pr-10 h-11"
