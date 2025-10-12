@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Movie } from "@/data/types";
@@ -49,6 +49,7 @@ export const MovieManagement = () => {
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   
@@ -56,44 +57,82 @@ export const MovieManagement = () => {
   const [syncMovie, setSyncMovie] = useState<Movie | null>(null);
   const [deleteMovie, setDeleteMovie] = useState<Movie | null>(null);
 
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+      setCurrentPage(1); // Reset to first page on search
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const fetchMovies = async () => {
     setLoading(true);
     try {
       const from = (currentPage - 1) * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
 
-      let query = supabase
+      // First, fetch basic movie data with pagination
+      let movieQuery = supabase
         .from('movies')
-        .select(`
-          *,
-          user_ratings(user_rating, in_watchlist)
-        `, { count: 'exact' })
+        .select('*', { count: 'exact' })
         .order('title', { ascending: true })
         .range(from, to);
 
       if (searchQuery) {
-        query = query.ilike('title', `%${searchQuery}%`);
+        movieQuery = movieQuery.ilike('title', `%${debouncedSearchQuery}%`);
       }
 
-      const { data, error, count } = await query;
+      const { data: movieData, error: movieError, count } = await movieQuery;
 
-      if (error) throw error;
+      if (movieError) throw movieError;
+
+      if (!movieData || movieData.length === 0) {
+        setMovies([]);
+        setTotalCount(0);
+        return;
+      }
+
+      // Fetch user ratings for these movies separately
+      const movieIds = movieData.map(m => m.id);
+      const { data: ratingsData, error: ratingsError } = await supabase
+        .from('user_ratings')
+        .select('media_id, user_rating, in_watchlist')
+        .in('media_id', movieIds)
+        .eq('media_type', 'movie');
+
+      if (ratingsError) {
+        console.error('Error fetching ratings:', ratingsError);
+      }
+
+      // Group ratings by movie
+      const ratingsByMovie = new Map();
+      ratingsData?.forEach((rating: any) => {
+        if (!ratingsByMovie.has(rating.media_id)) {
+          ratingsByMovie.set(rating.media_id, []);
+        }
+        ratingsByMovie.get(rating.media_id).push(rating);
+      });
 
       // Process data to add computed fields
-      const processedData = data?.map((movie: any) => {
-        const watchlistCount = movie.user_ratings?.filter((r: any) => r.in_watchlist).length || 0;
-        const ratings = movie.user_ratings?.filter((r: any) => r.user_rating !== null).map((r: any) => r.user_rating) || [];
-        const avgUserRating = ratings.length > 0
-          ? ratings.reduce((sum: number, r: number) => sum + r, 0) / ratings.length
+      const processedData = movieData.map((movie: any) => {
+        const movieRatings = ratingsByMovie.get(movie.id) || [];
+        const watchlistCount = movieRatings.filter((r: any) => r.in_watchlist).length;
+        const validRatings = movieRatings
+          .filter((r: any) => r.user_rating !== null)
+          .map((r: any) => r.user_rating);
+        const avgUserRating = validRatings.length > 0
+          ? validRatings.reduce((sum: number, r: number) => sum + r, 0) / validRatings.length
           : 0;
 
         return {
           ...movie,
           watchlistCount,
           avgUserRating,
-          ratingCount: ratings.length
+          ratingCount: validRatings.length
         };
-      }) || [];
+      });
 
       setMovies(processedData);
       setTotalCount(count || 0);
@@ -101,9 +140,11 @@ export const MovieManagement = () => {
       console.error('Error fetching movies:', error);
       toast({
         title: "Error",
-        description: "Failed to load movies",
+        description: error.message || "Failed to load movies",
         variant: "destructive",
       });
+      setMovies([]);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }
@@ -112,43 +153,59 @@ export const MovieManagement = () => {
   const fetchStats = async () => {
     setStatsLoading(true);
     try {
-      // Fetch all movies for stats
-      const { data: allMovies, error } = await supabase
-        .from('movies')
-        .select(`
-          *,
-          user_ratings(user_rating, in_watchlist)
-        `);
+      // Fetch lightweight stats using count queries
+      const [
+        totalResult,
+        omdbResult,
+        postersResult,
+        watchlistResult,
+        ratingsResult,
+        genresResult
+      ] = await Promise.all([
+        // Total movies count
+        supabase.from('movies').select('id', { count: 'exact', head: true }),
+        
+        // Movies with OMDb data
+        supabase.from('movies')
+          .select('id', { count: 'exact', head: true })
+          .not('data_sources', 'is', null)
+          .filter('data_sources', 'cs', '{"omdb":true}'),
+        
+        // Movies with local posters
+        supabase.from('movies')
+          .select('id', { count: 'exact', head: true })
+          .not('local_poster_url', 'is', null),
+        
+        // Total watchlist saves
+        supabase.from('user_ratings')
+          .select('id', { count: 'exact', head: true })
+          .eq('in_watchlist', true)
+          .eq('media_type', 'movie'),
+        
+        // User ratings stats
+        supabase.from('user_ratings')
+          .select('user_rating')
+          .not('user_rating', 'is', null)
+          .eq('media_type', 'movie'),
+        
+        // Genre and year distribution (lightweight - only necessary fields)
+        supabase.from('movies').select('genres, year')
+      ]);
 
-      if (error) throw error;
+      const totalMovies = totalResult.count || 0;
+      const withOmdb = omdbResult.count || 0;
+      const withPosters = postersResult.count || 0;
+      const totalWatchlistSaves = watchlistResult.count || 0;
 
-      // Calculate stats
-      const totalMovies = allMovies?.length || 0;
-      const withOmdb = allMovies?.filter(m => {
-        const sources = m.data_sources as { tmdb?: boolean; omdb?: boolean } | null;
-        return sources?.omdb === true;
-      }).length || 0;
-      const withPosters = allMovies?.filter(m => m.local_poster_url).length || 0;
+      // Calculate average user rating
+      const ratings = ratingsResult.data || [];
+      const avgUserRating = ratings.length > 0
+        ? ratings.reduce((sum, r) => sum + (r.user_rating || 0), 0) / ratings.length
+        : 0;
 
-      let totalWatchlistSaves = 0;
-      let totalRatings = 0;
-      let ratingSum = 0;
-
-      allMovies?.forEach((movie: any) => {
-        movie.user_ratings?.forEach((r: any) => {
-          if (r.in_watchlist) totalWatchlistSaves++;
-          if (r.user_rating !== null) {
-            totalRatings++;
-            ratingSum += r.user_rating;
-          }
-        });
-      });
-
-      const avgUserRating = totalRatings > 0 ? ratingSum / totalRatings : 0;
-
-      // Genre distribution
+      // Calculate genre distribution
       const genreCounts: { [key: string]: number } = {};
-      allMovies?.forEach((movie: any) => {
+      genresResult.data?.forEach((movie: any) => {
         movie.genres?.forEach((genre: string) => {
           genreCounts[genre] = (genreCounts[genre] || 0) + 1;
         });
@@ -157,9 +214,9 @@ export const MovieManagement = () => {
         .map(([genre, count]) => ({ genre, count }))
         .sort((a, b) => b.count - a.count);
 
-      // Year distribution
+      // Calculate year distribution
       const yearCounts: { [key: number]: number } = {};
-      allMovies?.forEach((movie: any) => {
+      genresResult.data?.forEach((movie: any) => {
         yearCounts[movie.year] = (yearCounts[movie.year] || 0) + 1;
       });
       const byYear = Object.entries(yearCounts)
@@ -177,6 +234,21 @@ export const MovieManagement = () => {
       });
     } catch (error: any) {
       console.error('Error fetching stats:', error);
+      toast({
+        title: "Stats Error",
+        description: "Failed to load statistics. Showing limited data.",
+        variant: "destructive",
+      });
+      // Set empty stats on error
+      setStats({
+        totalMovies: 0,
+        withOmdb: 0,
+        withPosters: 0,
+        totalWatchlistSaves: 0,
+        avgUserRating: 0,
+        byGenre: [],
+        byYear: []
+      });
     } finally {
       setStatsLoading(false);
     }
@@ -184,7 +256,7 @@ export const MovieManagement = () => {
 
   useEffect(() => {
     fetchMovies();
-  }, [currentPage, searchQuery]);
+  }, [currentPage, debouncedSearchQuery]);
 
   useEffect(() => {
     fetchStats();
@@ -231,15 +303,12 @@ export const MovieManagement = () => {
             <Input
               placeholder="Search movies..."
               value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setCurrentPage(1);
-              }}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
             />
           </div>
           <div className="text-sm text-muted-foreground">
-            {totalCount} movies total
+            {loading ? "Loading..." : `${totalCount} movies total`}
           </div>
         </div>
 
