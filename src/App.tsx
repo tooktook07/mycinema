@@ -23,6 +23,7 @@ import DiscoverMode from "./pages/DiscoverMode";
 import Watchlist from "./pages/Watchlist";
 import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
+import MovieDetail from "./pages/MovieDetail";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const AppRoutes = () => {
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/movies" element={<Movies />} />
+        <Route path="/movie/:slug" element={<MovieDetail />} />
         <Route path="/discover" element={<DiscoverMode />} />
         <Route path="/watchlist" element={<Watchlist />} />
         <Route path="/signup" element={<SignUp />} />

@@ -40,6 +40,8 @@ import { getSimilarMovies } from "@/lib/recommendationEngine";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Card } from "@/components/ui/card";
 import { getRecentlyShownMovieIds, markMoviesAsShown } from "@/lib/recentlyShownTracker";
+import { Link } from "react-router-dom";
+import { getMovieUrl } from "@/lib/urlUtils";
 
 interface MovieDetailModalProps {
   isOpen: boolean;
@@ -452,7 +454,15 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                 <div className="flex-1 min-w-0">
                   <div className="mb-1.5">
                     <div className="inline-flex items-center gap-1 flex-wrap">
-                      <h2 className="text-sm sm:text-2xl font-bold leading-tight">{movie.title}</h2>
+                      <Link 
+                        to={getMovieUrl(movie.title, movie.year)}
+                        className="text-sm sm:text-2xl font-bold leading-tight hover:underline hover:text-primary transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                        }}
+                      >
+                        {movie.title}
+                      </Link>
                       {relevanceReason && (
                         <TooltipProvider>
                           <Tooltip>
