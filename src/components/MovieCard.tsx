@@ -208,36 +208,6 @@ export const MovieCard = ({
             </Badge>
           </div>
 
-          {/* Genres */}
-          <div className="flex flex-wrap gap-1 mb-2">
-            {genre.slice(0, 2).map(g => (
-              <Badge 
-                key={g} 
-                variant="secondary" 
-                className="text-xs cursor-pointer hover:bg-secondary/80 transition-colors bg-white/20 text-white border-white/30 hidden sm:inline-flex" 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onGenreClick?.(g);
-                }}
-              >
-                {g}
-              </Badge>
-            ))}
-            {genre.slice(0, 3).map(g => (
-              <Badge 
-                key={g} 
-                variant="secondary" 
-                className="text-xs cursor-pointer hover:bg-secondary/80 transition-colors bg-white/20 text-white border-white/30 sm:hidden" 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onGenreClick?.(g);
-                }}
-              >
-                {g}
-              </Badge>
-            ))}
-          </div>
-
           {/* Rating Buttons - Show on hover */}
           <div className="flex items-center justify-center gap-1 sm:gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
             <Tooltip>
