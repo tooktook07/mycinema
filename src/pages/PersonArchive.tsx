@@ -56,7 +56,7 @@ const PersonArchive = () => {
     }
 
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {moviesList.map((movie) => (
           <MovieCard
             key={movie.id}
@@ -82,8 +82,8 @@ const PersonArchive = () => {
         breadcrumbs={[{ label: displayName, href: `/person/${personName}` }]}
         movieCount={0}
       >
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {Array.from({ length: 20 }).map((_, idx) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 48 }).map((_, idx) => (
             <Skeleton key={idx} className="aspect-[2/3] rounded-lg" />
           ))}
         </div>

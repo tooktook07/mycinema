@@ -24,7 +24,7 @@ export const ArchiveLayout = ({
 }: ArchiveLayoutProps) => {
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Breadcrumbs */}
         <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
           <Link to="/" className="hover:text-foreground transition-colors flex items-center gap-1">
@@ -50,11 +50,13 @@ export const ArchiveLayout = ({
         </nav>
 
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">{title}</h1>
-          {description && <p className="text-muted-foreground text-lg">{description}</p>}
-          <p className="text-sm text-muted-foreground mt-2">
-            {movieCount} {movieCount === 1 ? 'movie' : 'movies'} found
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold">{title}</h1>
+            {description && <p className="text-muted-foreground text-lg mt-1">{description}</p>}
+          </div>
+          <p className="text-muted-foreground">
+            Showing {movieCount.toLocaleString()} {movieCount === 1 ? 'movie' : 'movies'}
           </p>
         </div>
 
