@@ -163,7 +163,18 @@ export const MovieCard = ({
         {/* Top Gradient Overlay - Title & Rating (Always Visible) */}
         <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 via-black/40 to-transparent p-2 sm:p-3 z-10">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="line-clamp-2 text-xs sm:text-sm font-semibold leading-tight text-white drop-shadow-lg flex-1">{title}</h3>
+            <h3 className="line-clamp-2 text-xs sm:text-sm font-semibold leading-tight text-white drop-shadow-lg flex-1">
+              {title}{' '}
+              <span 
+                className="cursor-pointer hover:underline opacity-80 hover:opacity-100 transition-opacity"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onYearClick?.(year);
+                }}
+              >
+                ({year})
+              </span>
+            </h3>
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="flex items-center gap-1 text-white cursor-help shrink-0">
@@ -194,19 +205,6 @@ export const MovieCard = ({
 
         {/* Bottom Gradient Overlay - Info & Controls */}
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-2 sm:p-3">
-          {/* Year Badge */}
-          <div className="mb-2">
-            <Badge 
-              variant="secondary" 
-              className="text-xs cursor-pointer hover:bg-secondary/80 transition-colors bg-white/20 text-white border-white/30" 
-              onClick={(e) => {
-                e.stopPropagation();
-                onYearClick?.(year);
-              }}
-            >
-              {year}
-            </Badge>
-          </div>
 
           {/* Rating Buttons - Show on hover */}
           <div className="flex items-center justify-center gap-1 sm:gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
