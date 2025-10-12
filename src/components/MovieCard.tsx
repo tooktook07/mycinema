@@ -157,8 +157,16 @@ export const MovieCard = ({
         className="aspect-[2/3] overflow-hidden relative cursor-pointer"
         onClick={handleMoreInfo}
       >
+        {/* Poster Image */}
         <img {...imageProps} alt={title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+        
+        {/* Top Gradient Overlay - Title */}
+        <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 via-black/40 to-transparent p-2 sm:p-3">
+          <h3 className="line-clamp-2 text-xs sm:text-sm font-semibold leading-tight text-white drop-shadow-lg">{title}</h3>
+        </div>
+
+        {/* Center - More Info Button (on hover) */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-colors flex items-center justify-center">
           <Button 
             size="sm" 
             variant="secondary" 
@@ -168,94 +176,130 @@ export const MovieCard = ({
             More Info
           </Button>
         </div>
-      </div>
-      <CardContent className="p-3 sm:p-4">
-        {/* Title - Full Width */}
-        <h3 className="line-clamp-2 text-sm sm:text-base font-semibold leading-tight">{title}</h3>
-        
-        {/* Info Row: Year | Rating */}
-        <div className="flex items-center justify-between mt-2 sm:mt-3">
-          <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80 transition-colors" onClick={() => onYearClick?.(year)}>
-            {year}
-          </Badge>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex items-center gap-1 text-foreground cursor-help">
-                <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-yellow-500 text-yellow-500" />
-                <span className="font-bold text-xs sm:text-sm">
-                  {imdbRating ? imdbRating.toFixed(1) : rating.toFixed(1)}
-                </span>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p className="text-xs">{imdbRating ? "IMDb Rating" : "TMDB Rating"}</p>
-            </TooltipContent>
-          </Tooltip>
-        </div>
 
-        {/* Genres */}
-        <div className="flex flex-wrap gap-1 sm:gap-1.5 mt-2 sm:mt-3 pt-2 sm:pt-3 border-t">
-          {genre.slice(0, 3).map(g => (
-            <Badge key={g} variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80 transition-colors" onClick={() => onGenreClick?.(g)}>
-              {g}
+        {/* Bottom Gradient Overlay - Info & Controls */}
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-2 sm:p-3">
+          {/* Year & Rating */}
+          <div className="flex items-center justify-between mb-2">
+            <Badge 
+              variant="secondary" 
+              className="text-xs cursor-pointer hover:bg-secondary/80 transition-colors bg-white/20 text-white border-white/30" 
+              onClick={(e) => {
+                e.stopPropagation();
+                onYearClick?.(year);
+              }}
+            >
+              {year}
             </Badge>
-          ))}
-        </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1 text-white cursor-help">
+                  <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5 fill-yellow-400 text-yellow-400" />
+                  <span className="font-bold text-xs sm:text-sm drop-shadow">
+                    {imdbRating ? imdbRating.toFixed(1) : rating.toFixed(1)}
+                  </span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs">{imdbRating ? "IMDb Rating" : "TMDB Rating"}</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
 
-        {/* Rating Buttons - At Bottom */}
-        <div className="flex items-center justify-center gap-1.5 sm:gap-2 mt-3 sm:mt-4 pt-2 sm:pt-3 border-t">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                size="icon" 
-                variant={currentRating === 1 ? "default" : "outline"} 
-                onClick={() => handleRate(1)} 
-                disabled={saving}
-                className="h-8 w-8 sm:h-9 sm:w-9"
+          {/* Genres */}
+          <div className="flex flex-wrap gap-1 mb-2">
+            {genre.slice(0, 2).map(g => (
+              <Badge 
+                key={g} 
+                variant="secondary" 
+                className="text-xs cursor-pointer hover:bg-secondary/80 transition-colors bg-white/20 text-white border-white/30 hidden sm:inline-flex" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onGenreClick?.(g);
+                }}
               >
-                <ThumbsDown className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${currentRating === 1 ? 'fill-current' : ''}`} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p className="text-xs">Not for me</p>
-            </TooltipContent>
-          </Tooltip>
-          
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                size="icon" 
-                variant={currentRating === 5 ? "default" : "outline"}
-                onClick={() => handleRate(5)} 
-                disabled={saving}
-                className="h-8 w-8 sm:h-9 sm:w-9"
+                {g}
+              </Badge>
+            ))}
+            {genre.slice(0, 3).map(g => (
+              <Badge 
+                key={g} 
+                variant="secondary" 
+                className="text-xs cursor-pointer hover:bg-secondary/80 transition-colors bg-white/20 text-white border-white/30 sm:hidden" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onGenreClick?.(g);
+                }}
               >
-                <ThumbsUp className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${currentRating === 5 ? 'fill-current' : ''}`} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p className="text-xs">I liked this</p>
-            </TooltipContent>
-          </Tooltip>
-          
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                size="icon" 
-                variant={currentRating === 10 ? "default" : "outline"}
-                onClick={() => handleRate(10)} 
-                disabled={saving}
-                className="h-8 w-8 sm:h-9 sm:w-9"
-              >
-                <Heart className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${currentRating === 10 ? 'fill-current' : ''}`} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p className="text-xs">Love this!</p>
-            </TooltipContent>
-          </Tooltip>
+                {g}
+              </Badge>
+            ))}
+          </div>
+
+          {/* Rating Buttons */}
+          <div className="flex items-center justify-center gap-1 sm:gap-1.5">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  size="icon" 
+                  variant={currentRating === 1 ? "default" : "outline"} 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRate(1);
+                  }} 
+                  disabled={saving}
+                  className="h-7 w-7 sm:h-8 sm:w-8 bg-white/10 border-white/30 text-white hover:bg-white/20"
+                >
+                  <ThumbsDown className={`h-3 w-3 sm:h-3.5 sm:w-3.5 ${currentRating === 1 ? 'fill-current' : ''}`} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs">Not for me</p>
+              </TooltipContent>
+            </Tooltip>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  size="icon" 
+                  variant={currentRating === 5 ? "default" : "outline"}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRate(5);
+                  }} 
+                  disabled={saving}
+                  className="h-7 w-7 sm:h-8 sm:w-8 bg-white/10 border-white/30 text-white hover:bg-white/20"
+                >
+                  <ThumbsUp className={`h-3 w-3 sm:h-3.5 sm:w-3.5 ${currentRating === 5 ? 'fill-current' : ''}`} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs">I liked this</p>
+              </TooltipContent>
+            </Tooltip>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  size="icon" 
+                  variant={currentRating === 10 ? "default" : "outline"}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRate(10);
+                  }} 
+                  disabled={saving}
+                  className="h-7 w-7 sm:h-8 sm:w-8 bg-white/10 border-white/30 text-white hover:bg-white/20"
+                >
+                  <Heart className={`h-3 w-3 sm:h-3.5 sm:w-3.5 ${currentRating === 10 ? 'fill-current' : ''}`} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs">Love this!</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
-      </CardContent>
+      </div>
     </Card>
   </TooltipProvider>;
 };
