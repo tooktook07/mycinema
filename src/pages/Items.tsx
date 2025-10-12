@@ -8,9 +8,21 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Search, X } from "lucide-react";
 
 const ITEMS_PER_PAGE = 48;
+
+const SEARCH_SUGGESTIONS = [
+  "Action",
+  "2020",
+  "IMDb 8+",
+  "Oscar",
+  "Christopher Nolan",
+  "Sci-Fi",
+  "120 min",
+  "Drama",
+];
 
 const Items = () => {
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
@@ -46,9 +58,28 @@ const Items = () => {
       // Apply search filter
       if (debouncedSearch) {
         const searchPattern = `%${debouncedSearch}%`;
-        query = query.or(
-          `title.ilike.${searchPattern},actors.ilike.${searchPattern},director.ilike.${searchPattern},plot.ilike.${searchPattern}`
-        );
+        const searchConditions = [
+          `title.ilike.${searchPattern}`,
+          `actors.ilike.${searchPattern}`,
+          `director.ilike.${searchPattern}`,
+          `plot.ilike.${searchPattern}`,
+          `year::text.ilike.${searchPattern}`,
+          `runtime.ilike.${searchPattern}`,
+          `awards.ilike.${searchPattern}`,
+          `tagline.ilike.${searchPattern}`,
+          `writing.ilike.${searchPattern}`,
+          `sound.ilike.${searchPattern}`,
+          `original_language.ilike.${searchPattern}`,
+          `status.ilike.${searchPattern}`,
+          `imdb_rating::text.ilike.${searchPattern}`,
+          `metascore::text.ilike.${searchPattern}`,
+        ];
+        
+        // Add array field searches (genres and keywords)
+        searchConditions.push(`genres.cs.{${debouncedSearch}}`);
+        searchConditions.push(`keywords.cs.{${debouncedSearch}}`);
+        
+        query = query.or(searchConditions.join(','));
       }
 
       query = query.range(from, to);
@@ -93,7 +124,7 @@ const Items = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Search by title, actors, director, plot..."
+              placeholder="Search by title, year, genre, actors, director, IMDb rating, awards..."
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               className="pl-11 pr-10 h-11"
@@ -109,6 +140,20 @@ const Items = () => {
                 <X className="h-4 w-4" />
               </Button>
             )}
+          </div>
+          
+          {/* Search Hint Chips */}
+          <div className="flex flex-wrap gap-2 mt-3 max-w-2xl">
+            {SEARCH_SUGGESTIONS.map((suggestion) => (
+              <Badge
+                key={suggestion}
+                variant="outline"
+                className="cursor-pointer hover:bg-accent transition-colors"
+                onClick={() => setSearchText(suggestion)}
+              >
+                {suggestion}
+              </Badge>
+            ))}
           </div>
         </div>
 
