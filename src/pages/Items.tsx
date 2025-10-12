@@ -7,6 +7,8 @@ import { MovieDetailModal } from "@/components/MovieDetailModal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Search, X } from "lucide-react";
 
 const ITEMS_PER_PAGE = 48;
 
@@ -15,20 +17,43 @@ const Items = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [displayedMovies, setDisplayedMovies] = useState<any[]>([]);
   const [offset, setOffset] = useState(0);
+  const [searchText, setSearchText] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const { loading: authLoading } = useAuth();
 
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchText);
+      setOffset(0); // Reset offset when search changes
+      setDisplayedMovies([]); // Clear displayed movies
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchText]);
+
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["items", offset],
+    queryKey: ["items", offset, debouncedSearch],
     enabled: !authLoading,
     queryFn: async () => {
       const from = offset;
       const to = from + ITEMS_PER_PAGE - 1;
 
-      const { data, error, count } = await supabase
+      let query = supabase
         .from("movies")
         .select("*", { count: "exact" })
-        .order("created_at", { ascending: false })
-        .range(from, to);
+        .order("created_at", { ascending: false });
+
+      // Apply search filter
+      if (debouncedSearch) {
+        const searchPattern = `%${debouncedSearch}%`;
+        query = query.or(
+          `title.ilike.${searchPattern},actors.ilike.${searchPattern},director.ilike.${searchPattern},plot.ilike.${searchPattern}`
+        );
+      }
+
+      query = query.range(from, to);
+
+      const { data, error, count } = await query;
 
       if (error) throw error;
       return { movies: data || [], totalCount: count || 0 };
@@ -62,6 +87,31 @@ const Items = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Search Bar */}
+        <div className="mb-6">
+          <div className="relative max-w-2xl">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search by title, actors, director, plot..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              className="pl-11 pr-10 h-11"
+            />
+            {searchText && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+                onClick={() => setSearchText("")}
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold">All Items</h1>
           <p className="text-muted-foreground">
