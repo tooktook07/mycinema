@@ -40,7 +40,7 @@ const GenreArchive = () => {
       const { data: exactMatch, error: exactError } = await supabase
         .from("movies")
         .select("id, title, year, rating, imdb_rating, imdb_votes, genres, poster, local_poster_url, imdb_id")
-        .contains("genres", [decodedGenreName])
+        .contains("genres", [toTitleCase(decodedGenreName)])
         .order("imdb_rating", { ascending: false, nullsFirst: false })
         .range(0, 999);
 
