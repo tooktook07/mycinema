@@ -135,7 +135,7 @@ const Movies = () => {
     return () => clearTimeout(timer);
   }, [searchText]);
 
-  const { data, isLoading, error, refetch } = useQuery({
+  const { data, isLoading, error, isFetched, refetch } = useQuery({
     queryKey: ["movies", lastCursor, debouncedSearch],
     enabled: !authLoading,
     queryFn: async () => {
@@ -424,7 +424,7 @@ const Movies = () => {
           </p>
         </div>
 
-        {isLoading && lastCursor === null && (
+        {(isLoading || authLoading) && lastCursor === null && (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {Array.from({ length: 48 }).map((_, i) => (
               <Skeleton key={i} className="aspect-[2/3] rounded-lg" />
@@ -438,13 +438,13 @@ const Movies = () => {
           </Card>
         )}
 
-        {!isLoading && displayedMovies.length === 0 && !searchText && (
+        {!isLoading && !authLoading && isFetched && displayedMovies.length === 0 && !searchText && (
           <Card className="p-8 text-center">
             <p className="text-muted-foreground">No movies found</p>
           </Card>
         )}
 
-        {!isLoading && displayedMovies.length === 0 && searchText && searchText === debouncedSearch && (
+        {!isLoading && !authLoading && isFetched && displayedMovies.length === 0 && searchText && searchText === debouncedSearch && (
           <Card className="p-8 text-center">
             <p className="text-muted-foreground">No movies match your search "{searchText}"</p>
           </Card>
