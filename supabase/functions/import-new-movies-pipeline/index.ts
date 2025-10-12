@@ -28,29 +28,56 @@ serve(async (req) => {
       });
     }
 
-    // Verify user is admin
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // Check if this is a service role key (automated call)
+    const isServiceRole = token === supabaseKey;
 
-    const { data: roleData } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('role', 'admin')
-      .single();
+    let userId: string;
 
-    if (!roleData) {
-      return new Response(JSON.stringify({ error: 'Admin access required' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    if (isServiceRole) {
+      // Automated call - use first admin user
+      console.log('🤖 Automated execution via service role');
+      const { data: adminUser, error: adminError } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'admin')
+        .limit(1)
+        .single();
+      
+      if (adminError || !adminUser) {
+        return new Response(JSON.stringify({ error: 'No admin user found for automated execution' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      userId = adminUser.user_id;
+    } else {
+      // Manual call - verify user is admin
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      
+      if (authError || !user) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .single();
+
+      if (!roleData) {
+        return new Response(JSON.stringify({ error: 'Admin access required' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      userId = user.id;
     }
 
     const logs: string[] = [];
@@ -59,15 +86,15 @@ serve(async (req) => {
       logs.push(`${new Date().toISOString()}: ${message}`);
     };
 
-    addLog('✨ Starting new movies import pipeline');
+    addLog(isServiceRole ? '🤖 Starting new movies import pipeline (automated)' : '✨ Starting new movies import pipeline (manual)');
 
     // Create sync history record
     const { data: syncHistory, error: syncError } = await supabase
       .from('sync_history')
       .insert({
         sync_type: 'new_imports',
-        trigger_source: 'automated',
-        user_id: user.id,
+        trigger_source: isServiceRole ? 'automated' : 'manual',
+        user_id: userId,
         status: 'running',
       })
       .select()
