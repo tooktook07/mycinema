@@ -24,7 +24,7 @@ export interface RecommendationMovie {
 }
 
 const RATING_THRESHOLD = 5; // User's liked movies threshold (Like rating = 5)
-const CANDIDATE_RATING_THRESHOLD = 6.0; // Minimum quality for recommendations (lowered for more candidates)
+const CANDIDATE_RATING_THRESHOLD = 5.0; // Minimum quality for recommendations (lowered for more candidates)
 const MIN_RATINGS_FOR_PERSONALIZATION = 5; // Minimum ratings needed for similarity algorithm
 
 // Rating weight constants (Phase 1)

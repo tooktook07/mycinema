@@ -197,7 +197,7 @@ serve(async (req) => {
           const tmdbVotes = detailData.vote_count || 0;
 
           // Must meet EITHER IMDB or TMDB thresholds
-          const meetsRatingThreshold = imdbRating >= 6.0 || tmdbRating >= 6.0;
+          const meetsRatingThreshold = imdbRating >= 5.0 || tmdbRating >= 5.0;
           const meetsVoteThreshold = imdbVotes >= 1000 || tmdbVotes >= 1000;
 
           if (!meetsRatingThreshold || !meetsVoteThreshold) {

@@ -81,7 +81,7 @@ interface Recommendation {
   metascore?: number;
 }
 const RATING_THRESHOLD = 7.0; // User's liked movies threshold
-const CANDIDATE_RATING_THRESHOLD = 6.5; // Minimum quality for recommendations
+const CANDIDATE_RATING_THRESHOLD = 5.0; // Minimum quality for recommendations
 const RECOMMENDATIONS_COUNT = 40;
 const MIN_RATINGS_FOR_PERSONALIZATION = 5; // Minimum ratings needed for similarity algorithm
 
