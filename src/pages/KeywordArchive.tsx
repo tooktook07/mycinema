@@ -19,15 +19,21 @@ const KeywordArchive = () => {
   const { data: movies, isLoading } = useQuery({
     queryKey: ["keywordMovies", decodedKeyword],
     queryFn: async () => {
-      // Since keywords are stored with original casing, we need case-insensitive matching
+      // Fetch all movies and filter client-side for case-insensitive matching
+      // Using limit to prevent timeouts
       const { data, error } = await supabase
         .from("movies")
         .select("*")
-        .order("imdb_rating", { ascending: false, nullsFirst: false });
+        .not("keywords", "is", null)
+        .order("imdb_rating", { ascending: false, nullsFirst: false })
+        .limit(5000);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Keyword query error:", error);
+        throw error;
+      }
       
-      // Filter client-side for case-insensitive keyword matching
+      // Client-side filter for exact case-insensitive match
       const filtered = data?.filter(movie => 
         movie.keywords?.some((k: string) => 
           k.toLowerCase() === decodedKeyword.toLowerCase()

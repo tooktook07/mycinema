@@ -60,7 +60,7 @@ const Movies = () => {
 
       let query = supabase
         .from("movies")
-        .select("*", { count: "exact" })
+        .select("*")
         .order("created_at", { ascending: false });
 
       // Apply search filter
@@ -130,10 +130,11 @@ const Movies = () => {
 
       query = query.range(from, to);
 
-      const { data, error, count } = await query;
+      const { data, error } = await query;
 
       if (error) throw error;
-      return { movies: data || [], totalCount: count || 0 };
+      // Return movies without exact count to avoid timeout
+      return { movies: data || [], totalCount: (data?.length || 0) + offset + (data?.length === MOVIES_PER_PAGE ? MOVIES_PER_PAGE : 0) };
     },
   });
 

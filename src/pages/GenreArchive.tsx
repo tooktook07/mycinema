@@ -19,15 +19,21 @@ const GenreArchive = () => {
   const { data: movies, isLoading } = useQuery({
     queryKey: ["genreMovies", decodedGenreName],
     queryFn: async () => {
-      // Since genres are stored with proper casing, we need case-insensitive matching
+      // Fetch all movies and filter client-side for case-insensitive matching
+      // Using limit to prevent timeouts
       const { data, error } = await supabase
         .from("movies")
         .select("*")
-        .order("imdb_rating", { ascending: false, nullsFirst: false });
+        .not("genres", "is", null)
+        .order("imdb_rating", { ascending: false, nullsFirst: false })
+        .limit(5000);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Genre query error:", error);
+        throw error;
+      }
       
-      // Filter client-side for case-insensitive genre matching
+      // Client-side filter for exact case-insensitive match
       const filtered = data?.filter(movie => 
         movie.genres?.some((g: string) => 
           g.toLowerCase() === decodedGenreName.toLowerCase()
