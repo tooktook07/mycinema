@@ -38,15 +38,11 @@ export const MovieDiscoverCard = ({ movie, totalRated, sessionRatings, recentSta
       <div className="absolute bottom-32 left-0 right-0 z-[60] px-6 pb-6 safe-area-bottom">
         {/* Movie Title */}
         <h2 className="text-xl md:text-2xl font-bold text-white mb-3 drop-shadow-lg leading-tight">
-          {movie.title}
+          {movie.title} ({movie.year})
         </h2>
 
         {/* Meta Info Row */}
         <div className="flex items-center gap-2 mb-3 flex-wrap">
-          <Badge variant="secondary" className="bg-white/20 text-white border-none backdrop-blur-md">
-            {movie.year}
-          </Badge>
-          
           <div className="flex items-center gap-1 bg-white/20 backdrop-blur-md rounded-full px-2.5 py-0.5">
             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
             <span className="font-semibold text-white text-xs">
