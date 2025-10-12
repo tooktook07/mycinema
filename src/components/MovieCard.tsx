@@ -165,14 +165,17 @@ export const MovieCard = ({
           <h3 className="line-clamp-2 text-xs sm:text-sm font-semibold leading-tight text-white drop-shadow-lg">{title}</h3>
         </div>
 
-        {/* Center - More Info Button (on hover) */}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-colors flex items-center justify-center">
+        {/* Center - Title & More Info Button (on hover) */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-colors flex flex-col items-center justify-center gap-3 p-4">
+          <h3 className="line-clamp-3 text-sm sm:text-base font-semibold leading-tight text-white text-center drop-shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+            {title}
+          </h3>
           <Button 
             size="sm" 
             variant="secondary" 
-            className="opacity-0 group-hover:opacity-100 transition-opacity"
+            className="opacity-0 group-hover:opacity-100 transition-opacity h-7 text-xs px-2"
           >
-            <Info className="h-4 w-4 mr-1" />
+            <Info className="h-3 w-3 mr-1" />
             More Info
           </Button>
         </div>
