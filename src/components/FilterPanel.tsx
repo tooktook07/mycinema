@@ -81,7 +81,7 @@ export const FilterPanel = ({
     (searchText ? 1 : 0);
 
   return (
-    <div className="flex flex-col rounded-lg border border-border bg-card p-4 md:p-5 shadow-lg">
+    <div className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4 md:p-5 shadow-lg">
       {/* Header with Search - Always Visible */}
       <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
         <div className="flex items-center gap-2 shrink-0">
@@ -137,7 +137,7 @@ export const FilterPanel = ({
 
       {/* Collapsible Filter Sections */}
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <CollapsibleContent>
+        <CollapsibleContent className="pt-4">
           <Accordion type="multiple" defaultValue={["genres", "rating", "year"]} className="space-y-2">
             {/* Genres Section */}
             <AccordionItem value="genres" className="border rounded-lg px-4">
