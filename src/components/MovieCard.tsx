@@ -169,20 +169,20 @@ export const MovieCard = ({
           </Button>
         </div>
       </div>
-      <CardContent className="p-4">
+      <CardContent className="p-3 sm:p-4">
         {/* Title - Full Width */}
-        <h3 className="line-clamp-2 text-base font-semibold leading-tight">{title}</h3>
+        <h3 className="line-clamp-2 text-sm sm:text-base font-semibold leading-tight">{title}</h3>
         
         {/* Info Row: Year | Rating */}
-        <div className="flex items-center justify-between mt-3">
+        <div className="flex items-center justify-between mt-2 sm:mt-3">
           <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80 transition-colors" onClick={() => onYearClick?.(year)}>
             {year}
           </Badge>
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="flex items-center gap-1 text-foreground cursor-help">
-                <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
-                <span className="font-bold text-sm">
+                <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-yellow-500 text-yellow-500" />
+                <span className="font-bold text-xs sm:text-sm">
                   {imdbRating ? imdbRating.toFixed(1) : rating.toFixed(1)}
                 </span>
               </div>
@@ -194,7 +194,7 @@ export const MovieCard = ({
         </div>
 
         {/* Genres */}
-        <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t">
+        <div className="flex flex-wrap gap-1 sm:gap-1.5 mt-2 sm:mt-3 pt-2 sm:pt-3 border-t">
           {genre.slice(0, 3).map(g => (
             <Badge key={g} variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80 transition-colors" onClick={() => onGenreClick?.(g)}>
               {g}
@@ -203,7 +203,7 @@ export const MovieCard = ({
         </div>
 
         {/* Rating Buttons - At Bottom */}
-        <div className="flex items-center justify-center gap-2 mt-4 pt-3 border-t">
+        <div className="flex items-center justify-center gap-1.5 sm:gap-2 mt-3 sm:mt-4 pt-2 sm:pt-3 border-t">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button 
@@ -211,9 +211,9 @@ export const MovieCard = ({
                 variant={currentRating === 1 ? "default" : "outline"} 
                 onClick={() => handleRate(1)} 
                 disabled={saving}
-                className="h-9 w-9"
+                className="h-8 w-8 sm:h-9 sm:w-9"
               >
-                <ThumbsDown className={`h-4 w-4 ${currentRating === 1 ? 'fill-current' : ''}`} />
+                <ThumbsDown className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${currentRating === 1 ? 'fill-current' : ''}`} />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
@@ -228,9 +228,9 @@ export const MovieCard = ({
                 variant={currentRating === 5 ? "default" : "outline"}
                 onClick={() => handleRate(5)} 
                 disabled={saving}
-                className="h-9 w-9"
+                className="h-8 w-8 sm:h-9 sm:w-9"
               >
-                <ThumbsUp className={`h-4 w-4 ${currentRating === 5 ? 'fill-current' : ''}`} />
+                <ThumbsUp className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${currentRating === 5 ? 'fill-current' : ''}`} />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
@@ -245,9 +245,9 @@ export const MovieCard = ({
                 variant={currentRating === 10 ? "default" : "outline"}
                 onClick={() => handleRate(10)} 
                 disabled={saving}
-                className="h-9 w-9"
+                className="h-8 w-8 sm:h-9 sm:w-9"
               >
-                <Heart className={`h-4 w-4 ${currentRating === 10 ? 'fill-current' : ''}`} />
+                <Heart className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${currentRating === 10 ? 'fill-current' : ''}`} />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
