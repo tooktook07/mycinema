@@ -439,23 +439,23 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
         ) : movie ? (
           <ScrollArea className="h-full">
             {/* Portrait Poster & Header Section */}
-            <div className="p-3 sm:p-6">
-              <div className="flex gap-3 sm:gap-4 mb-3 sm:mb-4">
+            <div className="p-2 sm:p-6">
+              <div className="flex gap-2 sm:gap-4 mb-2 sm:mb-4">
                 {/* Portrait Poster */}
                 {imageProps && (
-                  <div className="w-24 sm:w-32 flex-shrink-0">
+                  <div className="w-20 sm:w-32 flex-shrink-0">
                     <img
                       {...imageProps}
                       alt={movie.title}
-                      className="w-full rounded-lg shadow-lg"
+                      className="w-full rounded shadow-lg"
                     />
                   </div>
                 )}
                 
                 {/* Title & Info */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-1 mb-2">
-                    <h2 className="text-base sm:text-2xl font-bold leading-tight">{movie.title}</h2>
+                  <div className="flex items-start justify-between gap-1 mb-1.5">
+                    <h2 className="text-sm sm:text-2xl font-bold leading-tight line-clamp-2">{movie.title}</h2>
                     {relevanceReason && (
                       <TooltipProvider>
                         <Tooltip>
@@ -474,39 +474,39 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                   </div>
                   
                   {movie.tagline && (
-                    <p className="text-xs sm:text-sm text-muted-foreground italic line-clamp-2 mb-2">"{movie.tagline}"</p>
+                    <p className="text-[10px] sm:text-sm text-muted-foreground italic line-clamp-2 mb-1.5">"{movie.tagline}"</p>
                   )}
 
                   {/* Quick Info Badges */}
-                  <div className="flex flex-wrap gap-1 sm:gap-1.5 mb-2 sm:mb-3">
-                    <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0 sm:px-2 sm:py-0.5 h-5 sm:h-auto">
+                  <div className="flex flex-wrap gap-0.5 sm:gap-1.5 mb-1.5 sm:mb-3">
+                    <Badge variant="secondary" className="text-[9px] sm:text-xs px-1 py-0 sm:px-2 sm:py-0.5 h-4 sm:h-auto">
                       <Calendar className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
                       {movie.year}
                     </Badge>
                     {movie.runtime && (
-                      <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0 sm:px-2 sm:py-0.5 h-5 sm:h-auto">
-                        <Film className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
+                      <Badge variant="secondary" className="text-[9px] sm:text-xs px-1 py-0 sm:px-2 sm:py-0.5 h-4 sm:h-auto">
+                        <Film className="h-2 w-2 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
                         {movie.runtime}
                       </Badge>
                     )}
                     {(movie.imdb_rating || movie.rating) && (
-                      <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0 sm:px-2 sm:py-0.5 h-5 sm:h-auto">
-                        <Star className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1 fill-yellow-500 text-yellow-500" />
+                      <Badge variant="secondary" className="text-[9px] sm:text-xs px-1 py-0 sm:px-2 sm:py-0.5 h-4 sm:h-auto">
+                        <Star className="h-2 w-2 sm:h-3 sm:w-3 mr-0.5 sm:mr-1 fill-yellow-500 text-yellow-500" />
                         {movie.imdb_rating || movie.rating}/10
                       </Badge>
                     )}
                     {movie.original_language && (
-                      <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0 sm:px-2 sm:py-0.5 h-5 sm:h-auto">
-                        <Globe className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
+                      <Badge variant="secondary" className="text-[9px] sm:text-xs px-1 py-0 sm:px-2 sm:py-0.5 h-4 sm:h-auto">
+                        <Globe className="h-2 w-2 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
                         {movie.original_language.toUpperCase()}
                       </Badge>
                     )}
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex flex-wrap gap-1 sm:gap-2">
+                  <div className="flex flex-wrap gap-0.5 sm:gap-2">
                     <TooltipProvider>
-                      <div className="flex gap-1 sm:gap-2 flex-1">
+                      <div className="flex gap-0.5 sm:gap-2 flex-1">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button 
@@ -514,9 +514,9 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                               variant={currentRating === 1 ? "default" : "secondary"}
                               onClick={() => handleRate(1)}
                               disabled={saving}
-                              className="flex-1 h-7 sm:h-9 text-[10px] sm:text-sm px-1.5 sm:px-3"
+                              className="flex-1 h-7 sm:h-9 text-[10px] sm:text-sm px-1 sm:px-3"
                             >
-                              <ThumbsDown className={`h-3 w-3 sm:h-4 sm:w-4 sm:mr-2 ${currentRating === 1 ? 'fill-current' : ''}`} />
+                              <ThumbsDown className={`h-2.5 w-2.5 sm:h-4 sm:w-4 sm:mr-2 ${currentRating === 1 ? 'fill-current' : ''}`} />
                               <span className="hidden sm:inline">Not for me</span>
                             </Button>
                           </TooltipTrigger>
@@ -530,9 +530,9 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                               variant={currentRating === 5 ? "default" : "secondary"}
                               onClick={() => handleRate(5)}
                               disabled={saving}
-                              className="flex-1 h-7 sm:h-9 text-[10px] sm:text-sm px-1.5 sm:px-3"
+                              className="flex-1 h-7 sm:h-9 text-[10px] sm:text-sm px-1 sm:px-3"
                             >
-                              <ThumbsUp className={`h-3 w-3 sm:h-4 sm:w-4 sm:mr-2 ${currentRating === 5 ? 'fill-current' : ''}`} />
+                              <ThumbsUp className={`h-2.5 w-2.5 sm:h-4 sm:w-4 sm:mr-2 ${currentRating === 5 ? 'fill-current' : ''}`} />
                               <span className="hidden sm:inline">I like it</span>
                             </Button>
                           </TooltipTrigger>
@@ -546,9 +546,9 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                               variant={currentRating === 10 ? "default" : "secondary"}
                               onClick={() => handleRate(10)}
                               disabled={saving}
-                              className="flex-1 h-7 sm:h-9 text-[10px] sm:text-sm px-1.5 sm:px-3"
+                              className="flex-1 h-7 sm:h-9 text-[10px] sm:text-sm px-1 sm:px-3"
                             >
-                              <Heart className={`h-3 w-3 sm:h-4 sm:w-4 sm:mr-2 ${currentRating === 10 ? 'fill-current' : ''}`} />
+                              <Heart className={`h-2.5 w-2.5 sm:h-4 sm:w-4 sm:mr-2 ${currentRating === 10 ? 'fill-current' : ''}`} />
                               <span className="hidden sm:inline">Love it!</span>
                             </Button>
                           </TooltipTrigger>
@@ -569,22 +569,22 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
 
               {/* Plot */}
               {movie.plot && (
-                <div className="mb-3 sm:mb-4">
-                  <h3 className="text-sm sm:text-base font-semibold mb-1.5 sm:mb-2">Overview</h3>
-                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">{movie.plot}</p>
+                <div className="mb-2 sm:mb-4">
+                  <h3 className="text-xs sm:text-base font-semibold mb-1 sm:mb-2">Overview</h3>
+                  <p className="text-[10px] sm:text-sm text-muted-foreground leading-relaxed">{movie.plot}</p>
                 </div>
               )}
 
               {/* Navigation Buttons */}
-              <div className="flex gap-1.5 sm:gap-2 mb-3 sm:mb-4">
+              <div className="flex gap-1 sm:gap-2 mb-2 sm:mb-4">
                 <Button 
                   variant="outline"
                   size="sm"
                   onClick={handlePreviousMovie}
                   disabled={!canGoBack}
-                  className="flex-1 h-7 sm:h-9 text-[10px] sm:text-sm px-2 sm:px-4"
+                  className="flex-1 h-7 sm:h-9 text-[10px] sm:text-sm px-1.5 sm:px-4"
                 >
-                  <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <ArrowLeft className="h-2.5 w-2.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   Previous
                 </Button>
                 <Button 
@@ -592,12 +592,12 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                   size="sm"
                   onClick={handleNextSimilarMovie}
                   disabled={loadingNextMovie}
-                  className="flex-1 h-7 sm:h-9 text-[10px] sm:text-sm px-2 sm:px-4"
+                  className="flex-1 h-7 sm:h-9 text-[10px] sm:text-sm px-1.5 sm:px-4"
                 >
                   {loadingNextMovie ? (
-                    <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin" />
+                    <Loader2 className="h-2.5 w-2.5 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin" />
                   ) : (
-                    <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    <Sparkles className="h-2.5 w-2.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   )}
                   Next Similar
                 </Button>
@@ -605,41 +605,41 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
 
               {/* Tabs for Organized Content */}
               <Tabs defaultValue="details" className="w-full">
-                <TabsList className="w-full grid grid-cols-3 mb-3 sm:mb-4 h-8 sm:h-10">
-                  <TabsTrigger value="details" className="text-[10px] sm:text-sm px-2 sm:px-4">Details</TabsTrigger>
-                  <TabsTrigger value="cast" className="text-[10px] sm:text-sm px-2 sm:px-4">Cast</TabsTrigger>
-                  <TabsTrigger value="more" className="text-[10px] sm:text-sm px-2 sm:px-4">More</TabsTrigger>
+                <TabsList className="w-full grid grid-cols-3 mb-2 sm:mb-4 h-7 sm:h-10">
+                  <TabsTrigger value="details" className="text-[9px] sm:text-sm px-1 sm:px-4">Details</TabsTrigger>
+                  <TabsTrigger value="cast" className="text-[9px] sm:text-sm px-1 sm:px-4">Cast</TabsTrigger>
+                  <TabsTrigger value="more" className="text-[9px] sm:text-sm px-1 sm:px-4">More</TabsTrigger>
                 </TabsList>
 
                 {/* Details Tab */}
-                <TabsContent value="details" className="space-y-2 sm:space-y-3">
+                <TabsContent value="details" className="space-y-1.5 sm:space-y-3">
                   {/* Genres */}
                   {movie.genres && movie.genres.length > 0 && (
-                    <Card className="p-2 sm:p-3">
-                      <h4 className="text-[10px] sm:text-xs font-semibold mb-1.5 sm:mb-2 text-muted-foreground uppercase tracking-wide">Genres</h4>
-                      <div className="flex flex-wrap gap-1">
+                    <Card className="p-1.5 sm:p-3">
+                      <h4 className="text-[9px] sm:text-xs font-semibold mb-1 sm:mb-2 text-muted-foreground uppercase tracking-wide">Genres</h4>
+                      <div className="flex flex-wrap gap-0.5">
                         {movie.genres.map((g) => (
-                          <Badge key={g} variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0 h-5 sm:h-auto">{g}</Badge>
+                          <Badge key={g} variant="secondary" className="text-[9px] sm:text-xs px-1 py-0 h-4 sm:h-auto">{g}</Badge>
                         ))}
                       </div>
                     </Card>
                   )}
 
                   {/* External Links */}
-                  <Card className="p-2 sm:p-3">
-                    <h4 className="text-[10px] sm:text-xs font-semibold mb-1.5 sm:mb-2 text-muted-foreground uppercase tracking-wide">Links</h4>
-                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                  <Card className="p-1.5 sm:p-3">
+                    <h4 className="text-[9px] sm:text-xs font-semibold mb-1 sm:mb-2 text-muted-foreground uppercase tracking-wide">Links</h4>
+                    <div className="flex flex-wrap gap-1 sm:gap-2">
                       {hasValidImdbId && (
-                        <Button variant="outline" size="sm" asChild className="flex-1 sm:flex-none h-7 sm:h-9 text-[10px] sm:text-sm px-2 sm:px-3">
+                        <Button variant="outline" size="sm" asChild className="flex-1 sm:flex-none h-7 sm:h-9 text-[10px] sm:text-sm px-1.5 sm:px-3">
                           <a href={imdbUrl} target="_blank" rel="noopener noreferrer">
-                            <ExternalLink className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1" />
+                            <ExternalLink className="h-2 w-2 sm:h-3 sm:w-3 mr-0.5" />
                             IMDb
                           </a>
                         </Button>
                       )}
-                      <Button variant="outline" size="sm" asChild className="flex-1 sm:flex-none h-7 sm:h-9 text-[10px] sm:text-sm px-2 sm:px-3">
+                      <Button variant="outline" size="sm" asChild className="flex-1 sm:flex-none h-7 sm:h-9 text-[10px] sm:text-sm px-1.5 sm:px-3">
                         <a href={googleSearchUrl} target="_blank" rel="noopener noreferrer nofollow">
-                          <Search className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1" />
+                          <Search className="h-2 w-2 sm:h-3 sm:w-3 mr-0.5" />
                           Google
                         </a>
                       </Button>
@@ -648,39 +648,39 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
 
                   {/* Awards */}
                   {movie.awards && movie.awards !== "N/A" && (
-                    <Card className="p-2 sm:p-3 bg-gradient-to-br from-yellow-500/5 to-orange-500/5">
-                      <h4 className="text-[10px] sm:text-xs font-semibold mb-1.5 sm:mb-2 text-muted-foreground uppercase tracking-wide flex items-center gap-1">
-                        <Award className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <Card className="p-1.5 sm:p-3 bg-gradient-to-br from-yellow-500/5 to-orange-500/5">
+                      <h4 className="text-[9px] sm:text-xs font-semibold mb-1 sm:mb-2 text-muted-foreground uppercase tracking-wide flex items-center gap-0.5">
+                        <Award className="h-2.5 w-2.5 sm:h-4 sm:w-4" />
                         Awards
                       </h4>
-                      <p className="text-[10px] sm:text-sm">{movie.awards}</p>
+                      <p className="text-[9px] sm:text-sm">{movie.awards}</p>
                     </Card>
                   )}
 
                   {/* Financial Info */}
                   {(movie.budget || movie.revenue || movie.box_office) && (
-                    <Card className="p-2 sm:p-3">
-                      <h4 className="text-[10px] sm:text-xs font-semibold mb-2 text-muted-foreground uppercase tracking-wide flex items-center gap-1">
-                        <DollarSign className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <Card className="p-1.5 sm:p-3">
+                      <h4 className="text-[9px] sm:text-xs font-semibold mb-1 sm:mb-2 text-muted-foreground uppercase tracking-wide flex items-center gap-0.5">
+                        <DollarSign className="h-2.5 w-2.5 sm:h-4 sm:w-4" />
                         Box Office
                       </h4>
-                      <div className="space-y-1 sm:space-y-1.5">
+                      <div className="space-y-0.5 sm:space-y-1.5">
                         {movie.budget && (
                           <div className="flex justify-between items-center">
-                            <span className="text-[10px] sm:text-xs text-muted-foreground">Budget</span>
-                            <span className="text-[10px] sm:text-xs font-semibold">{formatCurrency(movie.budget)}</span>
+                            <span className="text-[9px] sm:text-xs text-muted-foreground">Budget</span>
+                            <span className="text-[9px] sm:text-xs font-semibold">{formatCurrency(movie.budget)}</span>
                           </div>
                         )}
                         {movie.revenue && (
                           <div className="flex justify-between items-center">
-                            <span className="text-[10px] sm:text-xs text-muted-foreground">Revenue</span>
-                            <span className="text-[10px] sm:text-xs font-semibold">{formatCurrency(movie.revenue)}</span>
+                            <span className="text-[9px] sm:text-xs text-muted-foreground">Revenue</span>
+                            <span className="text-[9px] sm:text-xs font-semibold">{formatCurrency(movie.revenue)}</span>
                           </div>
                         )}
                         {movie.box_office && (
                           <div className="flex justify-between items-center">
-                            <span className="text-[10px] sm:text-xs text-muted-foreground">Box Office</span>
-                            <span className="text-[10px] sm:text-xs font-semibold">{movie.box_office}</span>
+                            <span className="text-[9px] sm:text-xs text-muted-foreground">Box Office</span>
+                            <span className="text-[9px] sm:text-xs font-semibold">{movie.box_office}</span>
                           </div>
                         )}
                       </div>
@@ -689,18 +689,18 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
 
                   {/* Watch Providers */}
                   {watchProviders && (watchProviders.flatrate.length > 0 || watchProviders.rent.length > 0 || watchProviders.buy.length > 0) && (
-                    <Card className="p-2 sm:p-3">
-                      <h4 className="text-[10px] sm:text-xs font-semibold mb-2 text-muted-foreground uppercase tracking-wide flex items-center gap-1">
-                        <Play className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <Card className="p-1.5 sm:p-3">
+                      <h4 className="text-[9px] sm:text-xs font-semibold mb-1 sm:mb-2 text-muted-foreground uppercase tracking-wide flex items-center gap-0.5">
+                        <Play className="h-2.5 w-2.5 sm:h-4 sm:w-4" />
                         Where to Watch
                       </h4>
-                      <div className="space-y-2">
+                      <div className="space-y-1 sm:space-y-2">
                         {watchProviders.flatrate.length > 0 && (
                           <div>
-                            <p className="text-[9px] sm:text-xs text-muted-foreground mb-1">Streaming</p>
-                            <div className="flex flex-wrap gap-1">
+                            <p className="text-[8px] sm:text-xs text-muted-foreground mb-0.5">Streaming</p>
+                            <div className="flex flex-wrap gap-0.5">
                               {watchProviders.flatrate.map((provider: any) => (
-                                <div key={provider.provider_id} className="flex items-center gap-0.5 text-[9px] sm:text-xs bg-muted rounded px-1.5 py-0.5">
+                                <div key={provider.provider_id} className="flex items-center gap-0.5 text-[8px] sm:text-xs bg-muted rounded px-1 py-0.5">
                                   {provider.provider_name}
                                 </div>
                               ))}
@@ -709,10 +709,10 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                         )}
                         {watchProviders.rent.length > 0 && (
                           <div>
-                            <p className="text-[9px] sm:text-xs text-muted-foreground mb-1">Rent</p>
-                            <div className="flex flex-wrap gap-1">
+                            <p className="text-[8px] sm:text-xs text-muted-foreground mb-0.5">Rent</p>
+                            <div className="flex flex-wrap gap-0.5">
                               {watchProviders.rent.map((provider: any) => (
-                                <div key={provider.provider_id} className="flex items-center gap-0.5 text-[9px] sm:text-xs bg-muted rounded px-1.5 py-0.5">
+                                <div key={provider.provider_id} className="flex items-center gap-0.5 text-[8px] sm:text-xs bg-muted rounded px-1 py-0.5">
                                   {provider.provider_name}
                                 </div>
                               ))}
@@ -721,10 +721,10 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                         )}
                         {watchProviders.buy.length > 0 && (
                           <div>
-                            <p className="text-[9px] sm:text-xs text-muted-foreground mb-1">Buy</p>
-                            <div className="flex flex-wrap gap-1">
+                            <p className="text-[8px] sm:text-xs text-muted-foreground mb-0.5">Buy</p>
+                            <div className="flex flex-wrap gap-0.5">
                               {watchProviders.buy.map((provider: any) => (
-                                <div key={provider.provider_id} className="flex items-center gap-0.5 text-[9px] sm:text-xs bg-muted rounded px-1.5 py-0.5">
+                                <div key={provider.provider_id} className="flex items-center gap-0.5 text-[8px] sm:text-xs bg-muted rounded px-1 py-0.5">
                                   {provider.provider_name}
                                 </div>
                               ))}
@@ -737,14 +737,14 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                 </TabsContent>
 
                 {/* Cast & Crew Tab */}
-                <TabsContent value="cast" className="space-y-2 sm:space-y-3">
+                <TabsContent value="cast" className="space-y-1.5 sm:space-y-3">
                   {/* Director */}
                   {movie.director && (
-                    <Card className="p-2 sm:p-3">
-                      <h4 className="text-[10px] sm:text-xs font-semibold mb-1.5 sm:mb-2 text-muted-foreground uppercase tracking-wide">Director</h4>
-                      <div className="flex flex-wrap gap-1">
+                    <Card className="p-1.5 sm:p-3">
+                      <h4 className="text-[9px] sm:text-xs font-semibold mb-1 sm:mb-2 text-muted-foreground uppercase tracking-wide">Director</h4>
+                      <div className="flex flex-wrap gap-0.5">
                         {movie.director.split(",").map((d) => (
-                          <Badge key={d.trim()} variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0 h-5 sm:h-auto">{d.trim()}</Badge>
+                          <Badge key={d.trim()} variant="secondary" className="text-[9px] sm:text-xs px-1 py-0 h-4 sm:h-auto">{d.trim()}</Badge>
                         ))}
                       </div>
                     </Card>
@@ -752,11 +752,11 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
 
                   {/* Writers */}
                   {movie.writing && (
-                    <Card className="p-2 sm:p-3">
-                      <h4 className="text-[10px] sm:text-xs font-semibold mb-1.5 sm:mb-2 text-muted-foreground uppercase tracking-wide">Writers</h4>
-                      <div className="flex flex-wrap gap-1">
+                    <Card className="p-1.5 sm:p-3">
+                      <h4 className="text-[9px] sm:text-xs font-semibold mb-1 sm:mb-2 text-muted-foreground uppercase tracking-wide">Writers</h4>
+                      <div className="flex flex-wrap gap-0.5">
                         {movie.writing.split(",").map((writer) => (
-                          <Badge key={writer.trim()} variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0 h-5 sm:h-auto">{writer.trim()}</Badge>
+                          <Badge key={writer.trim()} variant="secondary" className="text-[9px] sm:text-xs px-1 py-0 h-4 sm:h-auto">{writer.trim()}</Badge>
                         ))}
                       </div>
                     </Card>
@@ -764,11 +764,11 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
 
                   {/* Cast */}
                   {movie.actors && (
-                    <Card className="p-2 sm:p-3">
-                      <h4 className="text-[10px] sm:text-xs font-semibold mb-1.5 sm:mb-2 text-muted-foreground uppercase tracking-wide">Cast</h4>
-                      <div className="flex flex-wrap gap-1">
+                    <Card className="p-1.5 sm:p-3">
+                      <h4 className="text-[9px] sm:text-xs font-semibold mb-1 sm:mb-2 text-muted-foreground uppercase tracking-wide">Cast</h4>
+                      <div className="flex flex-wrap gap-0.5">
                         {movie.actors.split(",").slice(0, 15).map((actor) => (
-                          <Badge key={actor.trim()} variant="outline" className="text-[10px] sm:text-xs px-1.5 py-0 h-5 sm:h-auto">{actor.trim()}</Badge>
+                          <Badge key={actor.trim()} variant="outline" className="text-[9px] sm:text-xs px-1 py-0 h-4 sm:h-auto">{actor.trim()}</Badge>
                         ))}
                       </div>
                     </Card>
@@ -776,11 +776,11 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
 
                   {/* Sound */}
                   {movie.sound && (
-                    <Card className="p-2 sm:p-3">
-                      <h4 className="text-[10px] sm:text-xs font-semibold mb-1.5 sm:mb-2 text-muted-foreground uppercase tracking-wide">Sound</h4>
-                      <div className="flex flex-wrap gap-1">
+                    <Card className="p-1.5 sm:p-3">
+                      <h4 className="text-[9px] sm:text-xs font-semibold mb-1 sm:mb-2 text-muted-foreground uppercase tracking-wide">Sound</h4>
+                      <div className="flex flex-wrap gap-0.5">
                         {movie.sound.split(",").slice(0, 10).map((person) => (
-                          <Badge key={person.trim()} variant="outline" className="text-[9px] sm:text-xs px-1.5 py-0 h-4 sm:h-5">{person.trim()}</Badge>
+                          <Badge key={person.trim()} variant="outline" className="text-[8px] sm:text-xs px-1 py-0 h-4 sm:h-5">{person.trim()}</Badge>
                         ))}
                       </div>
                     </Card>
@@ -788,14 +788,14 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                 </TabsContent>
 
                 {/* More Tab */}
-                <TabsContent value="more" className="space-y-2 sm:space-y-3">
+                <TabsContent value="more" className="space-y-1.5 sm:space-y-3">
                   {/* Keywords */}
                   {movie.keywords && movie.keywords.length > 0 && (
-                    <Card className="p-2 sm:p-3">
-                      <h4 className="text-[10px] sm:text-xs font-semibold mb-1.5 sm:mb-2 text-muted-foreground uppercase tracking-wide">Keywords</h4>
-                      <div className="flex flex-wrap gap-1">
+                    <Card className="p-1.5 sm:p-3">
+                      <h4 className="text-[9px] sm:text-xs font-semibold mb-1 sm:mb-2 text-muted-foreground uppercase tracking-wide">Keywords</h4>
+                      <div className="flex flex-wrap gap-0.5">
                         {movie.keywords.map((keyword) => (
-                          <Badge key={keyword} variant="outline" className="text-[9px] sm:text-xs px-1.5 py-0 h-4 sm:h-5">{keyword}</Badge>
+                          <Badge key={keyword} variant="outline" className="text-[8px] sm:text-xs px-1 py-0 h-4 sm:h-5">{keyword}</Badge>
                         ))}
                       </div>
                     </Card>
@@ -803,41 +803,41 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
 
                   {/* Production */}
                   {movie.production_companies && Array.isArray(movie.production_companies) && movie.production_companies.length > 0 && (
-                    <Card className="p-2 sm:p-3">
-                      <h4 className="text-[10px] sm:text-xs font-semibold mb-1.5 sm:mb-2 text-muted-foreground uppercase tracking-wide flex items-center gap-1">
-                        <Briefcase className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <Card className="p-1.5 sm:p-3">
+                      <h4 className="text-[9px] sm:text-xs font-semibold mb-1 sm:mb-2 text-muted-foreground uppercase tracking-wide flex items-center gap-0.5">
+                        <Briefcase className="h-2.5 w-2.5 sm:h-4 sm:w-4" />
                         Production
                       </h4>
-                      <div className="flex flex-wrap gap-1">
+                      <div className="flex flex-wrap gap-0.5">
                         {movie.production_companies.map((company: any, idx: number) => (
-                          <Badge key={idx} variant="outline" className="text-[9px] sm:text-xs px-1.5 py-0 h-4 sm:h-5">{company.name || company}</Badge>
+                          <Badge key={idx} variant="outline" className="text-[8px] sm:text-xs px-1 py-0 h-4 sm:h-5">{company.name || company}</Badge>
                         ))}
                       </div>
                     </Card>
                   )}
 
                   {/* Countries & Languages */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-3">
                     {movie.production_countries && Array.isArray(movie.production_countries) && movie.production_countries.length > 0 && (
-                      <Card className="p-2 sm:p-3">
-                        <h4 className="text-[10px] sm:text-xs font-semibold mb-1.5 sm:mb-2 text-muted-foreground uppercase tracking-wide">Countries</h4>
-                        <div className="flex flex-wrap gap-1">
+                      <Card className="p-1.5 sm:p-3">
+                        <h4 className="text-[9px] sm:text-xs font-semibold mb-1 sm:mb-2 text-muted-foreground uppercase tracking-wide">Countries</h4>
+                        <div className="flex flex-wrap gap-0.5">
                           {movie.production_countries.map((country: any, idx: number) => (
-                            <Badge key={idx} variant="outline" className="text-[9px] sm:text-xs px-1.5 py-0 h-4 sm:h-5">{country.name || country}</Badge>
+                            <Badge key={idx} variant="outline" className="text-[8px] sm:text-xs px-1 py-0 h-4 sm:h-5">{country.name || country}</Badge>
                           ))}
                         </div>
                       </Card>
                     )}
 
                     {movie.spoken_languages && Array.isArray(movie.spoken_languages) && movie.spoken_languages.length > 0 && (
-                      <Card className="p-2 sm:p-3">
-                        <h4 className="text-[10px] sm:text-xs font-semibold mb-1.5 sm:mb-2 text-muted-foreground uppercase tracking-wide flex items-center gap-1">
-                          <Languages className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <Card className="p-1.5 sm:p-3">
+                        <h4 className="text-[9px] sm:text-xs font-semibold mb-1 sm:mb-2 text-muted-foreground uppercase tracking-wide flex items-center gap-0.5">
+                          <Languages className="h-2.5 w-2.5 sm:h-4 sm:w-4" />
                           Languages
                         </h4>
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-wrap gap-0.5">
                           {movie.spoken_languages.map((lang: any, idx: number) => (
-                            <Badge key={idx} variant="outline" className="text-[9px] sm:text-xs px-1.5 py-0 h-4 sm:h-5">{lang.english_name || lang.name || lang}</Badge>
+                            <Badge key={idx} variant="outline" className="text-[8px] sm:text-xs px-1 py-0 h-4 sm:h-5">{lang.english_name || lang.name || lang}</Badge>
                           ))}
                         </div>
                       </Card>
@@ -848,14 +848,14 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
 
               {/* Similar Movies */}
               {similarMovies && similarMovies.length > 0 && (
-                <div className="mt-3 sm:mt-4">
-                  <h3 className="text-sm sm:text-base font-semibold mb-2 sm:mb-3">Similar Movies</h3>
+                <div className="mt-2 sm:mt-4">
+                  <h3 className="text-xs sm:text-base font-semibold mb-1.5 sm:mb-3">Similar Movies</h3>
                   <Carousel className="w-full">
-                    <CarouselContent className="-ml-1 sm:-ml-2">
+                    <CarouselContent className="-ml-0.5 sm:-ml-2">
                       {similarMovies.slice(0, 6).map((similar) => {
                         const similarImageProps = getOptimizedImageProps(similar.poster, similar.local_poster_url);
                         return (
-                          <CarouselItem key={similar.id} className="basis-1/3 sm:basis-1/4 pl-1 sm:pl-2">
+                          <CarouselItem key={similar.id} className="basis-1/3 sm:basis-1/4 pl-0.5 sm:pl-2">
                             <Card 
                               className="cursor-pointer hover:ring-2 hover:ring-primary transition-all overflow-hidden"
                               onClick={() => onNavigateToMovie?.(similar.id)}
@@ -867,17 +867,17 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                                   className="w-full aspect-[2/3] object-cover"
                                 />
                               )}
-                              <div className="p-2">
-                                <p className="text-xs font-medium line-clamp-2">{similar.title}</p>
-                                <p className="text-xs text-muted-foreground">{similar.year}</p>
+                              <div className="p-1 sm:p-2">
+                                <p className="text-[9px] sm:text-xs font-medium line-clamp-2">{similar.title}</p>
+                                <p className="text-[8px] sm:text-xs text-muted-foreground">{similar.year}</p>
                               </div>
                             </Card>
                           </CarouselItem>
                         );
                       })}
                     </CarouselContent>
-                    <CarouselPrevious className="left-2" />
-                    <CarouselNext className="right-2" />
+                    <CarouselPrevious className="left-1 sm:left-2 h-6 w-6 sm:h-8 sm:w-8" />
+                    <CarouselNext className="right-1 sm:right-2 h-6 w-6 sm:h-8 sm:w-8" />
                   </Carousel>
                 </div>
               )}
