@@ -18,9 +18,10 @@ const SEARCH_SUGGESTIONS = [
   "director:Nolan",
   "imdb:8+",
   "genre:Action",
-  "actor:Tom Hanks",
-  "Oscar",
-  "Inception",
+  "actor:DiCaprio",
+  "genre:Sci-Fi",
+  "year:2019",
+  "imdb:7+",
 ];
 
 const Items = () => {
@@ -110,25 +111,12 @@ const Items = () => {
           hasStructuredSearch = true;
         }
 
-        // If no structured pattern found, do general text search
+        // If no structured pattern found, do simple text search (title, actors, director, plot only)
         if (!hasStructuredSearch) {
           const searchPattern = `%${debouncedSearch}%`;
-          const searchConditions = [
-            `title.ilike.${searchPattern}`,
-            `actors.ilike.${searchPattern}`,
-            `director.ilike.${searchPattern}`,
-            `plot.ilike.${searchPattern}`,
-            `year::text.ilike.${searchPattern}`,
-            `runtime.ilike.${searchPattern}`,
-            `awards.ilike.${searchPattern}`,
-            `tagline.ilike.${searchPattern}`,
-            `writing.ilike.${searchPattern}`,
-            `sound.ilike.${searchPattern}`,
-            `original_language.ilike.${searchPattern}`,
-            `status.ilike.${searchPattern}`,
-          ];
-          
-          query = query.or(searchConditions.join(','));
+          query = query.or(
+            `title.ilike.${searchPattern},actors.ilike.${searchPattern},director.ilike.${searchPattern},plot.ilike.${searchPattern}`
+          );
         }
       }
 
