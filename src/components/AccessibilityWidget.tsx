@@ -1,18 +1,63 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Accessibility } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { AccessibilityPanel } from '@/components/AccessibilityPanel';
 import { useAccessibility } from '@/contexts/AccessibilityContext';
+import { supabase } from '@/integrations/supabase/client';
 
 export function AccessibilityWidget() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const { hasNonDefaultSettings } = useAccessibility();
   const location = useLocation();
+  const [isEnabled, setIsEnabled] = useState(true);
 
-  // Hide widget on specific routes
-  if (location.pathname === '/discover' || location.pathname === '/account') {
+  useEffect(() => {
+    fetchWidgetSetting();
+    
+    // Subscribe to realtime changes
+    const channel = supabase
+      .channel('system_settings_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'system_settings',
+          filter: 'key=eq.accessibility_widget_enabled'
+        },
+        (payload) => {
+          setIsEnabled(payload.new.value === true);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const fetchWidgetSetting = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'accessibility_widget_enabled')
+        .maybeSingle();
+
+      if (error) throw error;
+      
+      if (data) {
+        setIsEnabled(data.value === true);
+      }
+    } catch (error) {
+      console.error('Error fetching widget setting:', error);
+    }
+  };
+
+  // Hide widget on specific routes or if disabled by admin
+  if (!isEnabled || location.pathname === '/discover' || location.pathname === '/account') {
     return null;
   }
 
