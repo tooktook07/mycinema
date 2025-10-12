@@ -424,7 +424,7 @@ const Movies = () => {
           </p>
         </div>
 
-        {(isLoading || authLoading) && lastCursor === null && (
+        {((isLoading && !displayedMovies.length) || authLoading) && lastCursor === null && (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {Array.from({ length: 48 }).map((_, i) => (
               <Skeleton key={i} className="aspect-[2/3] rounded-lg" />

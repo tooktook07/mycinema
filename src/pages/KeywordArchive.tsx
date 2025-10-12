@@ -20,68 +20,62 @@ const KeywordArchive = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [displayedMovies, setDisplayedMovies] = useState<any[]>([]);
   const [offset, setOffset] = useState(0);
+  const [allFilteredMovies, setAllFilteredMovies] = useState<any[]>([]);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetched } = useQuery({
     queryKey: ["keywordMovies", decodedKeyword, offset],
     queryFn: async () => {
-      const from = offset;
-      const to = from + MOVIES_PER_PAGE - 1;
-
-      // Use case-insensitive and normalized matching
-      if (offset === 0) {
-        // First page: fetch more to find the exact keyword match
-        const { data: allData, error } = await supabase
-          .from("movies")
-          .select("id, title, year, rating, imdb_rating, imdb_votes, genres, poster, local_poster_url, imdb_id, keywords")
-          .not("keywords", "is", null)
-          .order("imdb_rating", { ascending: false, nullsFirst: false })
-          .limit(1000);
-
-        if (error) {
-          console.error("Keyword query error:", error);
-          throw error;
-        }
-
-        // Filter client-side with case-insensitive and normalized matching
-        const normalize = (str: string) => str.toLowerCase().replace(/[-\s]/g, '');
-        const normalizedSearch = normalize(decodedKeyword);
-        
-        const filtered = allData?.filter(movie => 
-          movie.keywords?.some((k: string) => 
-            normalize(k) === normalizedSearch
-          )
-        ).map(({ keywords, ...movie }) => movie) || [];
-
-        // Return only the first page
-        const paginatedData = filtered.slice(0, MOVIES_PER_PAGE);
-        const hasMore = filtered.length > MOVIES_PER_PAGE;
-        
-        return { movies: paginatedData, hasMore };
-      } else {
-        // For subsequent pages
-        const { data: allData, error } = await supabase
-          .from("movies")
-          .select("id, title, year, rating, imdb_rating, imdb_votes, genres, poster, local_poster_url, imdb_id, keywords")
-          .not("keywords", "is", null)
-          .order("imdb_rating", { ascending: false, nullsFirst: false })
-          .limit(1000);
-
-        if (error) throw error;
-
-        const normalize = (str: string) => str.toLowerCase().replace(/[-\s]/g, '');
-        const normalizedSearch = normalize(decodedKeyword);
-        
-        const filtered = allData?.filter(movie => 
-          movie.keywords?.some((k: string) => 
-            normalize(k) === normalizedSearch
-          )
-        ).map(({ keywords, ...movie }) => movie) || [];
-
-        const paginatedData = filtered.slice(from, to + 1);
-        const hasMore = filtered.length > to + 1;
-        
+      // If we already have filtered movies cached and offset > 0, paginate from cache
+      if (offset > 0 && allFilteredMovies.length > 0) {
+        const from = offset;
+        const to = from + MOVIES_PER_PAGE - 1;
+        const paginatedData = allFilteredMovies.slice(from, to + 1);
+        const hasMore = allFilteredMovies.length > to + 1;
         return { movies: paginatedData, hasMore };
       }
+
+      // First try exact match with .contains() for performance
+      const { data: exactMatch, error: exactError } = await supabase
+        .from("movies")
+        .select("id, title, year, rating, imdb_rating, imdb_votes, genres, poster, local_poster_url, imdb_id")
+        .contains("keywords", [decodedKeyword])
+        .order("imdb_rating", { ascending: false, nullsFirst: false })
+        .range(0, 999);
+
+      if (!exactError && exactMatch && exactMatch.length > 0) {
+        // Exact match found, use it
+        const paginatedData = exactMatch.slice(0, MOVIES_PER_PAGE);
+        const hasMore = exactMatch.length > MOVIES_PER_PAGE;
+        return { movies: paginatedData, hasMore, allFiltered: exactMatch };
+      }
+
+      // Fallback to client-side filtering for case-insensitive matching
+      const { data: allData, error } = await supabase
+        .from("movies")
+        .select("id, title, year, rating, imdb_rating, imdb_votes, genres, poster, local_poster_url, imdb_id, keywords")
+        .not("keywords", "is", null)
+        .order("imdb_rating", { ascending: false, nullsFirst: false })
+        .range(0, 999);
+
+      if (error) {
+        console.error("Keyword query error:", error);
+        throw error;
+      }
+
+      // Filter client-side with case-insensitive and normalized matching
+      const normalize = (str: string) => str.toLowerCase().replace(/[-\s]/g, '');
+      const normalizedSearch = normalize(decodedKeyword);
+      
+      const filtered = allData?.filter(movie => 
+        movie.keywords?.some((k: string) => 
+          normalize(k) === normalizedSearch
+        )
+      ).map(({ keywords, ...movie }) => movie) || [];
+
+      const paginatedData = filtered.slice(0, MOVIES_PER_PAGE);
+      const hasMore = filtered.length > MOVIES_PER_PAGE;
+      
+      return { movies: paginatedData, hasMore, allFiltered: filtered };
     },
     enabled: !!decodedKeyword,
   });
@@ -115,7 +109,15 @@ const KeywordArchive = () => {
 
   useEffect(() => {
     if (data?.movies) {
-      setDisplayedMovies(prev => offset === 0 ? data.movies : [...prev, ...data.movies]);
+      if (offset === 0) {
+        setDisplayedMovies(data.movies);
+        // Cache all filtered movies on first load
+        if (data.allFiltered) {
+          setAllFilteredMovies(data.allFiltered);
+        }
+      } else {
+        setDisplayedMovies(prev => [...prev, ...data.movies]);
+      }
     }
   }, [data?.movies, offset]);
 
@@ -134,7 +136,7 @@ const KeywordArchive = () => {
 
   const hasMore = data?.hasMore || false;
 
-  if (isLoading && offset === 0) {
+  if ((isLoading || !isFetched) && offset === 0) {
     return (
       <ArchiveLayout
         title={`Movies tagged: ${displayKeyword}`}
@@ -158,7 +160,7 @@ const KeywordArchive = () => {
         breadcrumbs={[{ label: displayKeyword, href: `/keyword/${keyword}` }]}
         movieCount={countData || displayedMovies.length}
       >
-        {displayedMovies && displayedMovies.length > 0 ? (
+        {isFetched && displayedMovies && displayedMovies.length > 0 ? (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {displayedMovies.map((movie) => (
@@ -191,11 +193,11 @@ const KeywordArchive = () => {
               </div>
             )}
           </>
-        ) : (
+        ) : isFetched ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">No movies found with this keyword.</p>
           </div>
-        )}
+        ) : null}
       </ArchiveLayout>
 
       <MovieDetailModal

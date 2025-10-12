@@ -22,7 +22,7 @@ const PersonArchive = () => {
   const [displayedMovies, setDisplayedMovies] = useState<any[]>([]);
   const [offset, setOffset] = useState(0);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetched } = useQuery({
     queryKey: ["personMovies", decodedPersonName, offset],
     queryFn: async () => {
       const from = offset;
@@ -114,7 +114,7 @@ const PersonArchive = () => {
     );
   };
 
-  if (isLoading && offset === 0) {
+  if ((isLoading || !isFetched) && offset === 0) {
     return (
       <ArchiveLayout
         title={displayName}

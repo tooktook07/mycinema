@@ -19,7 +19,7 @@ const YearArchive = () => {
   const [displayedMovies, setDisplayedMovies] = useState<any[]>([]);
   const [offset, setOffset] = useState(0);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetched } = useQuery({
     queryKey: ["yearMovies", yearNumber, offset],
     queryFn: async () => {
       const from = offset;
@@ -82,7 +82,7 @@ const YearArchive = () => {
 
   const hasMore = data?.hasMore || false;
 
-  if (isLoading && offset === 0) {
+  if ((isLoading || !isFetched) && offset === 0) {
     return (
       <ArchiveLayout
         title={`Movies from ${yearNumber}`}
@@ -106,7 +106,7 @@ const YearArchive = () => {
         breadcrumbs={[{ label: yearNumber.toString(), href: `/year/${year}` }]}
         movieCount={countData || displayedMovies.length}
       >
-        {displayedMovies && displayedMovies.length > 0 ? (
+        {isFetched && displayedMovies && displayedMovies.length > 0 ? (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {displayedMovies.map((movie) => (
@@ -139,11 +139,11 @@ const YearArchive = () => {
               </div>
             )}
           </>
-        ) : (
+        ) : isFetched ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">No movies found from {yearNumber}.</p>
           </div>
-        )}
+        ) : null}
       </ArchiveLayout>
 
       <MovieDetailModal
