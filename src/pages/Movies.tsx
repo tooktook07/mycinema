@@ -1,211 +1,292 @@
-import { useState, useEffect, useRef, useMemo } from "react";
-import { Film, Grid, Table as TableIcon } from "lucide-react";
+import { useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { Movie } from "@/data/types";
+import { FilterPanel } from "@/components/FilterPanel";
 import { MovieCard } from "@/components/MovieCard";
 import { MovieDetailModal } from "@/components/MovieDetailModal";
-import { FilterPanel } from "@/components/FilterPanel";
-import { MoviesTable } from "@/components/MoviesTable";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
-import { Movie } from "@/data/types";
-import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { toast } from "sonner";
 
-const Movies = () => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
+const ITEMS_PER_PAGE = 48;
+
+export default function Movies() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const resultsRef = useRef<HTMLDivElement>(null);
-
+  const { user } = useAuth();
+  
   // Modal state
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Load more state
-  const [allMovies, setAllMovies] = useState<Movie[]>([]);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [hasMoreMovies, setHasMoreMovies] = useState(true);
-
-  // Debug logging
-  useEffect(() => {
-    console.log("[Movies] Component mounted on route:", window.location.pathname);
-    return () => {
-      console.log("[Movies] Component unmounting");
-    };
-  }, []);
-
-  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
+  // Read all params from URL
+  const currentPage = parseInt(searchParams.get("page") || "1", 10);
+  const sortBy = searchParams.get("sortBy") || "rating";
+  const sortOrder = searchParams.get("sortOrder") || "desc";
   
-  // Track current page for load more (not in URL)
-  const [currentPage, setCurrentPage] = useState(1);
-  
-  // Derive sortBy and sortOrder from URL (single source of truth)
-  const sortBy = (() => {
-    const sortByParam = searchParams.get('sortBy');
-    if (sortByParam && ['rating', 'year', 'title', 'user_rating', 'random'].includes(sortByParam)) {
-      return sortByParam as "rating" | "year" | "title" | "user_rating" | "random";
-    }
-    // Default to random for new users, rating for returning users
-    const hasVisited = localStorage.getItem('movies_has_visited');
-    if (!hasVisited) {
-      localStorage.setItem('movies_has_visited', 'true');
-      return 'random';
-    }
-    return 'random'; // Use URL default from FilterContext
-  })();
-  
-  const sortOrder = (() => {
-    const sortOrderParam = searchParams.get('sortOrder');
-    return (sortOrderParam === 'asc' || sortOrderParam === 'desc') ? sortOrderParam : 'desc';
-  })();
-  
-  const [itemsPerPage, setItemsPerPage] = useState(20); // Start with 20 items for faster initial load
-
-  // Auto-reset sort to "rating" if user logs out while "My Rating" is selected
-  useEffect(() => {
-    if (!user && sortBy === "user_rating") {
-      console.log("[Movies] User logged out with user_rating sort active - resetting to rating");
-      const newParams = new URLSearchParams(searchParams);
-      newParams.set('sortBy', 'rating');
-      newParams.set('sortOrder', 'desc');
-      setSearchParams(newParams, { replace: true });
-    }
-  }, [user, sortBy]);
-
-  // Convert URL params to stable string for memoization - prevents race conditions
-  const searchParamsString = searchParams.toString();
-
-  // Read filter values directly from URL with stable references (useMemo prevents array recreation)
+  // Parse filters from URL
   const appliedGenres = useMemo(() => {
-    const genresParam = searchParams.get('genres');
-    return genresParam ? genresParam.split(',').filter(Boolean) : [];
-  }, [searchParamsString]);
+    const genresParam = searchParams.get("genres");
+    return genresParam ? genresParam.split(",").filter(Boolean) : [];
+  }, [searchParams]);
 
-  const appliedRatingRange = useMemo((): [number, number] => {
-    const ratingParam = searchParams.get('rating');
-    return ratingParam 
-      ? ratingParam.split('-').map(Number) as [number, number]
-      : [0, 10];
-  }, [searchParamsString]);
+  const appliedRatingRange = useMemo(() => {
+    const ratingParam = searchParams.get("rating");
+    if (!ratingParam) return [0, 10] as [number, number];
+    const [min, max] = ratingParam.split("-").map(Number);
+    return [min, max] as [number, number];
+  }, [searchParams]);
 
-  const appliedYearRange = useMemo((): [number, number] => {
-    const yearParam = searchParams.get('year');
-    return yearParam 
-      ? yearParam.split('-').map(Number) as [number, number]
-      : [1900, 2030];
-  }, [searchParamsString]);
+  const appliedYearRange = useMemo(() => {
+    const yearParam = searchParams.get("year");
+    if (!yearParam) return [1900, 2030] as [number, number];
+    const [min, max] = yearParam.split("-").map(Number);
+    return [min, max] as [number, number];
+  }, [searchParams]);
 
-  const appliedSearchText = useMemo(() => {
-    return searchParams.get('search') || "";
-  }, [searchParamsString]);
+  const appliedSearchText = searchParams.get("search") || "";
 
-  const appliedPopularityRange = useMemo((): [number, number] => {
-    const popularityParam = searchParams.get('popularity');
-    return popularityParam 
-      ? popularityParam.split('-').map(Number) as [number, number]
-      : [0, 1000];
-  }, [searchParamsString]);
-
-  // Debug: Log when URL changes trigger filter updates
-  useEffect(() => {
-    console.log("[Movies] Filter values updated:", {
-      genres: appliedGenres,
-      rating: appliedRatingRange,
-      year: appliedYearRange,
-      search: appliedSearchText,
-      popularity: appliedPopularityRange
-    });
-  }, [searchParamsString]);
-
-  // Helper to update filters and reset page in one call
-  const updateFiltersAndResetPage = (updates: Record<string, any>) => {
+  // Helper function to update URL params
+  const updateUrlParams = (updates: Record<string, string>) => {
     const newParams = new URLSearchParams(searchParams);
-    
     Object.entries(updates).forEach(([key, value]) => {
-      if (value === null || value === undefined) {
-        newParams.delete(key);
-      } else if (Array.isArray(value)) {
-        if (value.length > 0) {
-          newParams.set(key, value.join(','));
-        } else {
-          newParams.delete(key);
-        }
+      if (value) {
+        newParams.set(key, value);
       } else {
-        newParams.set(key, value.toString());
+        newParams.delete(key);
       }
     });
-    
     setSearchParams(newParams, { replace: true });
-    // Reset pagination state
-    setCurrentPage(1);
-    setAllMovies([]);
-    setHasMoreMovies(true);
   };
 
+  // Fetch movies with filters, sorting, and pagination
+  const { data, isLoading, error } = useQuery({
+    queryKey: [
+      "movies",
+      currentPage,
+      sortBy,
+      sortOrder,
+      appliedGenres,
+      appliedRatingRange,
+      appliedYearRange,
+      appliedSearchText,
+    ],
+    queryFn: async () => {
+      let query = supabase.from("movies").select("*", { count: "exact" });
+
+      // Apply filters
+      if (appliedGenres.length > 0) {
+        query = query.overlaps("genres", appliedGenres);
+      }
+
+      if (appliedRatingRange[0] > 0 || appliedRatingRange[1] < 10) {
+        const minRating = appliedRatingRange[0];
+        const maxRating = appliedRatingRange[1];
+        query = query.or(
+          `and(rating.gte.${minRating},rating.lte.${maxRating}),and(imdb_rating.gte.${minRating},imdb_rating.lte.${maxRating})`
+        );
+      }
+
+      if (appliedYearRange[0] > 1900 || appliedYearRange[1] < 2030) {
+        query = query
+          .gte("year", appliedYearRange[0])
+          .lte("year", appliedYearRange[1]);
+      }
+
+      if (appliedSearchText) {
+        query = query.or(
+          `title.ilike.%${appliedSearchText}%,actors.ilike.%${appliedSearchText}%,director.ilike.%${appliedSearchText}%`
+        );
+      }
+
+      // Apply sorting
+      if (sortBy === "user_rating" && user) {
+        // Special handling for user ratings - need to fetch separately
+        const { data: moviesData, error: moviesError, count } = await query;
+        
+        if (moviesError) throw moviesError;
+        if (!moviesData) return { movies: [], totalCount: 0 };
+
+        // Fetch user ratings for these movies
+        const movieIds = moviesData.map((m) => m.id);
+        const { data: ratingsData } = await supabase
+          .from("user_ratings")
+          .select("media_id, user_rating")
+          .eq("user_id", user.id)
+          .in("media_id", movieIds);
+
+        // Merge ratings and sort
+        const moviesWithRatings = moviesData.map((movie) => {
+          const rating = ratingsData?.find((r) => r.media_id === movie.id);
+          return {
+            ...movie,
+            genre: movie.genres,
+            imdbId: movie.imdb_id,
+            voteCount: movie.vote_count,
+            originalLanguage: movie.original_language,
+            productionCompanies: movie.production_companies,
+            productionCountries: movie.production_countries,
+            spokenLanguages: movie.spoken_languages,
+            watchProviders: movie.watch_providers,
+            imdbRating: movie.imdb_rating,
+            imdbVotes: movie.imdb_votes,
+            boxOffice: movie.box_office,
+            dataSources: movie.data_sources as any,
+            lastOmdbFetch: movie.last_omdb_fetch,
+            userRating: rating?.user_rating || null,
+          };
+        });
+
+        // Sort by user rating
+        moviesWithRatings.sort((a, b) => {
+          const ratingA = a.userRating || 0;
+          const ratingB = b.userRating || 0;
+          return sortOrder === "desc" ? ratingB - ratingA : ratingA - ratingB;
+        });
+
+        // Apply pagination after sorting
+        const start = (currentPage - 1) * ITEMS_PER_PAGE;
+        const end = start + ITEMS_PER_PAGE;
+        const paginatedMovies = moviesWithRatings.slice(start, end);
+
+        return {
+          movies: paginatedMovies as Movie[],
+          totalCount: count || 0,
+        };
+      } else {
+        // Standard sorting
+        const column = sortBy === "rating" ? "imdb_rating" : sortBy;
+        query = query.order(column, { 
+          ascending: sortOrder === "asc",
+          nullsFirst: false 
+        });
+
+        // Apply pagination
+        const start = (currentPage - 1) * ITEMS_PER_PAGE;
+        const end = start + ITEMS_PER_PAGE - 1;
+        query = query.range(start, end);
+
+        const { data: moviesData, error: moviesError, count } = await query;
+        
+        if (moviesError) throw moviesError;
+
+        // Map database fields to Movie type
+        const mappedMovies = (moviesData || []).map((movie) => ({
+          ...movie,
+          genre: movie.genres,
+          imdbId: movie.imdb_id,
+          voteCount: movie.vote_count,
+          originalLanguage: movie.original_language,
+          productionCompanies: movie.production_companies,
+          productionCountries: movie.production_countries,
+          spokenLanguages: movie.spoken_languages,
+          watchProviders: movie.watch_providers,
+          imdbRating: movie.imdb_rating,
+          imdbVotes: movie.imdb_votes,
+          boxOffice: movie.box_office,
+          dataSources: movie.data_sources as any,
+          lastOmdbFetch: movie.last_omdb_fetch,
+        }));
+
+        return {
+          movies: mappedMovies as Movie[],
+          totalCount: count || 0,
+        };
+      }
+    },
+  });
+
+  const movies = data?.movies || [];
+  const totalCount = data?.totalCount || 0;
+  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
+
+  // Fetch user ratings for displayed movies
+  const { data: userRatingsData } = useQuery({
+    queryKey: ["userRatings", movies.map((m) => m.id), user?.id],
+    queryFn: async () => {
+      if (!user || movies.length === 0) return [];
+      
+      const { data } = await supabase
+        .from("user_ratings")
+        .select("media_id, user_rating, in_watchlist")
+        .eq("user_id", user.id)
+        .in("media_id", movies.map((m) => m.id));
+      
+      return data || [];
+    },
+    enabled: !!user && movies.length > 0,
+  });
+
+  // Filter handlers
   const handleGenreToggle = (genre: string) => {
-    const newGenres = appliedGenres.includes(genre) ? appliedGenres.filter(g => g !== genre) : [...appliedGenres, genre];
-    updateFiltersAndResetPage({ genres: newGenres.length > 0 ? newGenres.join(',') : null });
+    const newGenres = appliedGenres.includes(genre)
+      ? appliedGenres.filter((g) => g !== genre)
+      : [...appliedGenres, genre];
+    updateUrlParams({ genres: newGenres.join(","), page: "1" });
   };
-  
+
+  const handleRatingChange = (range: [number, number]) => {
+    updateUrlParams({ rating: `${range[0]}-${range[1]}`, page: "1" });
+  };
+
+  const handleYearChange = (range: [number, number]) => {
+    updateUrlParams({ year: `${range[0]}-${range[1]}`, page: "1" });
+  };
+
+  const handleSearchChange = (text: string) => {
+    updateUrlParams({ search: text, page: "1" });
+  };
+
   const handleResetFilters = () => {
-    // Keep sortBy and sortOrder when resetting filters
     const newParams = new URLSearchParams();
-    if (sortBy !== 'random') newParams.set('sortBy', sortBy);
-    if (sortOrder !== 'desc') newParams.set('sortOrder', sortOrder);
+    if (sortBy !== "rating") newParams.set("sortBy", sortBy);
+    if (sortOrder !== "desc") newParams.set("sortOrder", sortOrder);
     setSearchParams(newParams, { replace: true });
-    // Reset pagination state
-    setCurrentPage(1);
-    setAllMovies([]);
-    setHasMoreMovies(true);
-  };
-  
-  const handleYearClick = (year: number) => {
-    updateFiltersAndResetPage({ year: `${year}-${year}` });
-  };
-  
-  const handleGenreClick = (genre: string) => {
-    updateFiltersAndResetPage({ genres: genre });
-  };
-  
-  const handleActorClick = (actor: string) => {
-    updateFiltersAndResetPage({ search: actor });
-  };
-  
-  const handleDirectorClick = (director: string) => {
-    updateFiltersAndResetPage({ search: director });
-  };
-  
-  const handleWriterClick = (writer: string) => {
-    updateFiltersAndResetPage({ search: writer });
-  };
-  
-  const handleKeywordClick = (keyword: string) => {
-    updateFiltersAndResetPage({ search: keyword });
   };
 
-  const handlePopularityClick = (min: number, max: number) => {
-    updateFiltersAndResetPage({ popularity: `${min}-${max}` });
-  };
-
-  const handleAwardClick = (awardType: string) => {
-    updateFiltersAndResetPage({ search: awardType });
-  };
-
-  const handleMixedClick = (type: string) => {
-    if (type === "critical") {
-      updateFiltersAndResetPage({ rating: '8-10', popularity: '0-20' });
-    } else if (type === "audience") {
-      updateFiltersAndResetPage({ rating: '7-10', popularity: '50-1000' });
-    } else if (type === "boxoffice") {
-      updateFiltersAndResetPage({ search: 'revenue' });
+  // Sorting handler
+  const handleSortChange = (newSortBy: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("sortBy", newSortBy);
+    
+    // Auto-set sensible defaults for sort order
+    if (newSortBy === "rating" || newSortBy === "user_rating") {
+      newParams.set("sortOrder", "desc");
+    } else if (newSortBy === "year") {
+      newParams.set("sortOrder", "desc");
+    } else if (newSortBy === "title") {
+      newParams.set("sortOrder", "asc");
     }
+    
+    newParams.set("page", "1");
+    setSearchParams(newParams, { replace: true });
   };
 
+  // Pagination handler
+  const goToPage = (page: number) => {
+    if (page < 1 || page > totalPages) return;
+    updateUrlParams({ page: page.toString() });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
+  // Modal handlers
   const handleOpenDetail = (movieId: string) => {
     setSelectedMovieId(movieId);
     setIsModalOpen(true);
@@ -216,498 +297,188 @@ const Movies = () => {
     setSelectedMovieId(null);
   };
 
-  const handleNavigateToMovie = (newMovieId: string) => {
-    setSelectedMovieId(newMovieId);
+  // Error handling
+  if (error) {
+    toast.error("Failed to load movies");
+    console.error("Movies query error:", error);
+  }
+
+  // Generate pagination items
+  const renderPaginationItems = () => {
+    const items = [];
+    const showEllipsisStart = currentPage > 3;
+    const showEllipsisEnd = currentPage < totalPages - 2;
+
+    // Always show first page
+    items.push(
+      <PaginationItem key={1}>
+        <PaginationLink
+          onClick={() => goToPage(1)}
+          isActive={currentPage === 1}
+        >
+          1
+        </PaginationLink>
+      </PaginationItem>
+    );
+
+    // Show ellipsis if needed
+    if (showEllipsisStart) {
+      items.push(
+        <PaginationItem key="ellipsis-start">
+          <PaginationEllipsis />
+        </PaginationItem>
+      );
+    }
+
+    // Show pages around current page
+    const startPage = Math.max(2, currentPage - 1);
+    const endPage = Math.min(totalPages - 1, currentPage + 1);
+
+    for (let i = startPage; i <= endPage; i++) {
+      items.push(
+        <PaginationItem key={i}>
+          <PaginationLink
+            onClick={() => goToPage(i)}
+            isActive={currentPage === i}
+          >
+            {i}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+
+    // Show ellipsis if needed
+    if (showEllipsisEnd) {
+      items.push(
+        <PaginationItem key="ellipsis-end">
+          <PaginationEllipsis />
+        </PaginationItem>
+      );
+    }
+
+    // Always show last page if more than 1 page
+    if (totalPages > 1) {
+      items.push(
+        <PaginationItem key={totalPages}>
+          <PaginationLink
+            onClick={() => goToPage(totalPages)}
+            isActive={currentPage === totalPages}
+          >
+            {totalPages}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+
+    return items;
   };
 
+  return (
+    <div className="container mx-auto px-4 py-8">
+      {/* Filter Panel */}
+      <div className="mb-8">
+        <FilterPanel
+          selectedGenres={appliedGenres}
+          onGenreToggle={handleGenreToggle}
+          ratingRange={appliedRatingRange}
+          onRatingRangeChange={handleRatingChange}
+          yearRange={appliedYearRange}
+          onYearRangeChange={handleYearChange}
+          searchText={appliedSearchText}
+          onSearchTextChange={handleSearchChange}
+          onReset={handleResetFilters}
+        />
+      </div>
 
-  // Reset pagination when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-    setAllMovies([]);
-    setHasMoreMovies(true);
-  }, [appliedGenres, appliedRatingRange, appliedYearRange, appliedSearchText, appliedPopularityRange, sortBy, sortOrder]);
-
-  // Fetch movies with filters, pagination, and sorting
-  const {
-    data: moviesData,
-    isLoading,
-    error,
-    isError
-  } = useQuery({
-    queryKey: ["movies", appliedGenres, appliedRatingRange, appliedYearRange, appliedSearchText, appliedPopularityRange, currentPage, sortBy, sortOrder, itemsPerPage],
-    queryFn: async () => {
-      console.log("[Movies Query] Starting fetch with filters:", {
-        genres: appliedGenres,
-        rating: appliedRatingRange,
-        year: appliedYearRange,
-        search: appliedSearchText,
-        popularity: appliedPopularityRange,
-        page: currentPage,
-        sortBy,
-        sortOrder
-      });
-      // Get current user for user_rating sorting
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      // For user rating sort, we need a different query structure
-      if (sortBy === "user_rating" && user) {
-        let query = supabase
-          .from("movies")
-          .select(`
-            *,
-            user_ratings!inner(user_rating)
-          `, {
-            count: "exact"
-          })
-          .eq('user_ratings.user_id', user.id)
-          .eq('user_ratings.media_type', 'movie');
-
-        // Apply filters
-        if (appliedGenres.length > 0) {
-          query = query.overlaps("genres", appliedGenres);
-        }
-      if (appliedRatingRange[0] > 0 || appliedRatingRange[1] < 10) {
-        // Optimized: Simpler rating filter using indexes
-        const [min, max] = appliedRatingRange;
-        query = query.or(`imdb_rating.gte.${min},and(imdb_rating.is.null,rating.gte.${min})`);
-        query = query.or(`imdb_rating.lte.${max},and(imdb_rating.is.null,rating.lte.${max})`);
-      }
-        query = query.gte("year", appliedYearRange[0]).lte("year", appliedYearRange[1]);
-
-        // Apply text search across multiple fields
-        if (appliedSearchText) {
-          query = query.or(`title.ilike.%${appliedSearchText}%,actors.ilike.%${appliedSearchText}%,director.ilike.%${appliedSearchText}%,writing.ilike.%${appliedSearchText}%,keywords.cs.{${appliedSearchText}},awards.ilike.%${appliedSearchText}%`);
-        }
-
-        // Apply popularity filter
-        if (appliedPopularityRange[0] > 0 || appliedPopularityRange[1] < 1000) {
-          query = query.gte("popularity", appliedPopularityRange[0]).lte("popularity", appliedPopularityRange[1]);
-        }
-
-        // Skip database-level sorting for user_rating (PostgREST limitation with embedded resources)
-        // We'll sort client-side instead
-
-        // Apply pagination
-        const from = (currentPage - 1) * itemsPerPage;
-        const to = from + itemsPerPage - 1;
-        query = query.range(from, to);
-
-        const { data, error, count } = await query;
-        
-        // Client-side sorting for user_rating (PostgREST can't order by embedded resource columns)
-        if (data && Array.isArray(data)) {
-          data.sort((a, b) => {
-            const aRating = a.user_ratings?.[0]?.user_rating ?? 0;
-            const bRating = b.user_ratings?.[0]?.user_rating ?? 0;
-            return sortOrder === "asc" ? aRating - bRating : bRating - aRating;
-          });
-          console.log("[Movies Query] Client-side sorted by user_rating", sortOrder);
-        }
-        if (error) {
-          console.error("[Movies Query] Error fetching with user_rating:", error);
-          throw error;
-        }
-        
-        console.log("[Movies Query] Success with user_rating - found", count, "movies");
-        return {
-          movies: (data || []).map((movie: any): Movie => ({
-            id: movie.id,
-            title: movie.title,
-            year: movie.year,
-            rating: movie.rating || 0,
-            genre: movie.genres || [],
-            poster: movie.poster || "",
-            plot: movie.plot || "",
-            director: movie.director || "",
-            actors: movie.actors || "",
-            runtime: movie.runtime || "",
-            imdbId: movie.imdb_id,
-            voteCount: movie.vote_count || 0,
-            originalLanguage: movie.original_language || "",
-            writing: movie.writing || "",
-            sound: movie.sound || "",
-            keywords: movie.keywords || []
-          })),
-          totalCount: count || 0
-        };
-      }
-
-      // Standard query for other sorting options
-      let query = supabase.from("movies").select("*", {
-        count: "exact"
-      });
-
-      // Apply filters
-      if (appliedGenres.length > 0) {
-        query = query.overlaps("genres", appliedGenres);
-      }
-      if (appliedRatingRange[0] > 0 || appliedRatingRange[1] < 10) {
-        // Optimized: Simpler rating filter using indexes
-        const [min, max] = appliedRatingRange;
-        query = query.or(`imdb_rating.gte.${min},and(imdb_rating.is.null,rating.gte.${min})`);
-        query = query.or(`imdb_rating.lte.${max},and(imdb_rating.is.null,rating.lte.${max})`);
-      }
-      query = query.gte("year", appliedYearRange[0]).lte("year", appliedYearRange[1]);
-
-      // Apply text search across multiple fields
-      if (appliedSearchText) {
-        query = query.or(`title.ilike.%${appliedSearchText}%,actors.ilike.%${appliedSearchText}%,director.ilike.%${appliedSearchText}%,writing.ilike.%${appliedSearchText}%,keywords.cs.{${appliedSearchText}},awards.ilike.%${appliedSearchText}%`);
-      }
-
-      // Apply popularity filter
-      if (appliedPopularityRange[0] > 0 || appliedPopularityRange[1] < 1000) {
-        query = query.gte("popularity", appliedPopularityRange[0]).lte("popularity", appliedPopularityRange[1]);
-      }
-
-      // Apply sorting - prioritize IMDb rating for rating sorts
-      if (sortBy === 'rating') {
-        // Sort by IMDb rating when available, then by TMDB rating
-        query = query.order('imdb_rating', { ascending: sortOrder === "asc", nullsFirst: false });
-        query = query.order('rating', { ascending: sortOrder === "asc" });
-      } else if (sortBy === 'random') {
-        // For random, we'll shuffle client-side after fetching
-        query = query.order('id', { ascending: true });
-      } else {
-        query = query.order(sortBy, { ascending: sortOrder === "asc" });
-      }
-
-      // Apply pagination
-      const from = (currentPage - 1) * itemsPerPage;
-      const to = from + itemsPerPage - 1;
-      query = query.range(from, to);
-      const {
-        data,
-        error,
-        count
-      } = await query;
-      if (error) {
-        console.error("[Movies Query] Error fetching movies:", error);
-        throw error;
-      }
-      
-      console.log("[Movies Query] Success - found", count, "movies");
-      
-      let movies = (data || []).map((movie): Movie => ({
-        id: movie.id,
-        title: movie.title,
-        year: movie.year,
-        rating: movie.rating || 0,
-        genre: movie.genres || [],
-        poster: movie.poster || "",
-        plot: movie.plot || "",
-        director: movie.director || "",
-        actors: movie.actors || "",
-        runtime: movie.runtime || "",
-        imdbId: movie.imdb_id,
-        voteCount: movie.vote_count || 0,
-        originalLanguage: movie.original_language || "",
-        writing: movie.writing || "",
-        sound: movie.sound || "",
-        keywords: movie.keywords || [],
-        imdbRating: movie.imdb_rating || undefined,
-        imdbVotes: movie.imdb_votes || undefined,
-        metascore: movie.metascore || undefined
-      }));
-
-      // Apply random shuffle if random sort is selected
-      if (sortBy === 'random') {
-        // Use Fisher-Yates shuffle with a seeded random for consistency within page
-        const seed = currentPage;
-        const shuffled = [...movies];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-          const j = Math.floor(((seed * (i + 1)) % 997) / 997 * (i + 1));
-          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-        movies = shuffled;
-      }
-      
-      return {
-        movies,
-        totalCount: count || 0
-      };
-    },
-    staleTime: 60000, // 1 minute - optimized caching
-    gcTime: 300000, // 5 minutes cache time
-  });
-
-  // Update allMovies when new data arrives
-  useEffect(() => {
-    if (moviesData?.movies) {
-      if (currentPage === 1) {
-        setAllMovies(moviesData.movies);
-      } else {
-        setAllMovies(prev => [...prev, ...moviesData.movies]);
-      }
-      
-      // Check if there are more movies to load
-      const totalLoaded = currentPage * itemsPerPage;
-      setHasMoreMovies(totalLoaded < (moviesData.totalCount || 0));
-    }
-  }, [moviesData, currentPage, itemsPerPage]);
-
-  const movies = allMovies;
-  const totalCount = moviesData?.totalCount || 0;
-
-  // Load more handler
-  const handleLoadMore = () => {
-    if (!isLoadingMore && hasMoreMovies) {
-      setIsLoadingMore(true);
-      setCurrentPage(prev => prev + 1);
-    }
-  };
-
-  // Reset loading more when new data arrives
-  useEffect(() => {
-    if (!isLoading) {
-      setIsLoadingMore(false);
-    }
-  }, [isLoading]);
-
-  // Batch fetch user data for all displayed movies (N+1 query fix)
-  const { data: userDataMap = {} } = useQuery({
-    queryKey: ["batch-user-data", movies.map(m => m.id), user?.id],
-    queryFn: async () => {
-      if (!user?.id) return {};
-      
-      const movieIds = movies.map(m => m.id);
-      if (movieIds.length === 0) return {};
-
-      const { data } = await supabase
-        .from("user_ratings")
-        .select("media_id, user_rating, in_watchlist")
-        .eq("user_id", user.id)
-        .eq("media_type", "movie")
-        .in("media_id", movieIds);
-      
-      // Create lookup map
-      const map: Record<string, { rating: number | null, inWatchlist: boolean }> = {};
-      data?.forEach(item => {
-        map[item.media_id] = {
-          rating: item.user_rating,
-          inWatchlist: item.in_watchlist || false
-        };
-      });
-      
-      return map;
-    },
-    enabled: !!user?.id && movies.length > 0,
-    staleTime: 30000, // 30 seconds
-  });
-
-  // Debug query states
-  useEffect(() => {
-    console.log("[Movies] Query state:", { isLoading, isError, error, totalCount, moviesCount: movies.length });
-  }, [isLoading, isError, error, totalCount, movies.length]);
-
-  const handleSortChange = (value: string) => {
-    const [field, order] = value.split("-") as [typeof sortBy, typeof sortOrder];
-    
-    // Defensive validation: prevent user_rating sort when not logged in
-    if (field === "user_rating" && !user) {
-      console.warn("[Movies] Attempted to set user_rating sort without logged in user - defaulting to rating");
-      updateFiltersAndResetPage({ sortBy: 'rating', sortOrder: 'desc' });
-      return;
-    }
-    
-    updateFiltersAndResetPage({ sortBy: field, sortOrder: order });
-  };
-
-  return <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/10">
-      {/* Main Content */}
-      <div className="container mx-auto max-w-7xl px-4 py-8">
-        {/* Filters */}
-        <div className="mb-8">
-          <FilterPanel 
-            selectedGenres={appliedGenres} 
-            onGenreToggle={handleGenreToggle} 
-            ratingRange={appliedRatingRange} 
-            onRatingRangeChange={(range) => {
-              updateFiltersAndResetPage({ 
-                rating: range[0] !== 0 || range[1] !== 10 ? `${range[0]}-${range[1]}` : null 
-              });
-            }} 
-            yearRange={appliedYearRange} 
-            onYearRangeChange={(range) => {
-              updateFiltersAndResetPage({ 
-                year: range[0] !== 1900 || range[1] !== 2030 ? `${range[0]}-${range[1]}` : null 
-              });
-            }} 
-            searchText={appliedSearchText} 
-            onSearchTextChange={(text) => {
-              updateFiltersAndResetPage({ search: text || null });
-            }} 
-            onReset={handleResetFilters} 
-          />
+      {/* Header: Title + Sorting */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">Movies</h1>
+          <p className="text-muted-foreground mt-1">
+            {isLoading
+              ? "Loading..."
+              : totalCount > 0
+              ? `Showing ${(currentPage - 1) * ITEMS_PER_PAGE + 1}-${Math.min(
+                  currentPage * ITEMS_PER_PAGE,
+                  totalCount
+                )} of ${totalCount} ${totalCount === 1 ? "movie" : "movies"}`
+              : "No movies found"}
+          </p>
         </div>
 
-        {/* Results */}
-        <main ref={resultsRef}>
-          <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <h2 className="text-2xl font-semibold text-foreground">Movies</h2>
-              {/* Enhancement 2: Show more context */}
-              <p className="text-muted-foreground">
-                {isLoading && movies.length === 0
-                  ? "Loading..." 
-                  : totalCount > 0 
-                    ? `Showing ${movies.length > 0 ? `1-${movies.length}` : '0'} of ${totalCount} ${totalCount === 1 ? "movie" : "movies"}` 
-                    : "No results found"
-                }
-              </p>
-            </div>
-            <div className="flex gap-2 items-center flex-wrap">
-              <Select value={`${sortBy}-${sortOrder}`} onValueChange={handleSortChange}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="random-desc">Random</SelectItem>
-                  <SelectItem value="rating-desc">Rating (High to Low)</SelectItem>
-                  <SelectItem value="rating-asc">Rating (Low to High)</SelectItem>
-                  {user && (
-                    <>
-                      <SelectItem value="user_rating-desc">My Rating (High to Low)</SelectItem>
-                      <SelectItem value="user_rating-asc">My Rating (Low to High)</SelectItem>
-                    </>
-                  )}
-                  <SelectItem value="year-desc">Year (Newest First)</SelectItem>
-                  <SelectItem value="year-asc">Year (Oldest First)</SelectItem>
-                  <SelectItem value="title-asc">Title (A to Z)</SelectItem>
-                  <SelectItem value="title-desc">Title (Z to A)</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={itemsPerPage.toString()} onValueChange={(value) => {
-                setItemsPerPage(parseInt(value));
-                setCurrentPage(1);
-                setAllMovies([]);
-                setHasMoreMovies(true);
-              }}>
-                <SelectTrigger className="w-[130px]">
-                  <SelectValue placeholder="Per page" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="20">20 per page</SelectItem>
-                  <SelectItem value="50">50 per page</SelectItem>
-                  <SelectItem value="100">100 per page</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button variant={viewMode === "grid" ? "default" : "outline"} size="sm" onClick={() => setViewMode("grid")}>
-                <Grid className="h-4 w-4 mr-2" />
-                Grid
-              </Button>
-              <Button variant={viewMode === "table" ? "default" : "outline"} size="sm" onClick={() => setViewMode("table")}>
-                <TableIcon className="h-4 w-4 mr-2" />
-                Table
-              </Button>
-            </div>
-          </div>
-
-          {isLoading && movies.length === 0 ? <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4">
-              {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-[400px] rounded-lg" />)}
-            </div> : error ? <div className="flex flex-col items-center justify-center py-20 text-center">
-              <Film className="h-16 w-16 text-muted-foreground/50 mb-4" />
-              <h3 className="text-xl font-semibold text-foreground mb-2">Error loading movies</h3>
-              <p className="text-muted-foreground mb-4">
-                {error instanceof Error ? error.message : "Please try again later"}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Check the browser console for more details
-              </p>
-            </div> : movies.length === 0 && totalCount === 0 && appliedGenres.length === 0 && appliedSearchText === "" ? <div className="flex flex-col items-center justify-center py-20 text-center">
-              <Film className="h-16 w-16 text-muted-foreground/50 mb-4" />
-              <h3 className="text-xl font-semibold text-foreground mb-2">No movies in database</h3>
-              <p className="text-muted-foreground mb-4">
-                The movie database is empty. Please sync movies from TMDB first.
-              </p>
-              <Button onClick={() => window.location.href = "/account"}>
-                Go to Sync Settings
-              </Button>
-            </div> : movies.length === 0 ? <div className="flex flex-col items-center justify-center py-20 text-center">
-              <Film className="h-16 w-16 text-muted-foreground/50 mb-4" />
-              <h3 className="text-xl font-semibold text-foreground mb-2">No results found</h3>
-              <p className="text-muted-foreground">
-                Try adjusting your filters to discover more content
-              </p>
-            </div> : viewMode === "grid" ? <>
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4">
-                {movies.map((movie, index) => {
-                  const userData = userDataMap[movie.id];
-                  return (
-                    <MovieCard
-                      key={movie.id}
-                      {...movie}
-                      preloadedUserRating={userData?.rating}
-                      preloadedInWatchlist={userData?.inWatchlist}
-                      onYearClick={handleYearClick}
-                      onGenreClick={handleGenreClick}
-                      onActorClick={handleActorClick}
-                      onDirectorClick={handleDirectorClick}
-                      onWriterClick={handleWriterClick}
-                      onKeywordClick={handleKeywordClick}
-                      onOpenDetail={handleOpenDetail}
-                    />
-                  );
-                })}
-              </div>
-              
-              {/* Load More Button */}
-              {hasMoreMovies && (
-                <div className="flex justify-center mt-8 mb-8">
-                  <Button
-                    onClick={handleLoadMore}
-                    disabled={isLoadingMore || isLoading}
-                    size="lg"
-                    variant="outline"
-                  >
-                    {isLoadingMore || isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Loading...
-                      </>
-                    ) : (
-                      `Load More (${totalCount - movies.length} remaining)`
-                    )}
-                  </Button>
-                </div>
-              )}
-            </> : <>
-              {/* Table view */}
-              <div className="mb-8">
-                <MoviesTable movies={movies} title="Movies" onOpenDetail={handleOpenDetail} />
-              </div>
-              
-              {/* Load More Button */}
-              {hasMoreMovies && (
-                <div className="flex justify-center mt-8 mb-8">
-                  <Button
-                    onClick={handleLoadMore}
-                    disabled={isLoadingMore || isLoading}
-                    size="lg"
-                    variant="outline"
-                  >
-                    {isLoadingMore || isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Loading...
-                      </>
-                    ) : (
-                      `Load More (${totalCount - movies.length} remaining)`
-                    )}
-                  </Button>
-                </div>
-              )}
-            </>}
-        </main>
+        <Select value={sortBy} onValueChange={handleSortChange}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Sort by" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="rating">Rating</SelectItem>
+            <SelectItem value="year">Year</SelectItem>
+            <SelectItem value="title">Title</SelectItem>
+            {user && <SelectItem value="user_rating">My Rating</SelectItem>}
+          </SelectContent>
+        </Select>
       </div>
+
+      {/* Movie Cards Grid */}
+      {isLoading ? (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
+          {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
+            <Skeleton key={i} className="aspect-[2/3] w-full" />
+          ))}
+        </div>
+      ) : error ? (
+        <div className="text-center py-12">
+          <p className="text-lg text-muted-foreground">
+            Unable to load movies. Please try again.
+          </p>
+        </div>
+      ) : movies.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-lg text-muted-foreground">
+            No movies found matching your filters.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
+          {movies.map((movie) => (
+            <MovieCard
+              key={movie.id}
+              {...movie}
+              onOpenDetail={handleOpenDetail}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {!isLoading && totalPages > 1 && (
+        <Pagination>
+          <PaginationContent>
+            <PaginationPrevious
+              onClick={() => goToPage(currentPage - 1)}
+              className={
+                currentPage === 1 ? "pointer-events-none opacity-50" : ""
+              }
+            />
+            {renderPaginationItems()}
+            <PaginationNext
+              onClick={() => goToPage(currentPage + 1)}
+              className={
+                currentPage === totalPages
+                  ? "pointer-events-none opacity-50"
+                  : ""
+              }
+            />
+          </PaginationContent>
+        </Pagination>
+      )}
 
       {/* Movie Detail Modal */}
       <MovieDetailModal
+        movieId={selectedMovieId}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        movieId={selectedMovieId}
-        onNavigateToMovie={handleNavigateToMovie}
       />
-    </div>;
-};
-export default Movies;
+    </div>
+  );
+}
