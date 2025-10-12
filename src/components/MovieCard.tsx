@@ -160,9 +160,24 @@ export const MovieCard = ({
         {/* Poster Image */}
         <img {...imageProps} alt={title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
         
-        {/* Top Gradient Overlay - Title (Always Visible) */}
+        {/* Top Gradient Overlay - Title & Rating (Always Visible) */}
         <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 via-black/40 to-transparent p-2 sm:p-3 z-10">
-          <h3 className="line-clamp-2 text-xs sm:text-sm font-semibold leading-tight text-white drop-shadow-lg">{title}</h3>
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="line-clamp-2 text-xs sm:text-sm font-semibold leading-tight text-white drop-shadow-lg flex-1">{title}</h3>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1 text-white cursor-help shrink-0">
+                  <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5 fill-yellow-400 text-yellow-400" />
+                  <span className="font-bold text-xs sm:text-sm drop-shadow">
+                    {imdbRating ? imdbRating.toFixed(1) : rating.toFixed(1)}
+                  </span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs">{imdbRating ? "IMDb Rating" : "TMDB Rating"}</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
 
         {/* Center - More Info Button (on hover, below title) */}
@@ -179,8 +194,8 @@ export const MovieCard = ({
 
         {/* Bottom Gradient Overlay - Info & Controls */}
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-2 sm:p-3">
-          {/* Year & Rating */}
-          <div className="flex items-center justify-between mb-2">
+          {/* Year Badge */}
+          <div className="mb-2">
             <Badge 
               variant="secondary" 
               className="text-xs cursor-pointer hover:bg-secondary/80 transition-colors bg-white/20 text-white border-white/30" 
@@ -191,19 +206,6 @@ export const MovieCard = ({
             >
               {year}
             </Badge>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex items-center gap-1 text-white cursor-help">
-                  <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5 fill-yellow-400 text-yellow-400" />
-                  <span className="font-bold text-xs sm:text-sm drop-shadow">
-                    {imdbRating ? imdbRating.toFixed(1) : rating.toFixed(1)}
-                  </span>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="text-xs">{imdbRating ? "IMDb Rating" : "TMDB Rating"}</p>
-              </TooltipContent>
-            </Tooltip>
           </div>
 
           {/* Genres */}
