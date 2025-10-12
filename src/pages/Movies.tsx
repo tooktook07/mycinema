@@ -429,27 +429,6 @@ const Movies = () => {
       });
     }
   }, [currentPage]);
-
-  // Enhancement 1: Keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if user is typing in an input/textarea
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return;
-      }
-      
-      if (e.key === 'ArrowLeft' && currentPage > 1) {
-        e.preventDefault();
-        setCurrentPage(currentPage - 1);
-      } else if (e.key === 'ArrowRight' && currentPage < totalPages) {
-        e.preventDefault();
-        setCurrentPage(currentPage + 1);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentPage, totalPages]);
   const handleSortChange = (value: string) => {
     const [field, order] = value.split("-") as [typeof sortBy, typeof sortOrder];
     
@@ -482,45 +461,47 @@ const Movies = () => {
     for (let i = startPage; i <= endPage; i++) {
       pages.push(i);
     }
-    return <Pagination className="mt-8">
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevious onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)} className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} />
-          </PaginationItem>
-          
-          {startPage > 1 && <>
-              <PaginationItem>
-                <PaginationLink onClick={() => setCurrentPage(1)} className="cursor-pointer">
-                  1
+    return <div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t py-4 mt-8">
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)} className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+            </PaginationItem>
+            
+            {startPage > 1 && <>
+                <PaginationItem>
+                  <PaginationLink onClick={() => setCurrentPage(1)} className="cursor-pointer">
+                    1
+                  </PaginationLink>
+                </PaginationItem>
+                {startPage > 2 && <PaginationItem>
+                    <PaginationEllipsis />
+                  </PaginationItem>}
+              </>}
+
+            {pages.map(page => <PaginationItem key={page}>
+                <PaginationLink onClick={() => setCurrentPage(page)} isActive={currentPage === page} className="cursor-pointer">
+                  {page}
                 </PaginationLink>
-              </PaginationItem>
-              {startPage > 2 && <PaginationItem>
-                  <PaginationEllipsis />
-                </PaginationItem>}
-            </>}
+              </PaginationItem>)}
 
-          {pages.map(page => <PaginationItem key={page}>
-              <PaginationLink onClick={() => setCurrentPage(page)} isActive={currentPage === page} className="cursor-pointer">
-                {page}
-              </PaginationLink>
-            </PaginationItem>)}
+            {endPage < totalPages && <>
+                {endPage < totalPages - 1 && <PaginationItem>
+                    <PaginationEllipsis />
+                  </PaginationItem>}
+                <PaginationItem>
+                  <PaginationLink onClick={() => setCurrentPage(totalPages)} className="cursor-pointer">
+                    {totalPages}
+                  </PaginationLink>
+                </PaginationItem>
+              </>}
 
-          {endPage < totalPages && <>
-              {endPage < totalPages - 1 && <PaginationItem>
-                  <PaginationEllipsis />
-                </PaginationItem>}
-              <PaginationItem>
-                <PaginationLink onClick={() => setCurrentPage(totalPages)} className="cursor-pointer">
-                  {totalPages}
-                </PaginationLink>
-              </PaginationItem>
-            </>}
-
-          <PaginationItem>
-            <PaginationNext onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)} className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>;
+            <PaginationItem>
+              <PaginationNext onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)} className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      </div>;
   };
   return <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/10">
       {/* Main Content */}
@@ -599,9 +580,6 @@ const Movies = () => {
             </div>
           </div>
 
-          {/* Enhancement 3: Top pagination */}
-          {!isLoading && movies.length > 0 && renderPagination()}
-
           {isLoading && movies.length === 0 ? <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-[400px] rounded-lg" />)}
             </div> : error ? <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -630,7 +608,7 @@ const Movies = () => {
               </p>
             </div> : viewMode === "grid" ? <>
               {/* Enhancement 6: Loading state improvement with skeleton overlay */}
-              <div className="relative">
+              <div className="relative mb-20">
                 <div className={`grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 transition-opacity ${isLoading ? "opacity-30" : ""}`}>
                   {movies.map((movie, index) => {
                     const userData = userDataMap[movie.id];
@@ -661,14 +639,14 @@ const Movies = () => {
                   </div>
                 )}
               </div>
-              {/* Enhancement 3: Bottom pagination */}
+              {/* Sticky bottom pagination */}
               {renderPagination()}
             </> : <>
               {/* Table view with loading overlay */}
-              <div className={`transition-opacity ${isLoading ? "opacity-30" : ""}`}>
+              <div className={`transition-opacity mb-20 ${isLoading ? "opacity-30" : ""}`}>
                 <MoviesTable movies={movies} title="Movies" onOpenDetail={handleOpenDetail} />
               </div>
-              {/* Enhancement 3: Bottom pagination */}
+              {/* Sticky bottom pagination */}
               {renderPagination()}
             </>}
         </main>
