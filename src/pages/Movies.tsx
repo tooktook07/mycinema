@@ -36,13 +36,24 @@ const Movies = () => {
 
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   
-  // Initialize currentPage from URL parameter
-  const [currentPage, setCurrentPage] = useState(() => {
+  // Derive currentPage directly from URL (single source of truth)
+  const currentPage = (() => {
     const pageParam = searchParams.get('page');
     return pageParam ? parseInt(pageParam, 10) : 1;
-  });
+  })();
   
   const [itemsPerPage, setItemsPerPage] = useState(50); // Optimized: reduced from 100
+  
+  // Helper function to update page in URL
+  const handlePageChange = (newPage: number) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (newPage > 1) {
+      newParams.set('page', newPage.toString());
+    } else {
+      newParams.delete('page'); // Remove param when page is 1
+    }
+    setSearchParams(newParams, { replace: true });
+  };
   
   // Initialize sort preferences with "random" as default for new users
   const [sortBy, setSortBy] = useState<"rating" | "year" | "title" | "user_rating" | "random">(() => {
@@ -94,45 +105,45 @@ const Movies = () => {
   }, [appliedSortBy, appliedSortOrder]);
   const handleGenreToggle = (genre: string) => {
     setAppliedGenres(appliedGenres.includes(genre) ? appliedGenres.filter(g => g !== genre) : [...appliedGenres, genre]);
-    setCurrentPage(1);
+    handlePageChange(1);
   };
   const handleResetFilters = () => {
     resetFilters();
-    setCurrentPage(1);
+    handlePageChange(1);
   };
   const handleYearClick = (year: number) => {
     setAppliedYearRange([year, year]);
-    setCurrentPage(1);
+    handlePageChange(1);
   };
   const handleGenreClick = (genre: string) => {
     setAppliedGenres([genre]);
-    setCurrentPage(1);
+    handlePageChange(1);
   };
   const handleActorClick = (actor: string) => {
     setAppliedSearchText(actor);
-    setCurrentPage(1);
+    handlePageChange(1);
   };
   const handleDirectorClick = (director: string) => {
     setAppliedSearchText(director);
-    setCurrentPage(1);
+    handlePageChange(1);
   };
   const handleWriterClick = (writer: string) => {
     setAppliedSearchText(writer);
-    setCurrentPage(1);
+    handlePageChange(1);
   };
   const handleKeywordClick = (keyword: string) => {
     setAppliedSearchText(keyword);
-    setCurrentPage(1);
+    handlePageChange(1);
   };
 
   const handlePopularityClick = (min: number, max: number) => {
     setAppliedPopularityRange([min, max]);
-    setCurrentPage(1);
+    handlePageChange(1);
   };
 
   const handleAwardClick = (awardType: string) => {
     setAppliedSearchText(awardType);
-    setCurrentPage(1);
+    handlePageChange(1);
   };
 
   const handleMixedClick = (type: string) => {
@@ -148,7 +159,7 @@ const Movies = () => {
       // Search for high revenue movies
       setAppliedSearchText("revenue");
     }
-    setCurrentPage(1);
+    handlePageChange(1);
   };
 
 
@@ -409,17 +420,6 @@ const Movies = () => {
     console.log("[Movies] Query state:", { isLoading, isError, error, totalCount, moviesCount: movies.length });
   }, [isLoading, isError, error, totalCount, movies.length]);
 
-  // Enhancement 4: Update URL when page changes
-  useEffect(() => {
-    const newParams = new URLSearchParams(searchParams);
-    if (currentPage > 1) {
-      newParams.set('page', currentPage.toString());
-    } else {
-      newParams.delete('page');
-    }
-    setSearchParams(newParams, { replace: true });
-  }, [currentPage]);
-
   // Enhancement 5: Smooth scroll to top when page changes
   useEffect(() => {
     if (resultsRef.current && !isLoading) {
@@ -439,7 +439,7 @@ const Movies = () => {
       setSortOrder("desc");
       setAppliedSortBy("rating");
       setAppliedSortOrder("desc");
-      setCurrentPage(1);
+      handlePageChange(1);
       return;
     }
     
@@ -447,7 +447,7 @@ const Movies = () => {
     setSortOrder(order);
     setAppliedSortBy(field);
     setAppliedSortOrder(order);
-    setCurrentPage(1);
+    handlePageChange(1);
   };
   const renderPagination = () => {
     if (totalPages <= 1) return null;
@@ -468,7 +468,7 @@ const Movies = () => {
               <PaginationPrevious 
                 onClick={(e) => {
                   e.preventDefault();
-                  if (currentPage > 1) setCurrentPage(currentPage - 1);
+                  if (currentPage > 1) handlePageChange(currentPage - 1);
                 }} 
                 className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} 
               />
@@ -479,8 +479,8 @@ const Movies = () => {
                   <PaginationLink 
                     onClick={(e) => {
                       e.preventDefault();
-                      setCurrentPage(1);
-                    }} 
+                      handlePageChange(1);
+                    }}
                     className="cursor-pointer"
                   >
                     1
@@ -495,7 +495,7 @@ const Movies = () => {
                 <PaginationLink 
                   onClick={(e) => {
                     e.preventDefault();
-                    setCurrentPage(page);
+                    handlePageChange(page);
                   }} 
                   isActive={currentPage === page} 
                   className="cursor-pointer"
@@ -512,8 +512,8 @@ const Movies = () => {
                   <PaginationLink 
                     onClick={(e) => {
                       e.preventDefault();
-                      setCurrentPage(totalPages);
-                    }} 
+                      handlePageChange(totalPages);
+                    }}
                     className="cursor-pointer"
                   >
                     {totalPages}
@@ -525,7 +525,7 @@ const Movies = () => {
               <PaginationNext 
                 onClick={(e) => {
                   e.preventDefault();
-                  if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+                  if (currentPage < totalPages) handlePageChange(currentPage + 1);
                 }} 
                 className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} 
               />
@@ -541,13 +541,13 @@ const Movies = () => {
         <div className="mb-8">
           <FilterPanel selectedGenres={appliedGenres} onGenreToggle={handleGenreToggle} ratingRange={appliedRatingRange} onRatingRangeChange={range => {
           setAppliedRatingRange(range);
-          setCurrentPage(1);
+          handlePageChange(1);
         }} yearRange={appliedYearRange} onYearRangeChange={range => {
           setAppliedYearRange(range);
-          setCurrentPage(1);
+          handlePageChange(1);
         }} searchText={appliedSearchText} onSearchTextChange={text => {
           setAppliedSearchText(text);
-          setCurrentPage(1);
+          handlePageChange(1);
         }} onReset={handleResetFilters} />
         </div>
 
@@ -589,7 +589,7 @@ const Movies = () => {
               </Select>
               <Select value={itemsPerPage.toString()} onValueChange={value => {
               setItemsPerPage(parseInt(value));
-              setCurrentPage(1);
+              handlePageChange(1);
             }}>
                 <SelectTrigger className="w-[130px]">
                   <SelectValue placeholder="Per page" />
