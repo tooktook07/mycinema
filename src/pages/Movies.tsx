@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Film, Grid, Table as TableIcon } from "lucide-react";
 import { MovieCard } from "@/components/MovieCard";
 import { MovieDetailModal } from "@/components/MovieDetailModal";
@@ -11,7 +11,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Movie } from "@/data/types";
-import { useFilters } from "@/contexts/FilterContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 
@@ -86,26 +85,47 @@ const Movies = () => {
     }
   }, [user, sortBy]);
 
-  // Filter states from context
-  const {
-    appliedGenres,
-    setAppliedGenres,
-    appliedRatingRange,
-    setAppliedRatingRange,
-    appliedYearRange,
-    setAppliedYearRange,
-    appliedSearchText,
-    setAppliedSearchText,
-    appliedPopularityRange,
-    setAppliedPopularityRange,
-    appliedSortBy,
-    setAppliedSortBy,
-    appliedSortOrder,
-    setAppliedSortOrder,
-    resetFilters
-  } = useFilters();
+  // Read filter values directly from URL with stable references (useMemo prevents array recreation)
+  const appliedGenres = useMemo(() => {
+    const genresParam = searchParams.get('genres');
+    return genresParam ? genresParam.split(',').filter(Boolean) : [];
+  }, [searchParams.get('genres')]);
 
-  // No need to sync - sortBy and sortOrder are now derived from URL
+  const appliedRatingRange = useMemo((): [number, number] => {
+    const ratingParam = searchParams.get('rating');
+    return ratingParam 
+      ? ratingParam.split('-').map(Number) as [number, number]
+      : [0, 10];
+  }, [searchParams.get('rating')]);
+
+  const appliedYearRange = useMemo((): [number, number] => {
+    const yearParam = searchParams.get('year');
+    return yearParam 
+      ? yearParam.split('-').map(Number) as [number, number]
+      : [1900, 2030];
+  }, [searchParams.get('year')]);
+
+  const appliedSearchText = useMemo(() => {
+    return searchParams.get('search') || "";
+  }, [searchParams.get('search')]);
+
+  const appliedPopularityRange = useMemo((): [number, number] => {
+    const popularityParam = searchParams.get('popularity');
+    return popularityParam 
+      ? popularityParam.split('-').map(Number) as [number, number]
+      : [0, 1000];
+  }, [searchParams.get('popularity')]);
+  // Debug: Log when memoized filter values change
+  useEffect(() => {
+    console.log("[Movies] Filter values updated:", {
+      genres: appliedGenres,
+      rating: appliedRatingRange,
+      year: appliedYearRange,
+      search: appliedSearchText,
+      popularity: appliedPopularityRange
+    });
+  }, [appliedGenres, appliedRatingRange, appliedYearRange, appliedSearchText, appliedPopularityRange]);
+
   // Helper to update filters and reset page in one call
   const updateFiltersAndResetPage = (updates: Record<string, any>) => {
     const newParams = new URLSearchParams(searchParams);
@@ -134,7 +154,11 @@ const Movies = () => {
   };
   
   const handleResetFilters = () => {
-    setSearchParams(new URLSearchParams(), { replace: true });
+    // Keep sortBy and sortOrder when resetting filters
+    const newParams = new URLSearchParams();
+    if (sortBy !== 'random') newParams.set('sortBy', sortBy);
+    if (sortOrder !== 'desc') newParams.set('sortOrder', sortOrder);
+    setSearchParams(newParams, { replace: true });
   };
   
   const handleYearClick = (year: number) => {
