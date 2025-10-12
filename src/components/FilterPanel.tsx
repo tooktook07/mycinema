@@ -137,8 +137,8 @@ export const FilterPanel = ({
 
       {/* Collapsible Filter Sections */}
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <CollapsibleContent className="pt-4">
-          <Accordion type="multiple" defaultValue={["genres", "rating", "year"]} className="space-y-2">
+        <CollapsibleContent>
+          <Accordion type="multiple" defaultValue={["genres", "rating", "year"]} className="mt-4 space-y-2">
             {/* Genres Section */}
             <AccordionItem value="genres" className="border rounded-lg px-4">
               <AccordionTrigger className="text-sm font-semibold hover:no-underline py-3">Genres</AccordionTrigger>
