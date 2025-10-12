@@ -82,7 +82,7 @@ interface Recommendation {
 }
 const RATING_THRESHOLD = 7.0; // User's liked movies threshold
 const CANDIDATE_RATING_THRESHOLD = 5.0; // Minimum quality for recommendations
-const RECOMMENDATIONS_COUNT = 40;
+const RECOMMENDATIONS_COUNT = 20;
 const MIN_RATINGS_FOR_PERSONALIZATION = 5; // Minimum ratings needed for similarity algorithm
 
 // Similarity weights
@@ -485,7 +485,7 @@ const Index = () => {
           metascore: (movie as any).metascore,
         }));
 
-        setRecommendations((prev) => append ? [...prev, ...topRecommendations] : topRecommendations);
+        setRecommendations((prev) => (append ? [...prev, ...topRecommendations] : topRecommendations));
         setTotalMoviesViewed((prev) => prev + topRecommendations.length);
 
         // Calculate total available movies
@@ -588,7 +588,7 @@ const Index = () => {
           metascore: (movie as any).metascore,
         }));
 
-        setRecommendations((prev) => append ? [...prev, ...selected] : selected);
+        setRecommendations((prev) => (append ? [...prev, ...selected] : selected));
         setTotalMoviesViewed((prev) => prev + selected.length);
 
         // Calculate total available movies
