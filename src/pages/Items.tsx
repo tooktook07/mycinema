@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { MovieCard } from "@/components/MovieCard";
 import { MovieDetailModal } from "@/components/MovieDetailModal";
-import { SearchPanel } from "@/components/SearchPanel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import {
@@ -28,45 +27,18 @@ const Items = () => {
   
   const currentPage = parseInt(searchParams.get("page") || "1", 10);
 
-  // Parse search parameter from URL
-  const searchText = useMemo(() => {
-    return searchParams.get("search") || "";
-  }, [searchParams]);
-
-  // Handle search text change
-  const handleSearchTextChange = (text: string) => {
-    const newParams = new URLSearchParams(searchParams);
-    if (text.trim()) {
-      newParams.set("search", text.trim());
-    } else {
-      newParams.delete("search");
-    }
-    // Reset to page 1 when search changes
-    newParams.set("page", "1");
-    setSearchParams(newParams);
-  };
-
   const { data, isLoading, error } = useQuery({
-    queryKey: ["items", currentPage, searchText],
+    queryKey: ["items", currentPage],
     enabled: !authLoading,
     queryFn: async () => {
       const from = (currentPage - 1) * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
 
-      let query = supabase
+      const query = supabase
         .from("movies")
         .select("*", { count: "exact" })
-        .order("created_at", { ascending: false });
-
-      // Apply search filter across multiple fields
-      if (searchText) {
-        const searchPattern = `%${searchText}%`;
-        query = query.or(
-          `title.ilike.${searchPattern},actors.ilike.${searchPattern},director.ilike.${searchPattern},plot.ilike.${searchPattern}`
-        );
-      }
-
-      query = query.range(from, to);
+        .order("created_at", { ascending: false })
+        .range(from, to);
 
       const { data, error, count } = await query;
 
@@ -175,15 +147,6 @@ const Items = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Search Panel */}
-        <div className="mb-6">
-          <SearchPanel
-            searchText={searchText}
-            onSearchTextChange={handleSearchTextChange}
-            resultCount={searchText ? totalCount : undefined}
-          />
-        </div>
-
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold">All Items</h1>
           <p className="text-muted-foreground">
