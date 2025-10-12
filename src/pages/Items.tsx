@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { MovieCard } from "@/components/MovieCard";
 import { MovieDetailModal } from "@/components/MovieDetailModal";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,11 +23,13 @@ const Items = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { loading: authLoading } = useAuth();
   
   const currentPage = parseInt(searchParams.get("page") || "1", 10);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["items", currentPage],
+    enabled: !authLoading,
     queryFn: async () => {
       const from = (currentPage - 1) * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;

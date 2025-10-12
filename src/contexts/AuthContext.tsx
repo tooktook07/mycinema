@@ -68,26 +68,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const checkUserRole = async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      // Check admin role
+      const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
         .eq('role', 'admin')
         .maybeSingle();
 
-      if (error) throw error;
-      setIsAdmin(!!data);
+      if (roleError) {
+        console.warn('Could not fetch user role:', roleError.message);
+        setIsAdmin(false);
+      } else {
+        setIsAdmin(!!roleData);
+      }
       
       // Fetch subscription tier
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('subscription_tier')
         .eq('user_id', userId)
         .maybeSingle();
       
-      setSubscriptionTier(profile?.subscription_tier as 'free' | 'pro' || 'free');
-    } catch (error) {
-      console.error('Error checking user role:', error);
+      if (profileError) {
+        console.warn('Could not fetch subscription tier:', profileError.message);
+        setSubscriptionTier('free');
+      } else {
+        setSubscriptionTier(profile?.subscription_tier as 'free' | 'pro' || 'free');
+      }
+    } catch (error: any) {
+      console.warn('Error in checkUserRole:', error?.message || 'Unknown error');
       setIsAdmin(false);
       setSubscriptionTier('free');
     }
