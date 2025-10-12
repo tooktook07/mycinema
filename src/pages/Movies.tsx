@@ -6,7 +6,7 @@ import { FilterPanel } from "@/components/FilterPanel";
 import { MoviesTable } from "@/components/MoviesTable";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from "@/components/ui/pagination";
+import { Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -25,6 +25,11 @@ const Movies = () => {
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Load more state
+  const [allMovies, setAllMovies] = useState<Movie[]>([]);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMoreMovies, setHasMoreMovies] = useState(true);
+
   // Debug logging
   useEffect(() => {
     console.log("[Movies] Component mounted on route:", window.location.pathname);
@@ -35,11 +40,8 @@ const Movies = () => {
 
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   
-  // Derive currentPage directly from URL (single source of truth)
-  const currentPage = (() => {
-    const pageParam = searchParams.get('page');
-    return pageParam ? parseInt(pageParam, 10) : 1;
-  })();
+  // Track current page for load more (not in URL)
+  const [currentPage, setCurrentPage] = useState(1);
   
   // Derive sortBy and sortOrder from URL (single source of truth)
   const sortBy = (() => {
@@ -61,18 +63,7 @@ const Movies = () => {
     return (sortOrderParam === 'asc' || sortOrderParam === 'desc') ? sortOrderParam : 'desc';
   })();
   
-  const [itemsPerPage, setItemsPerPage] = useState(50); // Optimized: reduced from 100
-  
-  // Helper function to update page in URL
-  const handlePageChange = (newPage: number) => {
-    const newParams = new URLSearchParams(searchParams);
-    if (newPage > 1) {
-      newParams.set('page', newPage.toString());
-    } else {
-      newParams.delete('page'); // Remove param when page is 1
-    }
-    setSearchParams(newParams, { replace: true });
-  };
+  const [itemsPerPage, setItemsPerPage] = useState(20); // Start with 20 items for faster initial load
 
   // Auto-reset sort to "rating" if user logs out while "My Rating" is selected
   useEffect(() => {
@@ -133,7 +124,6 @@ const Movies = () => {
   // Helper to update filters and reset page in one call
   const updateFiltersAndResetPage = (updates: Record<string, any>) => {
     const newParams = new URLSearchParams(searchParams);
-    newParams.delete('page'); // Always reset to page 1 on filter changes
     
     Object.entries(updates).forEach(([key, value]) => {
       if (value === null || value === undefined) {
@@ -150,6 +140,10 @@ const Movies = () => {
     });
     
     setSearchParams(newParams, { replace: true });
+    // Reset pagination state
+    setCurrentPage(1);
+    setAllMovies([]);
+    setHasMoreMovies(true);
   };
 
   const handleGenreToggle = (genre: string) => {
@@ -163,6 +157,10 @@ const Movies = () => {
     if (sortBy !== 'random') newParams.set('sortBy', sortBy);
     if (sortOrder !== 'desc') newParams.set('sortOrder', sortOrder);
     setSearchParams(newParams, { replace: true });
+    // Reset pagination state
+    setCurrentPage(1);
+    setAllMovies([]);
+    setHasMoreMovies(true);
   };
   
   const handleYearClick = (year: number) => {
@@ -222,6 +220,13 @@ const Movies = () => {
     setSelectedMovieId(newMovieId);
   };
 
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+    setAllMovies([]);
+    setHasMoreMovies(true);
+  }, [appliedGenres, appliedRatingRange, appliedYearRange, appliedSearchText, appliedPopularityRange, sortBy, sortOrder]);
 
   // Fetch movies with filters, pagination, and sorting
   const {
@@ -425,9 +430,39 @@ const Movies = () => {
     staleTime: 60000, // 1 minute - optimized caching
     gcTime: 300000, // 5 minutes cache time
   });
-  const movies = moviesData?.movies || [];
+
+  // Update allMovies when new data arrives
+  useEffect(() => {
+    if (moviesData?.movies) {
+      if (currentPage === 1) {
+        setAllMovies(moviesData.movies);
+      } else {
+        setAllMovies(prev => [...prev, ...moviesData.movies]);
+      }
+      
+      // Check if there are more movies to load
+      const totalLoaded = currentPage * itemsPerPage;
+      setHasMoreMovies(totalLoaded < (moviesData.totalCount || 0));
+    }
+  }, [moviesData, currentPage, itemsPerPage]);
+
+  const movies = allMovies;
   const totalCount = moviesData?.totalCount || 0;
-  const totalPages = Math.ceil(totalCount / itemsPerPage);
+
+  // Load more handler
+  const handleLoadMore = () => {
+    if (!isLoadingMore && hasMoreMovies) {
+      setIsLoadingMore(true);
+      setCurrentPage(prev => prev + 1);
+    }
+  };
+
+  // Reset loading more when new data arrives
+  useEffect(() => {
+    if (!isLoading) {
+      setIsLoadingMore(false);
+    }
+  }, [isLoading]);
 
   // Batch fetch user data for all displayed movies (N+1 query fix)
   const { data: userDataMap = {} } = useQuery({
@@ -465,15 +500,6 @@ const Movies = () => {
     console.log("[Movies] Query state:", { isLoading, isError, error, totalCount, moviesCount: movies.length });
   }, [isLoading, isError, error, totalCount, movies.length]);
 
-  // Enhancement 5: Smooth scroll to top when page changes
-  useEffect(() => {
-    if (resultsRef.current && !isLoading) {
-      resultsRef.current.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'start' 
-      });
-    }
-  }, [currentPage]);
   const handleSortChange = (value: string) => {
     const [field, order] = value.split("-") as [typeof sortBy, typeof sortOrder];
     
@@ -486,91 +512,7 @@ const Movies = () => {
     
     updateFiltersAndResetPage({ sortBy: field, sortOrder: order });
   };
-  const renderPagination = () => {
-    if (totalPages <= 1) return null;
-    const pages = [];
-    const maxVisible = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-    if (endPage - startPage < maxVisible - 1) {
-      startPage = Math.max(1, endPage - maxVisible + 1);
-    }
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(i);
-    }
-    return <div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t py-4 mt-8">
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious 
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (currentPage > 1) handlePageChange(currentPage - 1);
-                }} 
-                className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} 
-              />
-            </PaginationItem>
-            
-            {startPage > 1 && <>
-                <PaginationItem>
-                  <PaginationLink 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handlePageChange(1);
-                    }}
-                    className="cursor-pointer"
-                  >
-                    1
-                  </PaginationLink>
-                </PaginationItem>
-                {startPage > 2 && <PaginationItem>
-                    <PaginationEllipsis />
-                  </PaginationItem>}
-              </>}
 
-            {pages.map(page => <PaginationItem key={page}>
-                <PaginationLink 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handlePageChange(page);
-                  }} 
-                  isActive={currentPage === page} 
-                  className="cursor-pointer"
-                >
-                  {page}
-                </PaginationLink>
-              </PaginationItem>)}
-
-            {endPage < totalPages && <>
-                {endPage < totalPages - 1 && <PaginationItem>
-                    <PaginationEllipsis />
-                  </PaginationItem>}
-                <PaginationItem>
-                  <PaginationLink 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handlePageChange(totalPages);
-                    }}
-                    className="cursor-pointer"
-                  >
-                    {totalPages}
-                  </PaginationLink>
-                </PaginationItem>
-              </>}
-
-            <PaginationItem>
-              <PaginationNext 
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (currentPage < totalPages) handlePageChange(currentPage + 1);
-                }} 
-                className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} 
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      </div>;
-  };
   return <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/10">
       {/* Main Content */}
       <div className="container mx-auto max-w-7xl px-4 py-8">
@@ -606,10 +548,10 @@ const Movies = () => {
               <h2 className="text-2xl font-semibold text-foreground">Movies</h2>
               {/* Enhancement 2: Show more context */}
               <p className="text-muted-foreground">
-                {isLoading 
+                {isLoading && movies.length === 0
                   ? "Loading..." 
                   : totalCount > 0 
-                    ? `Showing ${(currentPage - 1) * itemsPerPage + 1}-${Math.min(currentPage * itemsPerPage, totalCount)} of ${totalCount} ${totalCount === 1 ? "movie" : "movies"}` 
+                    ? `Showing ${movies.length} of ${totalCount} ${totalCount === 1 ? "movie" : "movies"}` 
                     : "No results found"
                 }
               </p>
@@ -637,17 +579,17 @@ const Movies = () => {
               </Select>
               <Select value={itemsPerPage.toString()} onValueChange={(value) => {
                 setItemsPerPage(parseInt(value));
-                const newParams = new URLSearchParams(searchParams);
-                newParams.delete('page'); // Reset to page 1
-                setSearchParams(newParams, { replace: true });
+                setCurrentPage(1);
+                setAllMovies([]);
+                setHasMoreMovies(true);
               }}>
                 <SelectTrigger className="w-[130px]">
                   <SelectValue placeholder="Per page" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="20">20 per page</SelectItem>
                   <SelectItem value="50">50 per page</SelectItem>
                   <SelectItem value="100">100 per page</SelectItem>
-                  <SelectItem value="200">200 per page</SelectItem>
                 </SelectContent>
               </Select>
               <Button variant={viewMode === "grid" ? "default" : "outline"} size="sm" onClick={() => setViewMode("grid")}>
@@ -688,47 +630,73 @@ const Movies = () => {
                 Try adjusting your filters to discover more content
               </p>
             </div> : viewMode === "grid" ? <>
-              {/* Enhancement 6: Loading state improvement with skeleton overlay */}
-              <div className="relative mb-20">
-                <div className={`grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4 transition-opacity ${isLoading ? "opacity-30" : ""}`}>
-                  {movies.map((movie, index) => {
-                    const userData = userDataMap[movie.id];
-                    return (
-                      <MovieCard
-                        key={movie.id}
-                        {...movie}
-                        preloadedUserRating={userData?.rating}
-                        preloadedInWatchlist={userData?.inWatchlist}
-                        onYearClick={handleYearClick}
-                        onGenreClick={handleGenreClick}
-                        onActorClick={handleActorClick}
-                        onDirectorClick={handleDirectorClick}
-                        onWriterClick={handleWriterClick}
-                        onKeywordClick={handleKeywordClick}
-                        onOpenDetail={handleOpenDetail}
-                      />
-                    );
-                  })}
-                </div>
-                
-                {/* Overlay skeleton when loading */}
-                {isLoading && movies.length > 0 && (
-                  <div className="absolute inset-0 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4 pointer-events-none">
-                    {[...Array(Math.min(itemsPerPage, 12))].map((_, i) => (
-                      <Skeleton key={i} className="h-[400px] rounded-lg" />
-                    ))}
-                  </div>
-                )}
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4">
+                {movies.map((movie, index) => {
+                  const userData = userDataMap[movie.id];
+                  return (
+                    <MovieCard
+                      key={movie.id}
+                      {...movie}
+                      preloadedUserRating={userData?.rating}
+                      preloadedInWatchlist={userData?.inWatchlist}
+                      onYearClick={handleYearClick}
+                      onGenreClick={handleGenreClick}
+                      onActorClick={handleActorClick}
+                      onDirectorClick={handleDirectorClick}
+                      onWriterClick={handleWriterClick}
+                      onKeywordClick={handleKeywordClick}
+                      onOpenDetail={handleOpenDetail}
+                    />
+                  );
+                })}
               </div>
-              {/* Sticky bottom pagination */}
-              {renderPagination()}
+              
+              {/* Load More Button */}
+              {hasMoreMovies && (
+                <div className="flex justify-center mt-8 mb-8">
+                  <Button
+                    onClick={handleLoadMore}
+                    disabled={isLoadingMore || isLoading}
+                    size="lg"
+                    variant="outline"
+                  >
+                    {isLoadingMore || isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      `Load More (${totalCount - movies.length} remaining)`
+                    )}
+                  </Button>
+                </div>
+              )}
             </> : <>
-              {/* Table view with loading overlay */}
-              <div className={`transition-opacity mb-20 ${isLoading ? "opacity-30" : ""}`}>
+              {/* Table view */}
+              <div className="mb-8">
                 <MoviesTable movies={movies} title="Movies" onOpenDetail={handleOpenDetail} />
               </div>
-              {/* Sticky bottom pagination */}
-              {renderPagination()}
+              
+              {/* Load More Button */}
+              {hasMoreMovies && (
+                <div className="flex justify-center mt-8 mb-8">
+                  <Button
+                    onClick={handleLoadMore}
+                    disabled={isLoadingMore || isLoading}
+                    size="lg"
+                    variant="outline"
+                  >
+                    {isLoadingMore || isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      `Load More (${totalCount - movies.length} remaining)`
+                    )}
+                  </Button>
+                </div>
+              )}
             </>}
         </main>
       </div>
