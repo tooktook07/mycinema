@@ -39,28 +39,21 @@ export function AccessibilityProfiles() {
   };
 
   return (
-    <div className="space-y-3">
-      <p className="text-sm text-muted-foreground mb-4">
-        Quick presets for common accessibility needs
-      </p>
-      <div className="grid gap-3">
+    <div className="space-y-2">
+      <div className="grid gap-2">
         {profiles.map((profile) => {
           const Icon = profile.icon;
           return (
             <Button
               key={profile.id}
               variant="outline"
-              className="justify-start h-auto p-4 text-left"
+              size="sm"
+              className="justify-start h-auto p-2 text-left"
               onClick={() => handleProfileClick(profile.id, profile.label)}
             >
-              <div className="flex items-start gap-3 w-full">
-                <Icon className="h-5 w-5 mt-0.5 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium">{profile.label}</div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {profile.description}
-                  </div>
-                </div>
+              <div className="flex items-center gap-2 w-full">
+                <Icon className="h-4 w-4 flex-shrink-0" />
+                <span className="text-sm">{profile.label}</span>
               </div>
             </Button>
           );

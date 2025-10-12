@@ -15,18 +15,19 @@ export function AccessibilityWidget() {
         <TooltipTrigger asChild>
           <Button
             size="icon"
-            className="fixed bottom-4 right-4 z-[9997] h-14 w-14 rounded-full shadow-lg"
+            variant="outline"
+            className="fixed bottom-4 right-4 z-[9997] h-12 w-12 rounded-full shadow-lg bg-card/95 backdrop-blur-sm"
             onClick={() => setIsPanelOpen(!isPanelOpen)}
             aria-label="Open accessibility options"
           >
-            <Accessibility className="h-6 w-6" />
+            <Accessibility className="h-5 w-5" />
             {hasNonDefaultSettings && (
-              <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary border-2 border-background" />
+              <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-primary border-2 border-background" />
             )}
           </Button>
         </TooltipTrigger>
         <TooltipContent side="left">
-          <p>Accessibility Options</p>
+          <p>Accessibility</p>
         </TooltipContent>
       </Tooltip>
 

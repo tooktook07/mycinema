@@ -31,83 +31,75 @@ export function AccessibilityPanel({ isOpen, onClose }: AccessibilityPanelProps)
   if (!isOpen) return null;
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[9998]"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-
-      {/* Panel */}
-      <div
-        className="fixed top-0 right-0 h-full w-full sm:w-[400px] bg-card border-l border-border shadow-lg z-[9999] animate-slide-in-right"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="accessibility-panel-title"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <h2 id="accessibility-panel-title" className="text-lg font-semibold">
-            Accessibility Options
-          </h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            aria-label="Close accessibility panel"
-          >
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
-
-        {/* Content */}
-        <ScrollArea className="h-[calc(100vh-8rem)]">
-          <div className="p-4 space-y-4">
-            <Accordion type="multiple" defaultValue={['profiles', 'text', 'visual', 'navigation']}>
-              <AccordionItem value="profiles">
-                <AccordionTrigger>Quick Profiles</AccordionTrigger>
-                <AccordionContent>
-                  <AccessibilityProfiles />
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="text">
-                <AccordionTrigger>Text Adjustments</AccordionTrigger>
-                <AccordionContent>
-                  <TextControls />
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="visual">
-                <AccordionTrigger>Visual Adjustments</AccordionTrigger>
-                <AccordionContent>
-                  <VisualControls />
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="navigation">
-                <AccordionTrigger>Navigation & Focus</AccordionTrigger>
-                <AccordionContent>
-                  <NavigationControls />
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </div>
-        </ScrollArea>
-
-        {/* Footer */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border bg-card">
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={handleReset}
-          >
-            <RotateCcw className="h-4 w-4 mr-2" />
-            Reset All Settings
-          </Button>
-        </div>
+    <div
+      className="fixed top-0 right-0 h-full w-full sm:w-[380px] bg-card/95 backdrop-blur-sm border-l border-border shadow-2xl z-[9999] animate-slide-in-right"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="accessibility-panel-title"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between p-3 border-b border-border/50">
+        <h2 id="accessibility-panel-title" className="text-base font-medium">
+          Accessibility
+        </h2>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={onClose}
+          aria-label="Close accessibility panel"
+        >
+          <X className="h-4 w-4" />
+        </Button>
       </div>
-    </>
+
+      {/* Content */}
+      <ScrollArea className="h-[calc(100vh-7rem)]">
+        <div className="p-3 space-y-2">
+          <Accordion type="multiple" defaultValue={['profiles', 'text', 'visual', 'navigation']} className="space-y-1">
+            <AccordionItem value="profiles" className="border-none">
+              <AccordionTrigger className="text-sm py-2 hover:no-underline">Profiles</AccordionTrigger>
+              <AccordionContent className="pb-2">
+                <AccessibilityProfiles />
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="text" className="border-none">
+              <AccordionTrigger className="text-sm py-2 hover:no-underline">Text</AccordionTrigger>
+              <AccordionContent className="pb-2">
+                <TextControls />
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="visual" className="border-none">
+              <AccordionTrigger className="text-sm py-2 hover:no-underline">Visual</AccordionTrigger>
+              <AccordionContent className="pb-2">
+                <VisualControls />
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="navigation" className="border-none">
+              <AccordionTrigger className="text-sm py-2 hover:no-underline">Navigation</AccordionTrigger>
+              <AccordionContent className="pb-2">
+                <NavigationControls />
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
+      </ScrollArea>
+
+      {/* Footer */}
+      <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-border/50 bg-card/95 backdrop-blur-sm">
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full"
+          onClick={handleReset}
+        >
+          <RotateCcw className="h-3.5 w-3.5 mr-2" />
+          Reset All
+        </Button>
+      </div>
+    </div>
   );
 }
