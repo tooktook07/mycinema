@@ -345,10 +345,6 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
         // Navigate to next movie
         if (onNavigateToMovie) {
           onNavigateToMovie(nextMovie.id);
-          toast({
-            title: "Next Movie",
-            description: `Now viewing: ${nextMovie.title}`,
-          });
         }
       } else {
         toast({
