@@ -1,4 +1,4 @@
-import { Film, Home, Settings, LogIn, LogOut, User, Sparkles, Bookmark, HelpCircle, Menu } from "lucide-react";
+import { Film, Home, Settings, LogIn, LogOut, User, Sparkles, Bookmark, HelpCircle, Menu, Package } from "lucide-react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -94,6 +94,25 @@ export const Navigation = () => {
               title="Movies"
             >
               <Film className="h-4 w-4" />
+            </NavLink>
+
+            <NavLink
+              to="/items"
+              className={({ isActive }) =>
+                cn(
+                  "flex items-center p-2 rounded transition-colors",
+                  isDiscoverPage
+                    ? isActive
+                      ? "bg-white/20 text-white"
+                      : "text-white/70 hover:text-white"
+                    : isActive
+                      ? "bg-foreground text-background"
+                      : "text-muted-foreground hover:text-foreground"
+                )
+              }
+              title="Items"
+            >
+              <Package className="h-4 w-4" />
             </NavLink>
 
             <NavLink
