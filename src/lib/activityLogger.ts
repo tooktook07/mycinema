@@ -1,4 +1,4 @@
-import { logUserActivity } from './adminService';
+import { supabase } from '@/integrations/supabase/client';
 
 export const logActivity = async (
   userId: string,
@@ -6,12 +6,13 @@ export const logActivity = async (
   details?: any
 ) => {
   try {
-    // Get user agent from browser
-    const userAgent = navigator.userAgent;
-    
-    // Note: IP address cannot be obtained client-side for security reasons.
-    // If IP logging is required, implement it server-side in edge functions instead.
-    await logUserActivity(userId, actionType, details, undefined, userAgent);
+    // Call the log-activity edge function to bypass RLS
+    await supabase.functions.invoke('log-activity', {
+      body: {
+        actionType,
+        details
+      }
+    });
   } catch (error) {
     // Silently fail - don't block user actions if logging fails
     console.error('Activity logging failed:', error);

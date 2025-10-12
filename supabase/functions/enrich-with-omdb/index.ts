@@ -18,7 +18,12 @@ serve(async (req) => {
   const userAgent = req.headers.get('user-agent') || 'unknown';
 
   try {
-    const { batchSize = 50, forceRefresh = false, trigger_source = 'manual' } = await req.json();
+    // Parse and validate input parameters
+    const body = await req.json();
+    const batchSize = typeof body.batchSize === 'number' && body.batchSize >= 1 && body.batchSize <= 100 ? body.batchSize : 50;
+    const forceRefresh = typeof body.forceRefresh === 'boolean' ? body.forceRefresh : false;
+    const trigger_source = body.trigger_source === 'automated' ? 'automated' : 'manual';
+    
     const OMDB_API_KEY = Deno.env.get("OMDB_API_KEY");
 
     // Initialize Supabase client with auth
@@ -36,6 +41,21 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Verify admin role
+    const { data: roleData } = await supabaseClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .single();
+
+    if (!roleData) {
+      return new Response(
+        JSON.stringify({ error: 'Admin access required' }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 

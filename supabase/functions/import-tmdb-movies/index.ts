@@ -20,20 +20,22 @@ serve(async (req) => {
   let syncId: string | undefined;
 
   try {
-    const {
-      minRating = 0,
-      maxRating = 10,
-      yearRange = [2025, 2025],
-      genres,
-      excludedGenres,
-      statuses,
-      languages,
-      minVoteCount = 100,
-      minPopularity = 0,
-      syncMode = false,
-      maxPages = 25, // Reduced from 50 to 25 pages per sync for safety
-      trigger_source = 'manual', // Track whether sync was triggered manually or by cron
-    } = await req.json();
+    // Parse and validate input parameters
+    const body = await req.json();
+    const minRating = typeof body.minRating === 'number' && body.minRating >= 0 && body.minRating <= 10 ? body.minRating : 0;
+    const maxRating = typeof body.maxRating === 'number' && body.maxRating >= 0 && body.maxRating <= 10 && body.maxRating >= minRating ? body.maxRating : 10;
+    const yearRange = Array.isArray(body.yearRange) && body.yearRange.length === 2 && 
+                      typeof body.yearRange[0] === 'number' && typeof body.yearRange[1] === 'number' ? 
+                      body.yearRange : [2025, 2025];
+    const genres = Array.isArray(body.genres) ? body.genres.filter((g: any) => typeof g === 'string') : undefined;
+    const excludedGenres = Array.isArray(body.excludedGenres) ? body.excludedGenres.filter((g: any) => typeof g === 'string') : undefined;
+    const statuses = Array.isArray(body.statuses) ? body.statuses.filter((s: any) => typeof s === 'string') : undefined;
+    const languages = Array.isArray(body.languages) ? body.languages.filter((l: any) => typeof l === 'string') : undefined;
+    const minVoteCount = typeof body.minVoteCount === 'number' && body.minVoteCount >= 0 && body.minVoteCount <= 100000 ? body.minVoteCount : 100;
+    const minPopularity = typeof body.minPopularity === 'number' && body.minPopularity >= 0 ? body.minPopularity : 0;
+    const syncMode = typeof body.syncMode === 'boolean' ? body.syncMode : false;
+    const maxPages = typeof body.maxPages === 'number' && body.maxPages >= 1 && body.maxPages <= 50 ? body.maxPages : 25;
+    const trigger_source = body.trigger_source === 'automated' ? 'automated' : 'manual';
     const TMDB_API_KEY = Deno.env.get("TMDB_API_KEY");
 
     // Initialize Supabase client with auth
@@ -54,6 +56,21 @@ serve(async (req) => {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Verify admin role
+    const { data: roleData } = await supabaseClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .single();
+
+    if (!roleData) {
+      return new Response(
+        JSON.stringify({ error: 'Admin access required' }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const userId = user.id;
