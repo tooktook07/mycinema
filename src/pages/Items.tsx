@@ -313,9 +313,15 @@ const Items = () => {
           </Card>
         )}
 
-        {!isLoading && displayedMovies.length === 0 && (
+        {!isLoading && displayedMovies.length === 0 && !searchText && (
           <Card className="p-8 text-center">
             <p className="text-muted-foreground">No items found</p>
+          </Card>
+        )}
+
+        {!isLoading && displayedMovies.length === 0 && searchText && searchText === debouncedSearch && (
+          <Card className="p-8 text-center">
+            <p className="text-muted-foreground">No movies match your search "{searchText}"</p>
           </Card>
         )}
 
