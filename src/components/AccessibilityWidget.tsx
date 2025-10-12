@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Accessibility } from 'lucide-react';
+import { SlidersHorizontal } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { AccessibilityPanel } from '@/components/AccessibilityPanel';
@@ -8,6 +9,12 @@ import { useAccessibility } from '@/contexts/AccessibilityContext';
 export function AccessibilityWidget() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const { hasNonDefaultSettings } = useAccessibility();
+  const location = useLocation();
+
+  // Hide widget on specific routes
+  if (location.pathname === '/discover' || location.pathname === '/account') {
+    return null;
+  }
 
   return (
     <>
@@ -20,7 +27,7 @@ export function AccessibilityWidget() {
             onClick={() => setIsPanelOpen(!isPanelOpen)}
             aria-label="Open accessibility options"
           >
-            <Accessibility className="h-5 w-5" />
+            <SlidersHorizontal className="h-5 w-5" />
             {hasNonDefaultSettings && (
               <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-primary border-2 border-background" />
             )}
