@@ -166,7 +166,7 @@ export const MovieCard = ({
         </div>
 
         {/* Center - More Info Button (on hover, below title) */}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-colors flex items-center justify-center pt-16">
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-colors flex items-center justify-center">
           <Button 
             size="sm" 
             variant="secondary" 
