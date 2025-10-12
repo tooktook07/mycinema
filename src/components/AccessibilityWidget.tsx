@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { SlidersHorizontal } from 'lucide-react';
+import { Accessibility } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -27,7 +27,7 @@ export function AccessibilityWidget() {
             onClick={() => setIsPanelOpen(!isPanelOpen)}
             aria-label="Open accessibility options"
           >
-            <SlidersHorizontal className="h-5 w-5" />
+            <Accessibility className="h-5 w-5" />
             {hasNonDefaultSettings && (
               <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-primary border-2 border-background" />
             )}
