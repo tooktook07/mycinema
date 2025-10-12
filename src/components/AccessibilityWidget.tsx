@@ -46,13 +46,17 @@ export function AccessibilityWidget() {
         .eq('key', 'accessibility_widget_enabled')
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.warn('Could not fetch widget setting:', error.message);
+        return;
+      }
       
       if (data) {
         setIsEnabled(data.value === true);
       }
-    } catch (error) {
-      console.error('Error fetching widget setting:', error);
+    } catch (error: any) {
+      console.warn('Error fetching widget setting:', error?.message || 'Unknown error');
+      // Keep widget enabled by default if we can't fetch settings
     }
   };
 

@@ -27,13 +27,16 @@ export const GeneralSettings = () => {
         .eq('key', 'accessibility_widget_enabled')
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.warn('Could not fetch settings:', error.message);
+        return;
+      }
       
       if (data) {
         setAccessibilityWidgetEnabled(data.value === true);
       }
-    } catch (error) {
-      console.error('Error fetching settings:', error);
+    } catch (error: any) {
+      console.warn('Error fetching settings:', error?.message || 'Unknown error');
     } finally {
       setIsLoading(false);
     }
