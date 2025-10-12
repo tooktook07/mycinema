@@ -110,15 +110,18 @@ const Items = () => {
         query = query.overlaps("genres", appliedGenres);
       }
 
-      // Apply rating filter (check both rating and imdb_rating)
-      if (appliedRatingRange[0] > 0 || appliedRatingRange[1] < 10) {
+      // Apply rating filter only if not default values
+      const hasRatingFilter = appliedRatingRange[0] !== 0 || appliedRatingRange[1] !== 10;
+      if (hasRatingFilter) {
         query = query.or(
-          `and(rating.gte.${appliedRatingRange[0]},rating.lte.${appliedRatingRange[1]}),and(imdb_rating.gte.${appliedRatingRange[0]},imdb_rating.lte.${appliedRatingRange[1]})`
+          `rating.gte.${appliedRatingRange[0]},rating.lte.${appliedRatingRange[1]},imdb_rating.gte.${appliedRatingRange[0]},imdb_rating.lte.${appliedRatingRange[1]}`
         );
       }
 
-      // Apply year filter
-      if (appliedYearRange[0] > 1900 || appliedYearRange[1] < new Date().getFullYear()) {
+      // Apply year filter only if not default values
+      const currentYear = new Date().getFullYear();
+      const hasYearFilter = appliedYearRange[0] !== 1900 || appliedYearRange[1] !== currentYear;
+      if (hasYearFilter) {
         query = query.gte("year", appliedYearRange[0]).lte("year", appliedYearRange[1]);
       }
 
