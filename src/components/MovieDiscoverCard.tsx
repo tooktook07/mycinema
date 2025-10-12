@@ -61,15 +61,6 @@ export const MovieDiscoverCard = ({ movie, totalRated, sessionRatings, recentSta
           )}
         </div>
 
-        {/* Genres */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          {movie.genre.slice(0, 4).map(g => (
-            <Badge key={g} className="bg-white/20 text-white border-none backdrop-blur-md">
-              {g}
-            </Badge>
-          ))}
-        </div>
-
         {/* Plot Preview */}
         {movie.plot && (
           <p className="text-xs md:text-sm text-white/90 line-clamp-3 mb-2 drop-shadow-lg leading-relaxed">
