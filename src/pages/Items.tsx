@@ -62,7 +62,7 @@ const Items = () => {
       if (searchText) {
         const searchPattern = `%${searchText}%`;
         query = query.or(
-          `title.ilike.${searchPattern},actors.ilike.${searchPattern},director.ilike.${searchPattern},plot.ilike.${searchPattern},genres.cs.{${searchText}}`
+          `title.ilike.${searchPattern},actors.ilike.${searchPattern},director.ilike.${searchPattern},plot.ilike.${searchPattern}`
         );
       }
 
