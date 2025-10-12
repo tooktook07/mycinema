@@ -419,7 +419,7 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[95vh] p-0 gap-0 overflow-hidden">
+      <DialogContent className="w-[95vw] max-w-6xl max-h-[95vh] p-0 gap-0 overflow-hidden">
         {isLoading ? (
           <div className="p-6 space-y-4">
             <Skeleton className="h-8 w-3/4" />
@@ -444,11 +444,11 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/20" />
 
-              <div className="relative p-8">
-                <div className="flex gap-6 items-start">
+              <div className="relative p-4 md:p-6 lg:p-8">
+                <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-start">
                   {/* Poster */}
                   {imageProps && (
-                    <div className="hidden md:block w-48 rounded-lg overflow-hidden shadow-2xl flex-shrink-0">
+                    <div className="w-32 md:w-40 lg:w-48 mx-auto md:mx-0 rounded-lg overflow-hidden shadow-2xl flex-shrink-0">
                       <img {...imageProps} alt={movie.title} className="w-full h-auto" />
                     </div>
                   )}
@@ -456,7 +456,7 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                   {/* Title & Quick Info */}
                   <div className="flex-1 space-y-3">
                     <DialogHeader>
-                      <DialogTitle className="text-4xl font-bold flex items-center gap-2">
+                      <DialogTitle className="text-2xl md:text-3xl lg:text-4xl font-bold flex items-center gap-2">
                         {movie.title}
                         {relevanceReason && (
                           <TooltipProvider>
@@ -474,13 +474,13 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                           </TooltipProvider>
                         )}
                       </DialogTitle>
-                      {movie.tagline && <p className="text-lg text-muted-foreground italic">"{movie.tagline}"</p>}
+                      {movie.tagline && <p className="text-sm md:text-base lg:text-lg text-muted-foreground italic">"{movie.tagline}"</p>}
                     </DialogHeader>
 
                     {/* Plot - Right after tagline */}
                     {movie.plot && (
                       <div className="mb-2">
-                        <p className="text-sm leading-relaxed text-muted-foreground">{movie.plot}</p>
+                        <p className="text-xs md:text-sm leading-relaxed text-muted-foreground">{movie.plot}</p>
                       </div>
                     )}
 
@@ -515,19 +515,19 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                     </div>
 
                     {/* Stats and Action Buttons */}
-                    <div className="flex flex-wrap items-center justify-between gap-4">
-                      <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex flex-col md:flex-row md:flex-wrap items-start md:items-center justify-between gap-4">
+                      <div className="flex flex-wrap items-center gap-2 md:gap-4">
                         {/* IMDb Rating (prioritized when available) */}
                         {movie.imdb_rating ? (
-                          <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-lg">
-                            <Star className="h-6 w-6 fill-yellow-500 text-yellow-500" />
-                            <div className="text-2xl font-bold">{movie.imdb_rating}/10</div>
+                          <div className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 bg-primary/10 rounded-lg">
+                            <Star className="h-4 md:h-6 w-4 md:w-6 fill-yellow-500 text-yellow-500" />
+                            <div className="text-lg md:text-2xl font-bold">{movie.imdb_rating}/10</div>
                             <div className="text-xs text-muted-foreground">IMDb</div>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-lg">
-                            <Star className="h-6 w-6 fill-yellow-500 text-yellow-500" />
-                            <div className="text-2xl font-bold">{movie.rating}/10</div>
+                          <div className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 bg-primary/10 rounded-lg">
+                            <Star className="h-4 md:h-6 w-4 md:w-6 fill-yellow-500 text-yellow-500" />
+                            <div className="text-lg md:text-2xl font-bold">{movie.rating}/10</div>
                             <div className="text-xs text-muted-foreground">TMDB</div>
                           </div>
                         )}
@@ -541,7 +541,7 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2 w-full md:w-auto">
                         {hasValidImdbId && (
                           <Button variant="outline" size="sm" asChild>
                             <a href={imdbUrl} target="_blank" rel="noopener noreferrer">
@@ -658,7 +658,7 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
             </div>
 
             {/* Content Section */}
-            <ScrollArea className="max-h-[400px] p-8 pt-6">
+            <ScrollArea className="max-h-[400px] p-4 md:p-6 lg:p-8 pt-4 md:pt-6">
               <div className="space-y-6">
                 {/* Awards Section */}
                 {movie.awards && movie.awards !== "N/A" && (
