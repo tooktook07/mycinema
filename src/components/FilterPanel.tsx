@@ -35,7 +35,6 @@ const GENRES = [
   "Fantasy",
 ];
 
-
 export const FilterPanel = ({
   selectedGenres,
   onGenreToggle,
@@ -49,19 +48,18 @@ export const FilterPanel = ({
 }: FilterPanelProps) => {
   const isMobile = useIsMobile();
   const [localSearch, setLocalSearch] = useState(searchText);
-  
+
   // Collapsible state with localStorage persistence
   const [isOpen, setIsOpen] = useState(() => {
-    const saved = localStorage.getItem('filterPanelOpen');
+    const saved = localStorage.getItem("filterPanelOpen");
     if (saved !== null) return JSON.parse(saved);
     return false; // Collapsed by default
   });
 
   // Persist collapse state
   useEffect(() => {
-    localStorage.setItem('filterPanelOpen', JSON.stringify(isOpen));
+    localStorage.setItem("filterPanelOpen", JSON.stringify(isOpen));
   }, [isOpen]);
-
 
   // Debounce search input
   useEffect(() => {
@@ -76,8 +74,9 @@ export const FilterPanel = ({
     setLocalSearch(searchText);
   }, [searchText]);
 
-  const selectedCount = selectedGenres.length + 
-    (ratingRange[0] > 0 || ratingRange[1] < 10 ? 1 : 0) + 
+  const selectedCount =
+    selectedGenres.length +
+    (ratingRange[0] > 0 || ratingRange[1] < 10 ? 1 : 0) +
     (yearRange[0] !== 1900 || yearRange[1] !== 2030 ? 1 : 0) +
     (searchText ? 1 : 0);
 
@@ -105,7 +104,7 @@ export const FilterPanel = ({
             <ChevronDown className={cn("h-4 w-4 transition-transform duration-200", isOpen && "rotate-180")} />
           </Button>
         </div>
-        
+
         {/* Search Input */}
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -130,12 +129,7 @@ export const FilterPanel = ({
 
         {/* Reset Button */}
         {selectedCount > 0 && (
-          <Button 
-            variant="destructive" 
-            size="sm"
-            onClick={onReset}
-            className="font-semibold shrink-0"
-          >
+          <Button variant="destructive" size="sm" onClick={onReset} className="font-semibold shrink-0">
             Reset All
           </Button>
         )}
@@ -143,17 +137,13 @@ export const FilterPanel = ({
 
       {/* Collapsible Filter Sections */}
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <CollapsibleContent className="space-y-4">
+        <CollapsibleContent>
           <Accordion type="multiple" defaultValue={["genres", "rating", "year"]} className="space-y-2">
             {/* Genres Section */}
             <AccordionItem value="genres" className="border rounded-lg px-4">
-              <AccordionTrigger className="text-sm font-semibold hover:no-underline py-3">
-                Genres
-              </AccordionTrigger>
+              <AccordionTrigger className="text-sm font-semibold hover:no-underline py-3">Genres</AccordionTrigger>
               <AccordionContent className="pb-3">
-                <p className="text-xs text-muted-foreground mb-2 hidden sm:block">
-                  Select one or more genres
-                </p>
+                <p className="text-xs text-muted-foreground mb-2 hidden sm:block">Select one or more genres</p>
                 <div className="flex flex-wrap gap-1.5 md:gap-2 max-h-48 overflow-y-auto p-2 rounded border border-border/50 bg-background/50">
                   {GENRES.map((genre) => {
                     const isSelected = selectedGenres.includes(genre);
@@ -163,7 +153,7 @@ export const FilterPanel = ({
                         variant={isSelected ? "default" : "outline"}
                         className={cn(
                           "cursor-pointer transition-all hover:scale-105 text-xs md:text-sm min-h-[32px] md:min-h-[36px]",
-                          isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                          isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background",
                         )}
                         onClick={() => onGenreToggle(genre)}
                       >
@@ -214,9 +204,7 @@ export const FilterPanel = ({
                 Release Year
               </AccordionTrigger>
               <AccordionContent className="pb-4">
-                <p className="text-xs text-muted-foreground mb-3 hidden sm:block">
-                  Set min and max year
-                </p>
+                <p className="text-xs text-muted-foreground mb-3 hidden sm:block">Set min and max year</p>
                 <div className="flex gap-3">
                   <div className="flex-1">
                     <Label htmlFor="year-from" className="text-xs text-muted-foreground mb-1.5 block">
