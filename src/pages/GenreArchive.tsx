@@ -12,12 +12,12 @@ import { decodeArchiveSlug, toTitleCase } from "@/lib/urlUtils";
 const MOVIES_PER_PAGE = 48;
 
 const GenreArchive = () => {
-  const { genre } = useParams<{ genre: string }>();
-  const decodedGenreName = genre ? decodeArchiveSlug(genre) : "";
+  const { genreName } = useParams<{ genreName: string }>();
+  const decodedGenreName = genreName ? decodeArchiveSlug(genreName) : "";
   const displayGenreName = toTitleCase(decodedGenreName);
   
   console.log("🔍 GenreArchive Debug:", {
-    urlParam: genre,
+    urlParam: genreName,
     decoded: decodedGenreName,
     titleCase: toTitleCase(decodedGenreName),
     display: displayGenreName
@@ -182,7 +182,7 @@ const GenreArchive = () => {
     return (
       <ArchiveLayout
         title={displayGenreName}
-        breadcrumbs={[{ label: displayGenreName, href: `/genre/${genre}` }]}
+        breadcrumbs={[{ label: displayGenreName, href: `/genre/${genreName}` }]}
         movieCount={0}
       >
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -199,7 +199,7 @@ const GenreArchive = () => {
       <ArchiveLayout
         title={displayGenreName}
         description={`Explore the best ${decodedGenreName} films`}
-        breadcrumbs={[{ label: displayGenreName, href: `/genre/${genre}` }]}
+        breadcrumbs={[{ label: displayGenreName, href: `/genre/${genreName}` }]}
         movieCount={countData || displayedMovies.length}
       >
         {isFetched && displayedMovies && displayedMovies.length > 0 ? (
