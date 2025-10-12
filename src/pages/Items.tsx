@@ -1,5 +1,4 @@
-import { useState, useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,55 +6,47 @@ import { MovieCard } from "@/components/MovieCard";
 import { MovieDetailModal } from "@/components/MovieDetailModal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+import { Button } from "@/components/ui/button";
 
 const ITEMS_PER_PAGE = 48;
 
 const Items = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [displayedMovies, setDisplayedMovies] = useState<any[]>([]);
+  const [offset, setOffset] = useState(0);
   const { loading: authLoading } = useAuth();
-  
-  const currentPage = parseInt(searchParams.get("page") || "1", 10);
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["items", currentPage],
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ["items", offset],
     enabled: !authLoading,
     queryFn: async () => {
-      const from = (currentPage - 1) * ITEMS_PER_PAGE;
+      const from = offset;
       const to = from + ITEMS_PER_PAGE - 1;
 
-      const query = supabase
+      const { data, error, count } = await supabase
         .from("movies")
         .select("*", { count: "exact" })
         .order("created_at", { ascending: false })
         .range(from, to);
 
-      const { data, error, count } = await query;
-
       if (error) throw error;
-      return { movies: data, totalCount: count || 0 };
+      return { movies: data || [], totalCount: count || 0 };
     },
   });
 
-  const movies = data?.movies || [];
-  const totalCount = data?.totalCount || 0;
-  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
+  // Append new movies to displayed movies when data changes
+  useEffect(() => {
+    if (data?.movies) {
+      setDisplayedMovies(prev => offset === 0 ? data.movies : [...prev, ...data.movies]);
+    }
+  }, [data?.movies, offset]);
 
-  const goToPage = (page: number) => {
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set("page", page.toString());
-    setSearchParams(newParams);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+  const totalCount = data?.totalCount || 0;
+  const hasMore = displayedMovies.length < totalCount;
+
+  const handleLoadMore = () => {
+    setOffset(prev => prev + ITEMS_PER_PAGE);
   };
 
   const handleOpenDetail = (movieId: string) => {
@@ -68,93 +59,17 @@ const Items = () => {
     setSelectedMovieId(null);
   };
 
-  const renderPaginationItems = () => {
-    const items = [];
-    const maxVisible = 7;
-
-    if (totalPages <= maxVisible) {
-      for (let i = 1; i <= totalPages; i++) {
-        items.push(
-          <PaginationItem key={i}>
-            <PaginationLink
-              onClick={() => goToPage(i)}
-              isActive={currentPage === i}
-            >
-              {i}
-            </PaginationLink>
-          </PaginationItem>
-        );
-      }
-    } else {
-      items.push(
-        <PaginationItem key={1}>
-          <PaginationLink
-            onClick={() => goToPage(1)}
-            isActive={currentPage === 1}
-          >
-            1
-          </PaginationLink>
-        </PaginationItem>
-      );
-
-      if (currentPage > 3) {
-        items.push(
-          <PaginationItem key="ellipsis-start">
-            <PaginationEllipsis />
-          </PaginationItem>
-        );
-      }
-
-      const start = Math.max(2, currentPage - 1);
-      const end = Math.min(totalPages - 1, currentPage + 1);
-
-      for (let i = start; i <= end; i++) {
-        items.push(
-          <PaginationItem key={i}>
-            <PaginationLink
-              onClick={() => goToPage(i)}
-              isActive={currentPage === i}
-            >
-              {i}
-            </PaginationLink>
-          </PaginationItem>
-        );
-      }
-
-      if (currentPage < totalPages - 2) {
-        items.push(
-          <PaginationItem key="ellipsis-end">
-            <PaginationEllipsis />
-          </PaginationItem>
-        );
-      }
-
-      items.push(
-        <PaginationItem key={totalPages}>
-          <PaginationLink
-            onClick={() => goToPage(totalPages)}
-            isActive={currentPage === totalPages}
-          >
-            {totalPages}
-          </PaginationLink>
-        </PaginationItem>
-      );
-    }
-
-    return items;
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold">All Items</h1>
           <p className="text-muted-foreground">
-            {totalCount} {totalCount === 1 ? "movie" : "movies"}
+            Showing {displayedMovies.length} of {totalCount} {totalCount === 1 ? "movie" : "movies"}
           </p>
         </div>
 
-        {isLoading && (
+        {isLoading && offset === 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {Array.from({ length: 48 }).map((_, i) => (
               <Skeleton key={i} className="aspect-[2/3] rounded-lg" />
@@ -168,16 +83,16 @@ const Items = () => {
           </Card>
         )}
 
-        {!isLoading && movies.length === 0 && (
+        {!isLoading && displayedMovies.length === 0 && (
           <Card className="p-8 text-center">
             <p className="text-muted-foreground">No items found</p>
           </Card>
         )}
 
-        {movies.length > 0 && (
+        {displayedMovies.length > 0 && (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-              {movies.map((movie) => (
+              {displayedMovies.map((movie) => (
                 <MovieCard
                   key={movie.id}
                   id={movie.id}
@@ -199,25 +114,17 @@ const Items = () => {
               ))}
             </div>
 
-            {totalPages > 1 && (
-              <div className="mt-8">
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious
-                        onClick={() => goToPage(Math.max(1, currentPage - 1))}
-                        className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                      />
-                    </PaginationItem>
-                    {renderPaginationItems()}
-                    <PaginationItem>
-                      <PaginationNext
-                        onClick={() => goToPage(Math.min(totalPages, currentPage + 1))}
-                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
+            {hasMore && (
+              <div className="mt-8 flex justify-center">
+                <Button
+                  onClick={handleLoadMore}
+                  disabled={isLoading}
+                  size="lg"
+                  variant="outline"
+                  className="min-w-[200px]"
+                >
+                  {isLoading ? "Loading..." : "Load More"}
+                </Button>
               </div>
             )}
           </>
