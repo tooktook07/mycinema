@@ -160,16 +160,13 @@ export const MovieCard = ({
         {/* Poster Image */}
         <img {...imageProps} alt={title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
         
-        {/* Top Gradient Overlay - Title */}
-        <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 via-black/40 to-transparent p-2 sm:p-3">
+        {/* Top Gradient Overlay - Title (Always Visible) */}
+        <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 via-black/40 to-transparent p-2 sm:p-3 z-10">
           <h3 className="line-clamp-2 text-xs sm:text-sm font-semibold leading-tight text-white drop-shadow-lg">{title}</h3>
         </div>
 
-        {/* Center - Title & More Info Button (on hover) */}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-colors flex flex-col items-center justify-center gap-3 p-4">
-          <h3 className="line-clamp-3 text-sm sm:text-base font-semibold leading-tight text-white text-center drop-shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
-            {title}
-          </h3>
+        {/* Center - More Info Button (on hover, below title) */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-colors flex items-center justify-center pt-16">
           <Button 
             size="sm" 
             variant="secondary" 
