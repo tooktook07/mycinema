@@ -784,7 +784,7 @@ const Index = () => {
         {/* Recommendations for all users */}
         <div className="space-y-6">
           <div className="space-y-2">
-            <h2 className="text-2xl font-semibold leading-none tracking-tight flex items-center gap-2">
+            <h2 className="text-lg sm:text-2xl font-semibold leading-none tracking-tight flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-yellow-500" />
               AI Recommendations For You
             </h2>
@@ -835,7 +835,7 @@ const Index = () => {
             </div>
           ) : (
             <>
-              <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4">
                 {recommendations?.map((movie, index) => (
                   <MovieCard
                     key={movie.id}

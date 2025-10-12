@@ -661,7 +661,7 @@ const Movies = () => {
             </div>
           </div>
 
-          {isLoading && movies.length === 0 ? <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {isLoading && movies.length === 0 ? <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4">
               {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-[400px] rounded-lg" />)}
             </div> : error ? <div className="flex flex-col items-center justify-center py-20 text-center">
               <Film className="h-16 w-16 text-muted-foreground/50 mb-4" />
@@ -690,7 +690,7 @@ const Movies = () => {
             </div> : viewMode === "grid" ? <>
               {/* Enhancement 6: Loading state improvement with skeleton overlay */}
               <div className="relative mb-20">
-                <div className={`grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 transition-opacity ${isLoading ? "opacity-30" : ""}`}>
+                <div className={`grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4 transition-opacity ${isLoading ? "opacity-30" : ""}`}>
                   {movies.map((movie, index) => {
                     const userData = userDataMap[movie.id];
                     return (
@@ -713,7 +713,7 @@ const Movies = () => {
                 
                 {/* Overlay skeleton when loading */}
                 {isLoading && movies.length > 0 && (
-                  <div className="absolute inset-0 grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 pointer-events-none">
+                  <div className="absolute inset-0 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4 pointer-events-none">
                     {[...Array(Math.min(itemsPerPage, 12))].map((_, i) => (
                       <Skeleton key={i} className="h-[400px] rounded-lg" />
                     ))}
