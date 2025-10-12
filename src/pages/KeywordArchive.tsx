@@ -19,8 +19,10 @@ const KeywordArchive = () => {
   const { data: movies, isLoading } = useQuery({
     queryKey: ["keywordMovies", decodedKeyword],
     queryFn: async () => {
-      // Fetch all movies and filter client-side for case-insensitive matching
-      // Using limit to prevent timeouts
+      // Normalize function to handle hyphens and spaces in keyword names
+      const normalize = (str: string) => str.toLowerCase().replace(/[-\s]/g, '');
+      const normalizedSearch = normalize(decodedKeyword);
+      
       const { data, error } = await supabase
         .from("movies")
         .select("*")
@@ -33,10 +35,10 @@ const KeywordArchive = () => {
         throw error;
       }
       
-      // Client-side filter for exact case-insensitive match
+      // Filter with normalized comparison to match variations with/without hyphens
       const filtered = data?.filter(movie => 
         movie.keywords?.some((k: string) => 
-          k.toLowerCase() === decodedKeyword.toLowerCase()
+          normalize(k) === normalizedSearch
         )
       ) || [];
       

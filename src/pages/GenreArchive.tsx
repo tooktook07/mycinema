@@ -19,8 +19,10 @@ const GenreArchive = () => {
   const { data: movies, isLoading } = useQuery({
     queryKey: ["genreMovies", decodedGenreName],
     queryFn: async () => {
-      // Fetch all movies and filter client-side for case-insensitive matching
-      // Using limit to prevent timeouts
+      // Normalize function to handle hyphens and spaces in genre names
+      const normalize = (str: string) => str.toLowerCase().replace(/[-\s]/g, '');
+      const normalizedSearch = normalize(decodedGenreName);
+      
       const { data, error } = await supabase
         .from("movies")
         .select("*")
@@ -33,10 +35,10 @@ const GenreArchive = () => {
         throw error;
       }
       
-      // Client-side filter for exact case-insensitive match
+      // Filter with normalized comparison to match "Sci-Fi", "Sci Fi", "SciFi"
       const filtered = data?.filter(movie => 
         movie.genres?.some((g: string) => 
-          g.toLowerCase() === decodedGenreName.toLowerCase()
+          normalize(g) === normalizedSearch
         )
       ) || [];
       

@@ -133,8 +133,15 @@ const Movies = () => {
       const { data, error } = await query;
 
       if (error) throw error;
-      // Return movies without exact count to avoid timeout
-      return { movies: data || [], totalCount: (data?.length || 0) + offset + (data?.length === MOVIES_PER_PAGE ? MOVIES_PER_PAGE : 0) };
+      
+      // Estimate total: if we got a full page, assume there are more movies
+      // Show a reasonable upper estimate instead of exact count
+      const hasMore = data?.length === MOVIES_PER_PAGE;
+      const estimatedTotal = hasMore 
+        ? offset + MOVIES_PER_PAGE + MOVIES_PER_PAGE // Current page + at least one more page
+        : offset + (data?.length || 0); // Last page
+      
+      return { movies: data || [], totalCount: estimatedTotal };
     },
   });
 

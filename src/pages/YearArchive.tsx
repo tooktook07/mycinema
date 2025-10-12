@@ -21,7 +21,8 @@ const YearArchive = () => {
         .from("movies")
         .select("*")
         .eq("year", yearNumber)
-        .order("imdb_rating", { ascending: false, nullsFirst: false });
+        .order("imdb_rating", { ascending: false, nullsFirst: false })
+        .limit(5000); // Add limit for better performance
 
       if (error) throw error;
       return data || [];
