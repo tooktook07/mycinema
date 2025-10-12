@@ -27,60 +27,91 @@ const GenreArchive = () => {
       const from = offset;
       const to = from + MOVIES_PER_PAGE - 1;
 
-      // Try exact match first (most common case)
-      let { data, error } = await supabase
-        .from("movies")
-        .select("id, title, year, rating, imdb_rating, imdb_votes, genres, poster, local_poster_url, imdb_id")
-        .contains("genres", [decodedGenreName])
-        .order("imdb_rating", { ascending: false, nullsFirst: false })
-        .range(from, to);
-
-      if (error) {
-        console.error("Genre query error:", error);
-        throw error;
-      }
+      // Use a more flexible query that handles case variations
+      // We'll fetch movies and filter client-side for the first page to handle case sensitivity
+      // Then use the found exact genre name for subsequent pages
       
-      // If no exact match and first page, try normalized matching
-      if ((!data || data.length === 0) && offset === 0) {
-        const { data: allGenreMovies, error: fallbackError } = await supabase
+      if (offset === 0) {
+        // First page: fetch more to find the exact genre match
+        const { data: allData, error } = await supabase
           .from("movies")
           .select("id, title, year, rating, imdb_rating, imdb_votes, genres, poster, local_poster_url, imdb_id")
           .not("genres", "is", null)
           .order("imdb_rating", { ascending: false, nullsFirst: false })
-          .limit(500);
+          .limit(1000);
 
-        if (fallbackError) throw fallbackError;
-        
+        if (error) {
+          console.error("Genre query error:", error);
+          throw error;
+        }
+
+        // Filter client-side with case-insensitive and normalized matching
         const normalize = (str: string) => str.toLowerCase().replace(/[-\s]/g, '');
         const normalizedSearch = normalize(decodedGenreName);
         
-        const filtered = allGenreMovies?.filter(movie => 
+        const filtered = allData?.filter(movie => 
           movie.genres?.some((g: string) => 
             normalize(g) === normalizedSearch
           )
         ) || [];
 
-        // Return only the first page of filtered results
-        data = filtered.slice(0, MOVIES_PER_PAGE);
-      }
+        // Return only the first page
+        const paginatedData = filtered.slice(0, MOVIES_PER_PAGE);
+        const hasMore = filtered.length > MOVIES_PER_PAGE;
+        
+        return { movies: paginatedData, hasMore, allFiltered: filtered };
+      } else {
+        // For subsequent pages, we need to get all filtered results again
+        // This is not ideal but necessary due to Supabase's case-sensitive array matching
+        const { data: allData, error } = await supabase
+          .from("movies")
+          .select("id, title, year, rating, imdb_rating, imdb_votes, genres, poster, local_poster_url, imdb_id")
+          .not("genres", "is", null)
+          .order("imdb_rating", { ascending: false, nullsFirst: false })
+          .limit(1000);
 
-      const hasMore = data?.length === MOVIES_PER_PAGE;
-      return { movies: data || [], hasMore };
+        if (error) throw error;
+
+        const normalize = (str: string) => str.toLowerCase().replace(/[-\s]/g, '');
+        const normalizedSearch = normalize(decodedGenreName);
+        
+        const filtered = allData?.filter(movie => 
+          movie.genres?.some((g: string) => 
+            normalize(g) === normalizedSearch
+          )
+        ) || [];
+
+        const paginatedData = filtered.slice(from, to + 1);
+        const hasMore = filtered.length > to + 1;
+        
+        return { movies: paginatedData, hasMore };
+      }
     },
     enabled: !!decodedGenreName,
   });
 
-  // Get total count
+  // Get total count with case-insensitive matching
   const { data: countData } = useQuery({
     queryKey: ["genreMoviesCount", decodedGenreName],
     queryFn: async () => {
-      const { count, error } = await supabase
+      // Fetch all movies with genres and count client-side due to case sensitivity
+      const { data, error } = await supabase
         .from("movies")
-        .select("*", { count: "exact", head: true })
-        .contains("genres", [decodedGenreName]);
+        .select("genres")
+        .not("genres", "is", null);
 
       if (error) throw error;
-      return count || 0;
+      
+      const normalize = (str: string) => str.toLowerCase().replace(/[-\s]/g, '');
+      const normalizedSearch = normalize(decodedGenreName);
+      
+      const count = data?.filter(movie => 
+        movie.genres?.some((g: string) => 
+          normalize(g) === normalizedSearch
+        )
+      ).length || 0;
+
+      return count;
     },
     enabled: !!decodedGenreName,
     staleTime: 60000,

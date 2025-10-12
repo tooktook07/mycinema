@@ -27,60 +27,87 @@ const KeywordArchive = () => {
       const from = offset;
       const to = from + MOVIES_PER_PAGE - 1;
 
-      // Try exact match first (most common case)
-      let { data, error } = await supabase
-        .from("movies")
-        .select("id, title, year, rating, imdb_rating, imdb_votes, genres, poster, local_poster_url, imdb_id")
-        .contains("keywords", [decodedKeyword])
-        .order("imdb_rating", { ascending: false, nullsFirst: false })
-        .range(from, to);
-
-      if (error) {
-        console.error("Keyword query error:", error);
-        throw error;
-      }
-      
-      // If no exact match and first page, try normalized matching
-      if ((!data || data.length === 0) && offset === 0) {
-        const { data: allKeywordMovies, error: fallbackError } = await supabase
+      // Use case-insensitive and normalized matching
+      if (offset === 0) {
+        // First page: fetch more to find the exact keyword match
+        const { data: allData, error } = await supabase
           .from("movies")
           .select("id, title, year, rating, imdb_rating, imdb_votes, genres, poster, local_poster_url, imdb_id, keywords")
           .not("keywords", "is", null)
           .order("imdb_rating", { ascending: false, nullsFirst: false })
-          .limit(500);
+          .limit(1000);
 
-        if (fallbackError) throw fallbackError;
-        
+        if (error) {
+          console.error("Keyword query error:", error);
+          throw error;
+        }
+
+        // Filter client-side with case-insensitive and normalized matching
         const normalize = (str: string) => str.toLowerCase().replace(/[-\s]/g, '');
         const normalizedSearch = normalize(decodedKeyword);
         
-        const filtered = allKeywordMovies?.filter(movie => 
+        const filtered = allData?.filter(movie => 
           movie.keywords?.some((k: string) => 
             normalize(k) === normalizedSearch
           )
         ).map(({ keywords, ...movie }) => movie) || [];
 
-        // Return only the first page of filtered results
-        data = filtered.slice(0, MOVIES_PER_PAGE);
-      }
+        // Return only the first page
+        const paginatedData = filtered.slice(0, MOVIES_PER_PAGE);
+        const hasMore = filtered.length > MOVIES_PER_PAGE;
+        
+        return { movies: paginatedData, hasMore };
+      } else {
+        // For subsequent pages
+        const { data: allData, error } = await supabase
+          .from("movies")
+          .select("id, title, year, rating, imdb_rating, imdb_votes, genres, poster, local_poster_url, imdb_id, keywords")
+          .not("keywords", "is", null)
+          .order("imdb_rating", { ascending: false, nullsFirst: false })
+          .limit(1000);
 
-      const hasMore = data?.length === MOVIES_PER_PAGE;
-      return { movies: data || [], hasMore };
+        if (error) throw error;
+
+        const normalize = (str: string) => str.toLowerCase().replace(/[-\s]/g, '');
+        const normalizedSearch = normalize(decodedKeyword);
+        
+        const filtered = allData?.filter(movie => 
+          movie.keywords?.some((k: string) => 
+            normalize(k) === normalizedSearch
+          )
+        ).map(({ keywords, ...movie }) => movie) || [];
+
+        const paginatedData = filtered.slice(from, to + 1);
+        const hasMore = filtered.length > to + 1;
+        
+        return { movies: paginatedData, hasMore };
+      }
     },
     enabled: !!decodedKeyword,
   });
 
-  // Get total count
+  // Get total count with case-insensitive matching
   const { data: countData } = useQuery({
     queryKey: ["keywordMoviesCount", decodedKeyword],
     queryFn: async () => {
-      const { count, error } = await supabase
+      // Fetch all movies with keywords and count client-side
+      const { data, error } = await supabase
         .from("movies")
-        .select("*", { count: "exact", head: true })
-        .contains("keywords", [decodedKeyword]);
+        .select("keywords")
+        .not("keywords", "is", null);
 
       if (error) throw error;
-      return count || 0;
+      
+      const normalize = (str: string) => str.toLowerCase().replace(/[-\s]/g, '');
+      const normalizedSearch = normalize(decodedKeyword);
+      
+      const count = data?.filter(movie => 
+        movie.keywords?.some((k: string) => 
+          normalize(k) === normalizedSearch
+        )
+      ).length || 0;
+
+      return count;
     },
     enabled: !!decodedKeyword,
     staleTime: 60000,
