@@ -1,11 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { MovieCard } from "@/components/MovieCard";
 import { MovieDetailModal } from "@/components/MovieDetailModal";
-import { FilterPanel } from "@/components/FilterPanel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import {
@@ -28,114 +27,18 @@ const Items = () => {
   
   const currentPage = parseInt(searchParams.get("page") || "1", 10);
 
-  // Parse filter parameters from URL
-  const appliedGenres = useMemo(() => {
-    const genresParam = searchParams.get("genres");
-    return genresParam ? genresParam.split(",").filter(Boolean) : [];
-  }, [searchParams]);
-
-  const appliedRatingRange = useMemo((): [number, number] => {
-    const ratingParam = searchParams.get("rating");
-    if (!ratingParam) return [0, 10];
-    const [min, max] = ratingParam.split("-").map(Number);
-    return [min, max];
-  }, [searchParams]);
-
-  const appliedYearRange = useMemo((): [number, number] => {
-    const yearParam = searchParams.get("year");
-    if (!yearParam) return [1900, new Date().getFullYear()];
-    const [min, max] = yearParam.split("-").map(Number);
-    return [min, max];
-  }, [searchParams]);
-
-  const appliedSearchText = useMemo(() => {
-    return searchParams.get("search") || "";
-  }, [searchParams]);
-
-  // Helper to update URL params
-  const updateUrlParams = (updates: Record<string, string | null>) => {
-    const newParams = new URLSearchParams(searchParams);
-    Object.entries(updates).forEach(([key, value]) => {
-      if (value === null || value === "") {
-        newParams.delete(key);
-      } else {
-        newParams.set(key, value);
-      }
-    });
-    // Reset to page 1 when filters change
-    if (Object.keys(updates).some(key => key !== "page")) {
-      newParams.set("page", "1");
-    }
-    setSearchParams(newParams);
-  };
-
-  // Filter handlers
-  const handleGenreToggle = (genre: string) => {
-    const newGenres = appliedGenres.includes(genre)
-      ? appliedGenres.filter((g) => g !== genre)
-      : [...appliedGenres, genre];
-    updateUrlParams({ genres: newGenres.length > 0 ? newGenres.join(",") : null });
-  };
-
-  const handleRatingRangeChange = (range: [number, number]) => {
-    updateUrlParams({ rating: `${range[0]}-${range[1]}` });
-  };
-
-  const handleYearRangeChange = (range: [number, number]) => {
-    updateUrlParams({ year: `${range[0]}-${range[1]}` });
-  };
-
-  const handleSearchTextChange = (text: string) => {
-    updateUrlParams({ search: text || null });
-  };
-
-  const handleResetFilters = () => {
-    setSearchParams({ page: "1" });
-  };
-
   const { data, isLoading, error } = useQuery({
-    queryKey: ["items", currentPage, appliedGenres, appliedRatingRange, appliedYearRange, appliedSearchText],
+    queryKey: ["items", currentPage],
     enabled: !authLoading,
     queryFn: async () => {
       const from = (currentPage - 1) * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
 
-      let query = supabase
+      const { data, error, count } = await supabase
         .from("movies")
         .select("*", { count: "exact" })
-        .order("created_at", { ascending: false });
-
-      // Apply genre filter
-      if (appliedGenres.length > 0) {
-        query = query.overlaps("genres", appliedGenres);
-      }
-
-      // Apply rating filter only if not default values
-      const hasRatingFilter = appliedRatingRange[0] !== 0 || appliedRatingRange[1] !== 10;
-      if (hasRatingFilter) {
-        query = query.or(
-          `rating.gte.${appliedRatingRange[0]},rating.lte.${appliedRatingRange[1]},imdb_rating.gte.${appliedRatingRange[0]},imdb_rating.lte.${appliedRatingRange[1]}`
-        );
-      }
-
-      // Apply year filter only if not default values
-      const currentYear = new Date().getFullYear();
-      const hasYearFilter = appliedYearRange[0] !== 1900 || appliedYearRange[1] !== currentYear;
-      if (hasYearFilter) {
-        query = query.gte("year", appliedYearRange[0]).lte("year", appliedYearRange[1]);
-      }
-
-      // Apply search filter
-      if (appliedSearchText) {
-        const searchPattern = `%${appliedSearchText}%`;
-        query = query.or(
-          `title.ilike.${searchPattern},actors.ilike.${searchPattern},director.ilike.${searchPattern}`
-        );
-      }
-
-      query = query.range(from, to);
-
-      const { data, error, count } = await query;
+        .order("created_at", { ascending: false })
+        .range(from, to);
 
       if (error) throw error;
       return { movies: data, totalCount: count || 0 };
@@ -242,20 +145,6 @@ const Items = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="mb-8">
-          <FilterPanel
-            selectedGenres={appliedGenres}
-            onGenreToggle={handleGenreToggle}
-            ratingRange={appliedRatingRange}
-            onRatingRangeChange={handleRatingRangeChange}
-            yearRange={appliedYearRange}
-            onYearRangeChange={handleYearRangeChange}
-            searchText={appliedSearchText}
-            onSearchTextChange={handleSearchTextChange}
-            onReset={handleResetFilters}
-          />
-        </div>
-
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold">All Items</h1>
           <p className="text-muted-foreground">
