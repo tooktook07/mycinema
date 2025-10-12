@@ -835,7 +835,7 @@ const Index = () => {
             </div>
           ) : (
             <>
-              <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4">
                 {recommendations?.map((movie, index) => (
                   <MovieCard
                     key={movie.id}
