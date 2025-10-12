@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -44,6 +44,7 @@ const Movies = () => {
   const [totalCount, setTotalCount] = useState<number | null>(null);
   const { loading: authLoading } = useAuth();
   const { user } = useEffectiveAuth();
+  const isInitialMount = useRef(true);
 
   // Fetch total count once on mount (or when search changes)
   const { data: countData } = useQuery({
@@ -127,6 +128,13 @@ const Movies = () => {
 
   // Debounce search input
   useEffect(() => {
+    // Skip clearing on initial mount
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      setDebouncedSearch(searchText); // Set initial debounced value
+      return;
+    }
+    
     const timer = setTimeout(() => {
       setDebouncedSearch(searchText);
       setLastCursor(null); // Reset cursor when search changes
