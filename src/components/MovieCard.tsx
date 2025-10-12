@@ -236,8 +236,8 @@ export const MovieCard = ({
             ))}
           </div>
 
-          {/* Rating Buttons */}
-          <div className="flex items-center justify-center gap-1 sm:gap-1.5">
+          {/* Rating Buttons - Show on hover */}
+          <div className="flex items-center justify-center gap-1 sm:gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button 
