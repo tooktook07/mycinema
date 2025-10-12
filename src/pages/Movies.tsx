@@ -41,8 +41,89 @@ const Movies = () => {
   const [searchText, setSearchText] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [userRatingsMap, setUserRatingsMap] = useState<Record<string, number>>({});
+  const [totalCount, setTotalCount] = useState<number | null>(null);
   const { loading: authLoading } = useAuth();
   const { user } = useEffectiveAuth();
+
+  // Fetch total count once on mount (or when search changes)
+  const { data: countData } = useQuery({
+    queryKey: ["moviesCount", debouncedSearch],
+    enabled: !authLoading,
+    staleTime: 60000, // Cache for 1 minute
+    queryFn: async () => {
+      let countQuery = supabase
+        .from("movies")
+        .select("*", { count: "exact", head: true });
+
+      // Apply same filters as main query
+      if (debouncedSearch) {
+        const structuredPatterns = {
+          year: /^year:(\d{4})$/i,
+          director: /^director:(.+)$/i,
+          actor: /^actor:(.+)$/i,
+          genre: /^genre:(.+)$/i,
+          imdb: /^imdb:(\d+\.?\d*)\+?$/i,
+          rating: /^rating:(\d+\.?\d*)\+?$/i,
+        };
+
+        let hasStructuredSearch = false;
+
+        const yearMatch = debouncedSearch.match(structuredPatterns.year);
+        if (yearMatch) {
+          countQuery = countQuery.eq('year', parseInt(yearMatch[1]));
+          hasStructuredSearch = true;
+        }
+
+        const directorMatch = debouncedSearch.match(structuredPatterns.director);
+        if (directorMatch) {
+          countQuery = countQuery.ilike('director', `%${directorMatch[1]}%`);
+          hasStructuredSearch = true;
+        }
+
+        const actorMatch = debouncedSearch.match(structuredPatterns.actor);
+        if (actorMatch) {
+          countQuery = countQuery.ilike('actors', `%${actorMatch[1]}%`);
+          hasStructuredSearch = true;
+        }
+
+        const genreMatch = debouncedSearch.match(structuredPatterns.genre);
+        if (genreMatch) {
+          countQuery = countQuery.contains('genres', [genreMatch[1]]);
+          hasStructuredSearch = true;
+        }
+
+        const imdbMatch = debouncedSearch.match(structuredPatterns.imdb);
+        if (imdbMatch) {
+          countQuery = countQuery.gte('imdb_rating', parseFloat(imdbMatch[1]));
+          hasStructuredSearch = true;
+        }
+
+        const ratingMatch = debouncedSearch.match(structuredPatterns.rating);
+        if (ratingMatch && !imdbMatch) {
+          countQuery = countQuery.gte('rating', parseFloat(ratingMatch[1]));
+          hasStructuredSearch = true;
+        }
+
+        if (!hasStructuredSearch) {
+          const searchPattern = `%${debouncedSearch}%`;
+          countQuery = countQuery.or(
+            `title.ilike.${searchPattern},actors.ilike.${searchPattern},director.ilike.${searchPattern},plot.ilike.${searchPattern}`
+          );
+        }
+      }
+
+      const { count, error } = await countQuery;
+      if (error) throw error;
+      return count || 0;
+    },
+  });
+
+  // Update total count when countData changes
+  useEffect(() => {
+    if (countData !== undefined) {
+      setTotalCount(countData);
+    }
+  }, [countData]);
 
   // Debounce search input
   useEffect(() => {
@@ -334,8 +415,12 @@ const Movies = () => {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold">Movies</h1>
           <p className="text-muted-foreground">
-            {displayedMovies.length > 0 && `Showing ${displayedMovies.length} ${displayedMovies.length === 1 ? "movie" : "movies"}`}
-            {hasMore && " • Load more to see additional results"}
+            {totalCount !== null && displayedMovies.length > 0 && (
+              `Showing ${displayedMovies.length} of ${totalCount.toLocaleString()} ${totalCount === 1 ? "movie" : "movies"}`
+            )}
+            {totalCount === null && displayedMovies.length > 0 && (
+              `Showing ${displayedMovies.length} ${displayedMovies.length === 1 ? "movie" : "movies"}`
+            )}
           </p>
         </div>
 
