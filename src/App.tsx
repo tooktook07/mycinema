@@ -13,7 +13,6 @@ import { DevModeSwitcher } from "@/components/DevModeSwitcher";
 import { AccessibilityWidget } from "@/components/AccessibilityWidget";
 import { ReadingGuide } from "@/components/accessibility/ReadingGuide";
 import Index from "./pages/Index";
-import Movies from "./pages/Movies";
 import Items from "./pages/Items";
 import Account from "./pages/Account";
 import Auth from "./pages/Auth";
@@ -33,7 +32,6 @@ const AppRoutes = () => {
       <Navigation />
       <Routes>
         <Route path="/" element={<Index />} />
-        <Route path="/movies" element={<Movies />} />
         <Route path="/items" element={<Items />} />
         <Route path="/discover" element={<DiscoverMode />} />
         <Route path="/watchlist" element={<Watchlist />} />

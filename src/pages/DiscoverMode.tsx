@@ -331,7 +331,7 @@ const DiscoverMode = () => {
             </Button>
 
             <Button
-              onClick={() => navigate('/movies')}
+              onClick={() => navigate('/items')}
               variant="outline"
               size="lg"
               className="w-full bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border-white/20"

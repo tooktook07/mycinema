@@ -772,7 +772,7 @@ const Index = () => {
                       : "Start your journey with Discover Mode"}
                   </p>
                 </div>
-                <Button size="lg" onClick={() => navigate("/movies")} className="min-w-[200px]">
+                <Button size="lg" onClick={() => navigate("/items")} className="min-w-[200px]">
                   <Sparkles className="h-4 w-4 mr-2" />
                   Start Rating Movies
                 </Button>
@@ -814,7 +814,7 @@ const Index = () => {
                 You've seen all available movies! Check back later or clear your viewing history.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
-                <Button onClick={() => navigate("/movies")} variant="outline">
+                <Button onClick={() => navigate("/items")} variant="outline">
                   <Film className="h-4 w-4 mr-2" />
                   Browse Movies
                 </Button>

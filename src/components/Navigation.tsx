@@ -76,25 +76,6 @@ export const Navigation = () => {
             >
               <Sparkles className="h-4 w-4" />
             </NavLink>
-            
-            <NavLink
-              to="/movies"
-              className={({ isActive }) =>
-                cn(
-                  "flex items-center p-2 rounded transition-colors",
-                  isDiscoverPage
-                    ? isActive
-                      ? "bg-white/20 text-white"
-                      : "text-white/70 hover:text-white"
-                    : isActive
-                      ? "bg-foreground text-background"
-                      : "text-muted-foreground hover:text-foreground"
-                )
-              }
-              title="Movies"
-            >
-              <Film className="h-4 w-4" />
-            </NavLink>
 
             <NavLink
               to="/items"
