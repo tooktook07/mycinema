@@ -136,7 +136,7 @@ export const FilterPanel = ({
       </div>
 
       {/* Collapsible Filter Sections */}
-      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <Collapsible open={isOpen} onOpenChange={setIsOpen} className="-mt-4">
         <CollapsibleContent>
           <Accordion type="multiple" defaultValue={["genres", "rating", "year"]} className="space-y-2">
             {/* Genres Section */}
