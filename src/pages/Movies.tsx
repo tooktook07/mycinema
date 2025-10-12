@@ -551,7 +551,7 @@ const Movies = () => {
                 {isLoading && movies.length === 0
                   ? "Loading..." 
                   : totalCount > 0 
-                    ? `Showing ${movies.length} of ${totalCount} ${totalCount === 1 ? "movie" : "movies"}` 
+                    ? `Showing ${movies.length > 0 ? `1-${movies.length}` : '0'} of ${totalCount} ${totalCount === 1 ? "movie" : "movies"}` 
                     : "No results found"
                 }
               </p>
