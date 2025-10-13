@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Film, Heart, ThumbsUp, ThumbsDown, Bookmark, Sparkles, User, HelpCircle, RefreshCw } from "lucide-react";
+import { Film, Heart, ThumbsUp, ThumbsDown, Bookmark, Sparkles, User, HelpCircle, RefreshCw, Eye, Hand, Brain, BookOpen, Accessibility } from "lucide-react";
 
 const Help = () => {
   useEffect(() => {
@@ -172,6 +172,102 @@ const Help = () => {
                       </div>
                     </div>
                   </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* Accessibility Features */}
+              <AccordionItem value="accessibility">
+                <AccordionTrigger className="text-lg font-semibold">
+                  <div className="flex items-center gap-2">
+                    <Accessibility className="h-5 w-5" />
+                    Accessibility Features ♿
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="space-y-4 text-base">
+                  <p className="text-muted-foreground">Customize your viewing experience with comprehensive accessibility options. Access the accessibility panel by clicking the accessibility icon in the bottom right corner of the screen.</p>
+                  
+                  <Alert className="border-primary/50 bg-primary/5">
+                    <Accessibility className="h-4 w-4 text-primary" />
+                    <AlertDescription>
+                      <strong>Quick Access:</strong> Look for the accessibility widget icon (♿) in the bottom right corner to open the full accessibility control panel.
+                    </AlertDescription>
+                  </Alert>
+
+                  <div>
+                    <h4 className="font-semibold mb-3">Accessibility Profiles</h4>
+                    <p className="text-muted-foreground mb-3">Quick presets that apply multiple settings at once for common accessibility needs:</p>
+                    <div className="grid gap-3">
+                      <div className="p-3 rounded-lg border bg-card flex items-start gap-3">
+                        <Eye className="h-5 w-5 mt-0.5 text-primary" />
+                        <div>
+                          <strong>Visual Impairment</strong>
+                          <p className="text-muted-foreground mt-1">Applies large text, high contrast mode, and dyslexia-friendly font for better readability</p>
+                        </div>
+                      </div>
+                      <div className="p-3 rounded-lg border bg-card flex items-start gap-3">
+                        <Hand className="h-5 w-5 mt-0.5 text-primary" />
+                        <div>
+                          <strong>Motor Impairment</strong>
+                          <p className="text-muted-foreground mt-1">Enables large cursor, enhanced focus indicators, and reduced motion for easier navigation</p>
+                        </div>
+                      </div>
+                      <div className="p-3 rounded-lg border bg-card flex items-start gap-3">
+                        <Brain className="h-5 w-5 mt-0.5 text-primary" />
+                        <div>
+                          <strong>Cognitive Support</strong>
+                          <p className="text-muted-foreground mt-1">Activates reading guide, simplified layout, and reduced motion to minimize distractions</p>
+                        </div>
+                      </div>
+                      <div className="p-3 rounded-lg border bg-card flex items-start gap-3">
+                        <BookOpen className="h-5 w-5 mt-0.5 text-primary" />
+                        <div>
+                          <strong>Dyslexia Friendly</strong>
+                          <p className="text-muted-foreground mt-1">Uses dyslexia-friendly font with increased spacing and reading guide for easier reading</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold mb-2">Text Controls</h4>
+                    <p className="text-muted-foreground mb-2">Fine-tune text appearance for optimal readability:</p>
+                    <ul className="list-disc pl-6 space-y-2">
+                      <li><strong>Font Size:</strong> Adjust text size from small to extra large</li>
+                      <li><strong>Line Height:</strong> Control spacing between lines of text</li>
+                      <li><strong>Letter Spacing:</strong> Adjust space between individual letters</li>
+                      <li><strong>Word Spacing:</strong> Control space between words</li>
+                      <li><strong>Dyslexia Font:</strong> Enable OpenDyslexic font designed for easier reading</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold mb-2">Visual Controls</h4>
+                    <p className="text-muted-foreground mb-2">Adjust visual elements for better perception:</p>
+                    <ul className="list-disc pl-6 space-y-2">
+                      <li><strong>Contrast Mode:</strong> Choose between normal, high, or extra high contrast</li>
+                      <li><strong>Color Blind Mode:</strong> Options for protanopia (red-blind), deuteranopia (green-blind), and tritanopia (blue-blind)</li>
+                      <li><strong>Grayscale:</strong> Remove all colors for a monochrome experience</li>
+                      <li><strong>Hide Images:</strong> Focus on text by hiding all images</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold mb-2">Navigation Controls</h4>
+                    <p className="text-muted-foreground mb-2">Enhance navigation and interaction:</p>
+                    <ul className="list-disc pl-6 space-y-2">
+                      <li><strong>Cursor Size:</strong> Choose between normal, large, or extra large cursor</li>
+                      <li><strong>Enhanced Focus:</strong> Make focused elements more visible with prominent outlines</li>
+                      <li><strong>Highlight Links:</strong> Make all clickable links stand out with underlines and highlighting</li>
+                      <li><strong>Reading Guide:</strong> A horizontal ruler that follows your mouse to help track lines of text</li>
+                      <li><strong>Reduce Motion:</strong> Minimize animations and transitions for users sensitive to motion</li>
+                    </ul>
+                  </div>
+
+                  <Alert>
+                    <AlertDescription>
+                      <strong>Settings Persistence:</strong> Your accessibility preferences are automatically saved and will be applied every time you visit the app.
+                    </AlertDescription>
+                  </Alert>
                 </AccordionContent>
               </AccordionItem>
 
