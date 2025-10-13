@@ -515,6 +515,10 @@ export type Database = {
         Args: { usage_date: string }
         Returns: undefined
       }
+      update_sync_tracker_cycle: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"
