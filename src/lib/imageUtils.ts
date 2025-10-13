@@ -13,16 +13,30 @@ export const getOptimizedImageProps = (posterUrl: string, localPosterUrl?: strin
   // Prefer local storage if available
   const imageUrl = localPosterUrl || posterUrl;
   
-  // If it's a TMDB URL with w500, optimize it
-  if (imageUrl && imageUrl.includes('image.tmdb.org/t/p/w500/')) {
-    const optimizedSrc = imageUrl.replace('/w500/', '/w342/');
-    const srcSet = `${optimizedSrc} 1x, ${imageUrl} 2x`;
-    return {
-      src: optimizedSrc,
-      srcSet: srcSet,
-      loading: 'lazy' as const,
-      decoding: 'async' as const
-    };
+  // If it's a TMDB URL, optimize with responsive srcset
+  if (imageUrl && imageUrl.includes('image.tmdb.org/t/p/')) {
+    // Extract the file path from the URL
+    const pathMatch = imageUrl.match(/\/t\/p\/w\d+\/(.+)$/);
+    
+    if (pathMatch && pathMatch[1]) {
+      const fileName = pathMatch[1];
+      const baseUrl = 'https://image.tmdb.org/t/p';
+      
+      // For display width of ~292px:
+      // - Use w342 as base (good for 1x displays)
+      // - Use w500 for 2x displays (retina)
+      const w342Src = `${baseUrl}/w342/${fileName}`;
+      const w500Src = `${baseUrl}/w500/${fileName}`;
+      
+      return {
+        src: w342Src,
+        srcSet: `${w342Src} 1x, ${w500Src} 2x`,
+        loading: 'lazy' as const,
+        decoding: 'async' as const,
+        width: 342,
+        height: 513
+      };
+    }
   }
   
   // For local storage or non-TMDB images, return as-is with lazy loading

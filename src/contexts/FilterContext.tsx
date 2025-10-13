@@ -47,7 +47,7 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
     } else {
       newParams.delete('genres');
     }
-    setSearchParams(newParams);
+    setSearchParams(newParams, { replace: true });
   };
 
   const setAppliedRatingRange = (range: [number, number]) => {
@@ -57,7 +57,7 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
     } else {
       newParams.delete('rating');
     }
-    setSearchParams(newParams);
+    setSearchParams(newParams, { replace: true });
   };
 
   const setAppliedYearRange = (range: [number, number]) => {
@@ -67,7 +67,7 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
     } else {
       newParams.delete('year');
     }
-    setSearchParams(newParams);
+    setSearchParams(newParams, { replace: true });
   };
 
   const setAppliedSearchText = (text: string) => {
@@ -77,7 +77,7 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
     } else {
       newParams.delete('search');
     }
-    setSearchParams(newParams);
+    setSearchParams(newParams, { replace: true });
   };
 
   const setAppliedPopularityRange = (range: [number, number]) => {
@@ -87,7 +87,7 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
     } else {
       newParams.delete('popularity');
     }
-    setSearchParams(newParams);
+    setSearchParams(newParams, { replace: true });
   };
 
   const setAppliedSortBy = (sortBy: string) => {
@@ -97,7 +97,7 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
     } else {
       newParams.delete('sortBy');
     }
-    setSearchParams(newParams);
+    setSearchParams(newParams, { replace: true });
   };
 
   const setAppliedSortOrder = (sortOrder: string) => {
@@ -107,11 +107,11 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
     } else {
       newParams.delete('sortOrder');
     }
-    setSearchParams(newParams);
+    setSearchParams(newParams, { replace: true });
   };
 
   const resetFilters = () => {
-    setSearchParams(new URLSearchParams());
+    setSearchParams(new URLSearchParams(), { replace: true });
   };
 
   return (

@@ -40,6 +40,8 @@ import { getSimilarMovies } from "@/lib/recommendationEngine";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Card } from "@/components/ui/card";
 import { getRecentlyShownMovieIds, markMoviesAsShown } from "@/lib/recentlyShownTracker";
+import { Link } from "react-router-dom";
+import { getMovieUrl, getGenreUrl, getPersonUrl, getKeywordUrl, getYearUrl } from "@/lib/urlUtils";
 
 interface MovieDetailModalProps {
   isOpen: boolean;
@@ -452,7 +454,15 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                 <div className="flex-1 min-w-0">
                   <div className="mb-1.5">
                     <div className="inline-flex items-center gap-1 flex-wrap">
-                      <h2 className="text-sm sm:text-2xl font-bold leading-tight">{movie.title}</h2>
+                      <Link 
+                        to={getMovieUrl(movie.title, movie.year)}
+                        className="text-sm sm:text-2xl font-bold leading-tight hover:underline hover:text-primary transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                        }}
+                      >
+                        {movie.title}
+                      </Link>
                       {relevanceReason && (
                         <TooltipProvider>
                           <Tooltip>
@@ -479,13 +489,15 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
 
                   {/* Quick Info Badges */}
                   <div className="flex flex-wrap gap-0.5 sm:gap-1.5 mb-1.5 sm:mb-3">
-                    <Badge
-                      variant="secondary"
-                      className="text-[9px] sm:text-xs px-1 py-0 sm:px-2 sm:py-0.5 h-4 sm:h-auto"
-                    >
-                      <Calendar className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
-                      {movie.year}
-                    </Badge>
+                    <Link to={getYearUrl(movie.year)}>
+                      <Badge
+                        variant="secondary"
+                        className="text-[9px] sm:text-xs px-1 py-0 sm:px-2 sm:py-0.5 h-4 sm:h-auto hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors"
+                      >
+                        <Calendar className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
+                        {movie.year}
+                      </Badge>
+                    </Link>
                     {movie.runtime && (
                       <Badge
                         variant="secondary"
@@ -645,9 +657,11 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                       </h4>
                       <div className="flex flex-wrap gap-0.5">
                         {movie.genres.map((g) => (
-                          <Badge key={g} variant="secondary" className="text-[9px] sm:text-xs px-1 py-0 h-4 sm:h-auto">
-                            {g}
-                          </Badge>
+                          <Link key={g} to={getGenreUrl(g)}>
+                            <Badge variant="secondary" className="text-[9px] sm:text-xs px-1 py-0 h-4 sm:h-auto hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors">
+                              {g}
+                            </Badge>
+                          </Link>
                         ))}
                       </div>
                     </Card>
@@ -798,13 +812,14 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                       </h4>
                       <div className="flex flex-wrap gap-0.5">
                         {movie.director.split(",").map((d) => (
-                          <Badge
-                            key={d.trim()}
-                            variant="secondary"
-                            className="text-[9px] sm:text-xs px-1 py-0 h-4 sm:h-auto"
-                          >
-                            {d.trim()}
-                          </Badge>
+                          <Link key={d.trim()} to={getPersonUrl(d.trim())}>
+                            <Badge
+                              variant="secondary"
+                              className="text-[9px] sm:text-xs px-1 py-0 h-4 sm:h-auto hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors"
+                            >
+                              {d.trim()}
+                            </Badge>
+                          </Link>
                         ))}
                       </div>
                     </Card>
@@ -818,13 +833,14 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                       </h4>
                       <div className="flex flex-wrap gap-0.5">
                         {movie.writing.split(",").map((writer) => (
-                          <Badge
-                            key={writer.trim()}
-                            variant="secondary"
-                            className="text-[9px] sm:text-xs px-1 py-0 h-4 sm:h-auto"
-                          >
-                            {writer.trim()}
-                          </Badge>
+                          <Link key={writer.trim()} to={getPersonUrl(writer.trim())}>
+                            <Badge
+                              variant="secondary"
+                              className="text-[9px] sm:text-xs px-1 py-0 h-4 sm:h-auto hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors"
+                            >
+                              {writer.trim()}
+                            </Badge>
+                          </Link>
                         ))}
                       </div>
                     </Card>
@@ -841,13 +857,14 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                           .split(",")
                           .slice(0, 15)
                           .map((actor) => (
-                            <Badge
-                              key={actor.trim()}
-                              variant="outline"
-                              className="text-[9px] sm:text-xs px-1 py-0 h-4 sm:h-auto"
-                            >
-                              {actor.trim()}
-                            </Badge>
+                            <Link key={actor.trim()} to={getPersonUrl(actor.trim())}>
+                              <Badge
+                                variant="outline"
+                                className="text-[9px] sm:text-xs px-1 py-0 h-4 sm:h-auto hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors"
+                              >
+                                {actor.trim()}
+                              </Badge>
+                            </Link>
                           ))}
                       </div>
                     </Card>
@@ -887,9 +904,11 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                       </h4>
                       <div className="flex flex-wrap gap-0.5">
                         {movie.keywords.map((keyword) => (
-                          <Badge key={keyword} variant="outline" className="text-[8px] sm:text-xs px-1 py-0 h-4 sm:h-5">
-                            {keyword}
-                          </Badge>
+                          <Link key={keyword} to={getKeywordUrl(keyword)}>
+                            <Badge variant="outline" className="text-[8px] sm:text-xs px-1 py-0 h-4 sm:h-5 hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors">
+                              {keyword}
+                            </Badge>
+                          </Link>
                         ))}
                       </div>
                     </Card>
