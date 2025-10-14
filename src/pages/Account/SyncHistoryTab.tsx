@@ -65,36 +65,25 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
   const { devMode } = useDevMode();
   const { toast } = useToast();
 
-  // Calculate next cron job times
+  // Calculate next cron job times (all times in UTC)
   const getNextCronRuns = (): CronJobSchedule[] => {
     const now = new Date();
     const jobs: CronJobSchedule[] = [];
 
-    // Helper to get next occurrence of a specific time
+    // Helper to get next occurrence of a specific UTC time
     const getNextOccurrence = (hour: number, minute: number = 0): Date => {
-      const next = new Date(now);
-      next.setHours(hour, minute, 0, 0);
+      const next = new Date();
+      // Work with UTC times
+      next.setUTCHours(hour, minute, 0, 0);
       if (next <= now) {
-        next.setDate(next.getDate() + 1);
-      }
-      return next;
-    };
-
-    // Helper to get next Sunday at specific time
-    const getNextSunday = (hour: number): Date => {
-      const next = new Date(now);
-      next.setHours(hour, 0, 0, 0);
-      const daysUntilSunday = (7 - next.getDay()) % 7 || 7;
-      next.setDate(next.getDate() + daysUntilSunday);
-      if (next <= now) {
-        next.setDate(next.getDate() + 7);
+        next.setUTCDate(next.getUTCDate() + 1);
       }
       return next;
     };
 
     jobs.push({
       name: 'Sync Tracker Reset',
-      schedule: '0 0 * * *',
+      schedule: '0 0 * * * (UTC)',
       nextRun: getNextOccurrence(0, 0),
       description: 'Daily cycle tracker update',
       emoji: '🔄'
@@ -102,16 +91,16 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
 
     jobs.push({
       name: 'Daily Refresh Pipeline',
-      schedule: '0 2 * * *',
-      nextRun: getNextOccurrence(2, 0),
+      schedule: '0 1 * * * (UTC)',
+      nextRun: getNextOccurrence(1, 0),
       description: 'Refresh ~120 movies with TMDB, OMDb & posters (30-day cycle)',
       emoji: '🔄'
     });
 
     jobs.push({
       name: 'New Movies Pipeline',
-      schedule: '30 3 * * *',
-      nextRun: getNextOccurrence(3, 30),
+      schedule: '0 2 * * * (UTC)',
+      nextRun: getNextOccurrence(2, 0),
       description: 'Import new releases with full processing',
       emoji: '✨'
     });
@@ -513,7 +502,7 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
               </div>
               <div className="text-right">
                 <div className="text-2xl font-bold text-primary">{getTimeUntil(nextJob.nextRun)}</div>
-                <p className="text-xs text-muted-foreground">{format(nextJob.nextRun, "PPp")}</p>
+                <p className="text-xs text-muted-foreground">{format(nextJob.nextRun, "PPp")} (your time)</p>
               </div>
             </div>
           </CardContent>
@@ -639,7 +628,8 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
                 </div>
                 <div className="text-right">
                   <div className="font-medium">{getTimeUntil(job.nextRun)}</div>
-                  <p className="text-xs text-muted-foreground">{format(job.nextRun, "PPp")}</p>
+                  <p className="text-xs text-muted-foreground">{format(job.nextRun, "PPp")} (your time)</p>
+                  <p className="text-xs text-muted-foreground font-mono">{job.schedule}</p>
                 </div>
               </div>
             ))}
