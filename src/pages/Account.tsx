@@ -34,7 +34,9 @@ const Account = () => {
   };
 
   useEffect(() => {
+    console.log('🔐 Account page auth state:', { loading, isAdmin });
     if (!loading && !isAdmin) {
+      console.log('❌ Redirecting to home - not admin');
       navigate("/");
     }
   }, [isAdmin, loading, navigate]);
