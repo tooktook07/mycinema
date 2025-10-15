@@ -189,7 +189,7 @@ export const MovieManagement = () => {
           .eq('media_type', 'movie'),
         
         // Genre and year distribution (lightweight - only necessary fields)
-        supabase.from('movies').select('genres, year')
+        supabase.from('movies').select('genres, year').limit(50000)
       ]);
 
       const totalMovies = totalResult.count || 0;
