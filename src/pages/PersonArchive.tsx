@@ -70,6 +70,9 @@ const PersonArchive = () => {
   const directorMovies = displayedMovies?.filter(m => m.director?.toLowerCase().includes(decodedPersonName.toLowerCase())) || [];
   const actorMovies = displayedMovies?.filter(m => m.actors?.toLowerCase().includes(decodedPersonName.toLowerCase())) || [];
   const writerMovies = displayedMovies?.filter(m => m.writing?.toLowerCase().includes(decodedPersonName.toLowerCase())) || [];
+  
+  // Get all movies sorted by year (for "All Movies" tab)
+  const allMoviesSorted = [...displayedMovies].sort((a, b) => (b.year || 0) - (a.year || 0));
 
   const handleOpenDetail = (movieId: string) => {
     setSelectedMovieId(movieId);
@@ -135,7 +138,7 @@ const PersonArchive = () => {
   const hasDirector = directorMovies.length > 0;
   const hasActor = actorMovies.length > 0;
   const hasWriter = writerMovies.length > 0;
-  const defaultTab = hasDirector ? "director" : hasActor ? "actor" : "writer";
+  const defaultTab = "all";
 
   return (
     <>
@@ -147,6 +150,9 @@ const PersonArchive = () => {
       >
         <Tabs defaultValue={defaultTab} className="w-full">
           <TabsList className="mb-6">
+            <TabsTrigger value="all">
+              All Movies ({displayedMovies.length})
+            </TabsTrigger>
             {hasDirector && (
               <TabsTrigger value="director">
                 As Director ({directorMovies.length})
@@ -163,6 +169,10 @@ const PersonArchive = () => {
               </TabsTrigger>
             )}
           </TabsList>
+
+          <TabsContent value="all">
+            {renderMovieGrid(allMoviesSorted)}
+          </TabsContent>
 
           {hasDirector && (
             <TabsContent value="director">
