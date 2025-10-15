@@ -22,16 +22,7 @@ import {
 
 const MOVIES_PER_PAGE = 48;
 
-const SEARCH_SUGGESTIONS = [
-  "Nolan",
-  "Action",
-  "Science Fiction",
-  "Comedy",
-  "Crime",
-  "Drama",
-  "year:2020",
-  "rating:7",
-];
+const SEARCH_SUGGESTIONS = ["Nolan", "Action", "Science Fiction", "Comedy", "Crime", "Drama", "year:2020", "imdb:7"];
 
 const Movies = () => {
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
@@ -52,9 +43,7 @@ const Movies = () => {
     enabled: !authLoading,
     staleTime: 60000, // Cache for 1 minute
     queryFn: async () => {
-      let countQuery = supabase
-        .from("movies")
-        .select("*", { count: "exact", head: true });
+      let countQuery = supabase.from("movies").select("*", { count: "exact", head: true });
 
       // Apply same filters as main query
       if (debouncedSearch) {
@@ -71,44 +60,44 @@ const Movies = () => {
 
         const yearMatch = debouncedSearch.match(structuredPatterns.year);
         if (yearMatch) {
-          countQuery = countQuery.eq('year', parseInt(yearMatch[1]));
+          countQuery = countQuery.eq("year", parseInt(yearMatch[1]));
           hasStructuredSearch = true;
         }
 
         const directorMatch = debouncedSearch.match(structuredPatterns.director);
         if (directorMatch) {
-          countQuery = countQuery.ilike('director', `%${directorMatch[1]}%`);
+          countQuery = countQuery.ilike("director", `%${directorMatch[1]}%`);
           hasStructuredSearch = true;
         }
 
         const actorMatch = debouncedSearch.match(structuredPatterns.actor);
         if (actorMatch) {
-          countQuery = countQuery.ilike('actors', `%${actorMatch[1]}%`);
+          countQuery = countQuery.ilike("actors", `%${actorMatch[1]}%`);
           hasStructuredSearch = true;
         }
 
         const genreMatch = debouncedSearch.match(structuredPatterns.genre);
         if (genreMatch) {
-          countQuery = countQuery.contains('genres', [genreMatch[1]]);
+          countQuery = countQuery.contains("genres", [genreMatch[1]]);
           hasStructuredSearch = true;
         }
 
         const imdbMatch = debouncedSearch.match(structuredPatterns.imdb);
         if (imdbMatch) {
-          countQuery = countQuery.gte('imdb_rating', parseFloat(imdbMatch[1]));
+          countQuery = countQuery.gte("imdb_rating", parseFloat(imdbMatch[1]));
           hasStructuredSearch = true;
         }
 
         const ratingMatch = debouncedSearch.match(structuredPatterns.rating);
         if (ratingMatch && !imdbMatch) {
-          countQuery = countQuery.gte('rating', parseFloat(ratingMatch[1]));
+          countQuery = countQuery.gte("rating", parseFloat(ratingMatch[1]));
           hasStructuredSearch = true;
         }
 
         if (!hasStructuredSearch) {
           const searchPattern = `%${debouncedSearch}%`;
           countQuery = countQuery.or(
-            `title.ilike.${searchPattern},actors.ilike.${searchPattern},director.ilike.${searchPattern},plot.ilike.${searchPattern}`
+            `title.ilike.${searchPattern},actors.ilike.${searchPattern},director.ilike.${searchPattern},plot.ilike.${searchPattern}`,
           );
         }
       }
@@ -134,7 +123,7 @@ const Movies = () => {
       setDebouncedSearch(searchText); // Set initial debounced value
       return;
     }
-    
+
     const timer = setTimeout(() => {
       setDebouncedSearch(searchText);
       setLastCursor(null); // Reset cursor when search changes
@@ -150,7 +139,9 @@ const Movies = () => {
       // Select only needed columns for better performance
       let query = supabase
         .from("movies")
-        .select("id, title, year, rating, imdb_rating, imdb_votes, genres, poster, local_poster_url, imdb_id, created_at")
+        .select(
+          "id, title, year, rating, imdb_rating, imdb_votes, genres, poster, local_poster_url, imdb_id, created_at",
+        )
         .order("created_at", { ascending: false })
         .limit(MOVIES_PER_PAGE);
 
@@ -176,42 +167,42 @@ const Movies = () => {
         // Check for year pattern
         const yearMatch = debouncedSearch.match(structuredPatterns.year);
         if (yearMatch) {
-          query = query.eq('year', parseInt(yearMatch[1]));
+          query = query.eq("year", parseInt(yearMatch[1]));
           hasStructuredSearch = true;
         }
 
         // Check for director pattern
         const directorMatch = debouncedSearch.match(structuredPatterns.director);
         if (directorMatch) {
-          query = query.ilike('director', `%${directorMatch[1]}%`);
+          query = query.ilike("director", `%${directorMatch[1]}%`);
           hasStructuredSearch = true;
         }
 
         // Check for actor pattern
         const actorMatch = debouncedSearch.match(structuredPatterns.actor);
         if (actorMatch) {
-          query = query.ilike('actors', `%${actorMatch[1]}%`);
+          query = query.ilike("actors", `%${actorMatch[1]}%`);
           hasStructuredSearch = true;
         }
 
         // Check for genre pattern
         const genreMatch = debouncedSearch.match(structuredPatterns.genre);
         if (genreMatch) {
-          query = query.contains('genres', [genreMatch[1]]);
+          query = query.contains("genres", [genreMatch[1]]);
           hasStructuredSearch = true;
         }
 
         // Check for IMDb rating pattern
         const imdbMatch = debouncedSearch.match(structuredPatterns.imdb);
         if (imdbMatch) {
-          query = query.gte('imdb_rating', parseFloat(imdbMatch[1]));
+          query = query.gte("imdb_rating", parseFloat(imdbMatch[1]));
           hasStructuredSearch = true;
         }
 
         // Check for general rating pattern
         const ratingMatch = debouncedSearch.match(structuredPatterns.rating);
         if (ratingMatch && !imdbMatch) {
-          query = query.gte('rating', parseFloat(ratingMatch[1]));
+          query = query.gte("rating", parseFloat(ratingMatch[1]));
           hasStructuredSearch = true;
         }
 
@@ -219,7 +210,7 @@ const Movies = () => {
         if (!hasStructuredSearch) {
           const searchPattern = `%${debouncedSearch}%`;
           query = query.or(
-            `title.ilike.${searchPattern},actors.ilike.${searchPattern},director.ilike.${searchPattern},plot.ilike.${searchPattern}`
+            `title.ilike.${searchPattern},actors.ilike.${searchPattern},director.ilike.${searchPattern},plot.ilike.${searchPattern}`,
           );
         }
       }
@@ -231,32 +222,33 @@ const Movies = () => {
       // Batch load user ratings for all movies in this page
       let ratingsData: Record<string, number> = {};
       if (user && moviesData && moviesData.length > 0) {
-        const movieIds = moviesData.map(m => m.id);
+        const movieIds = moviesData.map((m) => m.id);
         const { data: ratings, error: ratingsError } = await supabase
-          .from('user_ratings')
-          .select('media_id, user_rating')
-          .eq('user_id', user.id)
-          .eq('media_type', 'movie')
-          .in('media_id', movieIds);
+          .from("user_ratings")
+          .select("media_id, user_rating")
+          .eq("user_id", user.id)
+          .eq("media_type", "movie")
+          .in("media_id", movieIds);
 
         if (!ratingsError && ratings) {
-          ratingsData = ratings.reduce((acc, r) => {
-            if (r.user_rating) acc[r.media_id] = r.user_rating;
-            return acc;
-          }, {} as Record<string, number>);
+          ratingsData = ratings.reduce(
+            (acc, r) => {
+              if (r.user_rating) acc[r.media_id] = r.user_rating;
+              return acc;
+            },
+            {} as Record<string, number>,
+          );
         }
       }
-      
+
       const hasMore = moviesData?.length === MOVIES_PER_PAGE;
-      const newCursor = hasMore && moviesData.length > 0 
-        ? moviesData[moviesData.length - 1].created_at 
-        : null;
-      
-      return { 
-        movies: moviesData || [], 
+      const newCursor = hasMore && moviesData.length > 0 ? moviesData[moviesData.length - 1].created_at : null;
+
+      return {
+        movies: moviesData || [],
         hasMore,
         newCursor,
-        ratingsMap: ratingsData
+        ratingsMap: ratingsData,
       };
     },
   });
@@ -264,9 +256,9 @@ const Movies = () => {
   // Append new movies to displayed movies when data changes
   useEffect(() => {
     if (data?.movies) {
-      setDisplayedMovies(prev => lastCursor === null ? data.movies : [...prev, ...data.movies]);
+      setDisplayedMovies((prev) => (lastCursor === null ? data.movies : [...prev, ...data.movies]));
       if (data.ratingsMap) {
-        setUserRatingsMap(prev => ({ ...prev, ...data.ratingsMap }));
+        setUserRatingsMap((prev) => ({ ...prev, ...data.ratingsMap }));
       }
     }
   }, [data?.movies, data?.ratingsMap, lastCursor]);
@@ -317,23 +309,16 @@ const Movies = () => {
               )}
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    aria-label="Search help"
-                  >
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label="Search help">
                     <Info className="h-4 w-4" />
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Search Cheatsheet</DialogTitle>
-                    <DialogDescription>
-                      Use these patterns to search for movies with precision
-                    </DialogDescription>
+                    <DialogDescription>Use these patterns to search for movies with precision</DialogDescription>
                   </DialogHeader>
-                  
+
                   <div className="space-y-6 mt-4">
                     <div>
                       <h3 className="font-semibold mb-2">Simple Text Search</h3>
@@ -352,37 +337,37 @@ const Movies = () => {
                       <p className="text-sm text-muted-foreground mb-2">
                         Use field:value patterns for precise filtering
                       </p>
-                      
+
                       <div className="space-y-3">
                         <div>
                           <p className="text-sm font-medium mb-1">Year</p>
                           <code className="block bg-muted px-3 py-2 rounded text-sm">year:2020</code>
                         </div>
-                        
+
                         <div>
                           <p className="text-sm font-medium mb-1">Director</p>
                           <code className="block bg-muted px-3 py-2 rounded text-sm">director:Christopher Nolan</code>
                           <code className="block bg-muted px-3 py-2 rounded text-sm mt-1">director:Nolan</code>
                         </div>
-                        
+
                         <div>
                           <p className="text-sm font-medium mb-1">Actor</p>
                           <code className="block bg-muted px-3 py-2 rounded text-sm">actor:Leonardo DiCaprio</code>
                           <code className="block bg-muted px-3 py-2 rounded text-sm mt-1">actor:DiCaprio</code>
                         </div>
-                        
+
                         <div>
                           <p className="text-sm font-medium mb-1">Genre</p>
                           <code className="block bg-muted px-3 py-2 rounded text-sm">genre:Action</code>
                           <code className="block bg-muted px-3 py-2 rounded text-sm mt-1">genre:Sci-Fi</code>
                         </div>
-                        
+
                         <div>
                           <p className="text-sm font-medium mb-1">IMDb Rating (minimum)</p>
                           <code className="block bg-muted px-3 py-2 rounded text-sm">imdb:8+</code>
                           <code className="block bg-muted px-3 py-2 rounded text-sm mt-1">imdb:7.5</code>
                         </div>
-                        
+
                         <div>
                           <p className="text-sm font-medium mb-1">General Rating (minimum)</p>
                           <code className="block bg-muted px-3 py-2 rounded text-sm">rating:8</code>
@@ -404,7 +389,7 @@ const Movies = () => {
               </Dialog>
             </div>
           </div>
-          
+
           {/* Search Hint Chips */}
           <div className="flex flex-wrap gap-2 mt-3 max-w-2xl">
             {SEARCH_SUGGESTIONS.map((suggestion) => (
@@ -423,12 +408,12 @@ const Movies = () => {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold">Movies</h1>
           <p className="text-muted-foreground">
-            {totalCount !== null && displayedMovies.length > 0 && (
-              `Showing ${displayedMovies.length} of ${totalCount.toLocaleString()} ${totalCount === 1 ? "movie" : "movies"}`
-            )}
-            {totalCount === null && displayedMovies.length > 0 && (
-              `Showing ${displayedMovies.length} ${displayedMovies.length === 1 ? "movie" : "movies"}`
-            )}
+            {totalCount !== null &&
+              displayedMovies.length > 0 &&
+              `Showing ${displayedMovies.length} of ${totalCount.toLocaleString()} ${totalCount === 1 ? "movie" : "movies"}`}
+            {totalCount === null &&
+              displayedMovies.length > 0 &&
+              `Showing ${displayedMovies.length} ${displayedMovies.length === 1 ? "movie" : "movies"}`}
           </p>
         </div>
 
@@ -452,11 +437,16 @@ const Movies = () => {
           </Card>
         )}
 
-        {!isLoading && !authLoading && isFetched && displayedMovies.length === 0 && searchText && searchText === debouncedSearch && (
-          <Card className="p-8 text-center">
-            <p className="text-muted-foreground">No movies match your search "{searchText}"</p>
-          </Card>
-        )}
+        {!isLoading &&
+          !authLoading &&
+          isFetched &&
+          displayedMovies.length === 0 &&
+          searchText &&
+          searchText === debouncedSearch && (
+            <Card className="p-8 text-center">
+              <p className="text-muted-foreground">No movies match your search "{searchText}"</p>
+            </Card>
+          )}
 
         {displayedMovies.length > 0 && (
           <>
