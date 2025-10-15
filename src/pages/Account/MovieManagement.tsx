@@ -160,7 +160,8 @@ export const MovieManagement = () => {
         postersResult,
         watchlistResult,
         ratingsResult,
-        genresResult
+        genresResult,
+        decadeResult
       ] = await Promise.all([
         // Total movies count
         supabase.from('movies').select('id', { count: 'exact', head: true }),
@@ -188,8 +189,11 @@ export const MovieManagement = () => {
           .not('user_rating', 'is', null)
           .eq('media_type', 'movie'),
         
-        // Genre and year distribution (lightweight - only necessary fields)
-        supabase.from('movies').select('genres, year').limit(50000)
+        // Genre distribution using RPC
+        supabase.rpc('get_genre_stats'),
+        
+        // Decade distribution using RPC
+        supabase.rpc('get_decade_stats')
       ]);
 
       const totalMovies = totalResult.count || 0;
@@ -203,25 +207,23 @@ export const MovieManagement = () => {
         ? ratings.reduce((sum, r) => sum + (r.user_rating || 0), 0) / ratings.length
         : 0;
 
-      // Calculate genre distribution
-      const genreCounts: { [key: string]: number } = {};
-      genresResult.data?.forEach((movie: any) => {
-        movie.genres?.forEach((genre: string) => {
-          genreCounts[genre] = (genreCounts[genre] || 0) + 1;
-        });
-      });
-      const byGenre = Object.entries(genreCounts)
-        .map(([genre, count]) => ({ genre, count }))
-        .sort((a, b) => b.count - a.count);
+      // Genre distribution (already aggregated by database)
+      const byGenre = (genresResult.data || []).map((item: any) => ({
+        genre: item.genre,
+        count: Number(item.count)
+      }));
 
-      // Calculate year distribution
-      const yearCounts: { [key: number]: number } = {};
-      genresResult.data?.forEach((movie: any) => {
-        yearCounts[movie.year] = (yearCounts[movie.year] || 0) + 1;
-      });
-      const byYear = Object.entries(yearCounts)
-        .map(([year, count]) => ({ year: parseInt(year), count }))
-        .sort((a, b) => b.year - a.year);
+      // Decade distribution (already aggregated by database)
+      const decadeData = (decadeResult.data || []).map((item: any) => ({
+        decade: item.decade,
+        count: Number(item.count)
+      }));
+
+      // Group decades into display format
+      const byYear = decadeData.map(({ decade, count }) => ({
+        year: decade,
+        count
+      }));
 
       setStats({
         totalMovies,

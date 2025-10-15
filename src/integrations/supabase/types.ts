@@ -515,9 +515,23 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      get_decade_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          count: number
+          decade: number
+        }[]
+      }
       get_effective_rating: {
         Args: { movie: Database["public"]["Tables"]["movies"]["Row"] }
         Returns: number
+      }
+      get_genre_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          count: number
+          genre: string
+        }[]
       }
       get_user_activity_summary: {
         Args: { p_days?: number; p_user_id: string }
