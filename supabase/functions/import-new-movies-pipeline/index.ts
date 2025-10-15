@@ -104,30 +104,71 @@ serve(async (req) => {
       throw new Error(`Failed to create sync history: ${syncError?.message}`);
     }
 
-    let imported = 0, updated = 0, failed = 0, skipped = 0, removed = 0;
+    let imported = 0, updated = 0, failed = 0, skipped = 0, removed = 0, alreadyChecked = 0;
 
     try {
-      const currentYear = new Date().getFullYear();
-      addLog(`Fetching new releases for ${currentYear}`);
+      // Calculate date range: last 60 days
+      const today = new Date();
+      const sixtyDaysAgo = new Date(today);
+      sixtyDaysAgo.setDate(today.getDate() - 60);
+      
+      const todayStr = today.toISOString().split('T')[0];
+      const sixtyDaysAgoStr = sixtyDaysAgo.toISOString().split('T')[0];
+      
+      addLog(`Fetching movies released between ${sixtyDaysAgoStr} and ${todayStr}`);
 
-      // Fetch new releases from TMDB
-      const tmdbResponse = await fetch(
-        `https://api.themoviedb.org/3/discover/movie?api_key=${tmdbApiKey}&primary_release_year=${currentYear}&sort_by=release_date.desc&page=1`
-      );
+      let allMovies: any[] = [];
+      
+      // Fetch multiple pages to get more variety
+      for (let page = 1; page <= 5; page++) {
+        try {
+          const tmdbResponse = await fetch(
+            `https://api.themoviedb.org/3/discover/movie?api_key=${tmdbApiKey}&release_date.gte=${sixtyDaysAgoStr}&release_date.lte=${todayStr}&sort_by=popularity.desc&vote_count.gte=50&page=${page}`
+          );
 
-      if (!tmdbResponse.ok) {
-        throw new Error('Failed to fetch from TMDB');
+          if (!tmdbResponse.ok) {
+            addLog(`⚠ Failed to fetch page ${page} from TMDB`);
+            continue;
+          }
+
+          const tmdbData = await tmdbResponse.json();
+          const pageMovies = tmdbData.results || [];
+          allMovies = allMovies.concat(pageMovies);
+          
+          addLog(`Fetched ${pageMovies.length} movies from page ${page}`);
+          
+          // Small delay to respect TMDB rate limits
+          await new Promise(resolve => setTimeout(resolve, 50));
+        } catch (pageError) {
+          addLog(`⚠ Error fetching page ${page}: ${pageError}`);
+        }
       }
-
-      const tmdbData = await tmdbResponse.json();
-      const movies = tmdbData.results || [];
-      addLog(`Found ${movies.length} new releases from TMDB`);
+      
+      const movies = allMovies;
+      addLog(`Total found: ${movies.length} movies from TMDB`);
 
       for (const tmdbMovie of movies) {
         try {
           if (!tmdbMovie.id) {
             skipped++;
             continue;
+          }
+
+          // Check if this TMDB movie was already processed recently
+          const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+          const { data: processed } = await supabase
+            .from('tmdb_processed_movies')
+            .select('import_status, checked_at')
+            .eq('tmdb_id', tmdbMovie.id)
+            .gte('checked_at', thirtyDaysAgo)
+            .single();
+
+          if (processed) {
+            // If it was recently checked and not imported, skip it (will retry after 30 days)
+            if (processed.import_status !== 'imported') {
+              alreadyChecked++;
+              continue;
+            }
           }
 
           // Get detailed movie data including IMDb ID
@@ -145,6 +186,15 @@ serve(async (req) => {
 
           if (!imdbId) {
             addLog(`⚠ No IMDb ID for: ${detailData.title}`);
+            
+            // Record that we checked this movie
+            await supabase.from('tmdb_processed_movies').upsert({
+              tmdb_id: tmdbMovie.id,
+              import_status: 'skipped_no_imdb',
+              skip_reason: 'No IMDb ID found in TMDB data',
+              checked_at: new Date().toISOString()
+            });
+            
             skipped++;
             continue;
           }
@@ -158,6 +208,15 @@ serve(async (req) => {
 
           if (existingMovie) {
             addLog(`⊘ Movie already exists: ${detailData.title}`);
+            
+            // Record that we checked this movie
+            await supabase.from('tmdb_processed_movies').upsert({
+              tmdb_id: tmdbMovie.id,
+              import_status: 'skipped_duplicate',
+              skip_reason: `Already exists with IMDb ID: ${imdbId}`,
+              checked_at: new Date().toISOString()
+            });
+            
             skipped++;
             continue;
           }
@@ -203,6 +262,15 @@ serve(async (req) => {
           // Must meet BOTH thresholds (6+ stars AND 1000+ votes)
           if (effectiveRating < 6.0 || effectiveVotes < 1000) {
             addLog(`⊘ Below quality threshold: ${detailData.title} (Rating: ${effectiveRating}/10, Votes: ${effectiveVotes.toLocaleString()})`);
+            
+            // Record that we checked this movie (will retry after 30 days)
+            await supabase.from('tmdb_processed_movies').upsert({
+              tmdb_id: tmdbMovie.id,
+              import_status: 'skipped_quality',
+              skip_reason: `Below threshold - Rating: ${effectiveRating}/10, Votes: ${effectiveVotes}`,
+              checked_at: new Date().toISOString()
+            });
+            
             skipped++;
             continue;
           }
@@ -263,6 +331,14 @@ serve(async (req) => {
 
           imported++;
           addLog(`✓ Imported: ${detailData.title}`);
+          
+          // Record successful import
+          await supabase.from('tmdb_processed_movies').upsert({
+            tmdb_id: tmdbMovie.id,
+            import_status: 'imported',
+            skip_reason: null,
+            checked_at: new Date().toISOString()
+          });
 
           // Immediately download poster
           if (posterUrl) {
@@ -308,16 +384,16 @@ serve(async (req) => {
       // CLEANUP PHASE: Remove existing movies that don't meet quality threshold
       addLog('Starting cleanup phase: checking existing movies for quality compliance...');
       
-      const { data: allMovies, error: fetchError } = await supabase
+      const { data: existingMovies, error: fetchError } = await supabase
         .from('movies')
         .select('id, imdb_id, title, imdb_rating, rating, imdb_votes, vote_count');
 
       if (fetchError) {
         addLog(`⚠ Error fetching movies for cleanup: ${fetchError.message}`);
-      } else if (allMovies) {
-        addLog(`Checking ${allMovies.length} movies against quality threshold...`);
+      } else if (existingMovies) {
+        addLog(`Checking ${existingMovies.length} movies against quality threshold...`);
         
-        for (const movie of allMovies) {
+        for (const movie of existingMovies) {
           // Prefer IMDB data, fallback to TMDB
           const effectiveRating = movie.imdb_rating || movie.rating || 0;
           const effectiveVotes = movie.imdb_votes || movie.vote_count || 0;
@@ -358,7 +434,7 @@ serve(async (req) => {
         })
         .eq('id', syncHistory.id);
 
-      addLog(`✓ New movies pipeline completed: ${imported} imported, ${removed} removed, ${skipped} skipped, ${failed} failed`);
+      addLog(`✓ New movies pipeline completed: ${imported} imported, ${removed} removed, ${skipped} skipped, ${alreadyChecked} already checked, ${failed} failed`);
 
       return new Response(
         JSON.stringify({
@@ -368,6 +444,7 @@ serve(async (req) => {
           failed,
           skipped,
           removed,
+          alreadyChecked,
           total_found: movies.length,
           logs,
         }),

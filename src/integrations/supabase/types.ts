@@ -308,6 +308,33 @@ export type Database = {
         }
         Relationships: []
       }
+      tmdb_processed_movies: {
+        Row: {
+          checked_at: string | null
+          created_at: string | null
+          id: string
+          import_status: string
+          skip_reason: string | null
+          tmdb_id: number
+        }
+        Insert: {
+          checked_at?: string | null
+          created_at?: string | null
+          id?: string
+          import_status: string
+          skip_reason?: string | null
+          tmdb_id: number
+        }
+        Update: {
+          checked_at?: string | null
+          created_at?: string | null
+          id?: string
+          import_status?: string
+          skip_reason?: string | null
+          tmdb_id?: number
+        }
+        Relationships: []
+      }
       tv_shows: {
         Row: {
           created_at: string | null
