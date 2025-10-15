@@ -192,15 +192,20 @@ serve(async (req) => {
             addLog(`⚠ OMDb fetch failed for ${detailData.title}: ${omdbError}`);
           }
 
-          // Quality check with flexible criteria (IMDB OR TMDB)
+          // Quality check - VERY lenient for new releases since they won't have many votes yet
           const tmdbRating = detailData.vote_average || 0;
           const tmdbVotes = detailData.vote_count || 0;
 
-          // Must meet EITHER IMDB or TMDB thresholds
-          const meetsRatingThreshold = imdbRating >= 5.0 || tmdbRating >= 5.0;
-          const meetsVoteThreshold = imdbVotes >= 1000 || tmdbVotes >= 1000;
+          // For new releases, only skip if BOTH sources have data AND both are below threshold
+          // This allows movies with no ratings yet (brand new releases) to be imported
+          const hasImdbData = imdbRating > 0 || imdbVotes > 0;
+          const hasTmdbData = tmdbRating > 0 || tmdbVotes > 0;
+          
+          const failsImdb = hasImdbData && (imdbRating < 3.0 && imdbVotes > 100);
+          const failsTmdb = hasTmdbData && (tmdbRating < 3.0 && tmdbVotes > 100);
 
-          if (!meetsRatingThreshold || !meetsVoteThreshold) {
+          // Only skip if movie has votes AND is poorly rated on BOTH platforms
+          if (failsImdb && failsTmdb) {
             addLog(`⊘ Below quality threshold: ${detailData.title} (IMDB: ${imdbRating}/10 [${imdbVotes.toLocaleString()} votes], TMDB: ${tmdbRating}/10 [${tmdbVotes.toLocaleString()} votes])`);
             skipped++;
             continue;
