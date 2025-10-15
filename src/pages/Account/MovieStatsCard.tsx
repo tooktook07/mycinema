@@ -138,7 +138,6 @@ export const MovieStatsCard = ({ stats, loading }: MovieStatsCardProps) => {
                 });
                 return Object.entries(byDecade)
                   .sort((a, b) => parseInt(b[0]) - parseInt(a[0]))
-                  .slice(0, 10)
                   .map(([decade, count]) => (
                     <div key={decade} className="flex justify-between items-center p-2 bg-muted rounded-md text-sm">
                       <span>{decade}s</span>
