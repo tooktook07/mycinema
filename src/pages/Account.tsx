@@ -12,8 +12,10 @@ import { SystemSettings } from "./Account/SystemSettings";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Account = () => {
-  const { isAdmin, loading } = useAuth();
+  const { isAdmin, loading, user } = useAuth();
   const navigate = useNavigate();
+
+  console.log('🎬 Account component render:', { loading, isAdmin, userEmail: user?.email });
 
   // Tab and re-run state
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -34,12 +36,17 @@ const Account = () => {
   };
 
   useEffect(() => {
-    console.log('🔐 Account page auth state:', { loading, isAdmin });
-    if (!loading && !isAdmin) {
-      console.log('❌ Redirecting to home - not admin');
-      navigate("/");
+    // Only redirect if we're done loading AND confirmed not admin
+    if (!loading) {
+      console.log('🔐 Account page auth state:', { loading, isAdmin, user: user?.email });
+      if (!isAdmin) {
+        console.log('❌ Redirecting to home - not admin');
+        navigate("/");
+      } else {
+        console.log('✅ Admin confirmed, staying on page');
+      }
     }
-  }, [isAdmin, loading, navigate]);
+  }, [isAdmin, loading, navigate, user]);
 
   if (loading) {
     return (
