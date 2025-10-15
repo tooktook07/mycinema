@@ -12,8 +12,7 @@ import { SystemSettings } from "./Account/SystemSettings";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Account = () => {
-  const { isAdmin } = useAuth();
-  const loading = false;
+  const { isAdmin, loading } = useAuth();
   const navigate = useNavigate();
 
   // Tab and re-run state
