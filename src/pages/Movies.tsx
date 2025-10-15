@@ -22,7 +22,26 @@ import {
 
 const MOVIES_PER_PAGE = 48;
 
-const SEARCH_SUGGESTIONS = ["Nolan", "Action", "Science Fiction", "Comedy", "Crime", "Drama", "year:2020", "imdb:7"];
+const SEARCH_SUGGESTIONS = ["Nolan", "Action", "Science Fiction", "Comedy", "Crime", "Drama", "year:2020", "rating:7"];
+
+// Predefined list of known genres for auto-detection
+const KNOWN_GENRES = [
+  "Action", "Adventure", "Animation", "Comedy", "Crime", "Documentary", 
+  "Drama", "Family", "Fantasy", "History", "Horror", "Music", "Mystery", 
+  "Romance", "Science Fiction", "TV Movie", "Thriller", "War", "Western"
+];
+
+// Helper function to check if search term matches a known genre
+const detectGenre = (searchTerm: string): string | null => {
+  const normalize = (str: string) => str.toLowerCase().replace(/[-\s]/g, '');
+  const normalizedSearch = normalize(searchTerm);
+  
+  const matchedGenre = KNOWN_GENRES.find(genre => 
+    normalize(genre) === normalizedSearch
+  );
+  
+  return matchedGenre || null;
+};
 
 const Movies = () => {
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
@@ -95,10 +114,16 @@ const Movies = () => {
         }
 
         if (!hasStructuredSearch) {
-          const searchPattern = `%${debouncedSearch}%`;
-          countQuery = countQuery.or(
-            `title.ilike.${searchPattern},actors.ilike.${searchPattern},director.ilike.${searchPattern},plot.ilike.${searchPattern}`,
-          );
+          // Check if search term matches a known genre
+          const detectedGenre = detectGenre(debouncedSearch);
+          if (detectedGenre) {
+            countQuery = countQuery.contains("genres", [detectedGenre]);
+          } else {
+            const searchPattern = `%${debouncedSearch}%`;
+            countQuery = countQuery.or(
+              `title.ilike.${searchPattern},actors.ilike.${searchPattern},director.ilike.${searchPattern},plot.ilike.${searchPattern}`,
+            );
+          }
         }
       }
 
@@ -206,12 +231,18 @@ const Movies = () => {
           hasStructuredSearch = true;
         }
 
-        // If no structured pattern found, do simple text search
+        // If no structured pattern found, check for genre match or do simple text search
         if (!hasStructuredSearch) {
-          const searchPattern = `%${debouncedSearch}%`;
-          query = query.or(
-            `title.ilike.${searchPattern},actors.ilike.${searchPattern},director.ilike.${searchPattern},plot.ilike.${searchPattern}`,
-          );
+          // Check if search term matches a known genre
+          const detectedGenre = detectGenre(debouncedSearch);
+          if (detectedGenre) {
+            query = query.contains("genres", [detectedGenre]);
+          } else {
+            const searchPattern = `%${debouncedSearch}%`;
+            query = query.or(
+              `title.ilike.${searchPattern},actors.ilike.${searchPattern},director.ilike.${searchPattern},plot.ilike.${searchPattern}`,
+            );
+          }
         }
       }
 
