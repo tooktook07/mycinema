@@ -15,8 +15,6 @@ const Account = () => {
   const { isAdmin, loading, user } = useAuth();
   const navigate = useNavigate();
 
-  console.log('🎬 Account component render:', { loading, isAdmin, userEmail: user?.email });
-
   // Tab and re-run state
   const [activeTab, setActiveTab] = useState("dashboard");
   const [rerunFilters, setRerunFilters] = useState<any>(null);
@@ -36,15 +34,8 @@ const Account = () => {
   };
 
   useEffect(() => {
-    // Only redirect if we're done loading AND confirmed not admin
-    if (!loading) {
-      console.log('🔐 Account page auth state:', { loading, isAdmin, user: user?.email });
-      if (!isAdmin) {
-        console.log('❌ Redirecting to home - not admin');
-        navigate("/");
-      } else {
-        console.log('✅ Admin confirmed, staying on page');
-      }
+    if (!loading && !isAdmin) {
+      navigate("/");
     }
   }, [isAdmin, loading, navigate, user]);
 

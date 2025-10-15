@@ -69,7 +69,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const checkUserRole = async (userId: string) => {
     try {
-      console.log('🔍 Checking user role for:', userId);
       // Check admin role
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
@@ -82,7 +81,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.warn('Could not fetch user role:', roleError.message);
         setIsAdmin(false);
       } else {
-        console.log('✅ Admin role check result:', !!roleData, roleData);
         setIsAdmin(!!roleData);
       }
       
