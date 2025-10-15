@@ -23,14 +23,14 @@ import {
 const MOVIES_PER_PAGE = 48;
 
 const SEARCH_SUGGESTIONS = [
-  "Inception",
   "Nolan",
-  "DiCaprio",
   "Action",
-  "Sci-Fi",
+  "Science Fiction",
   "Comedy",
-  "Thriller",
+  "Crime",
   "Drama",
+  "year:2020",
+  "rating:7",
 ];
 
 const Movies = () => {
