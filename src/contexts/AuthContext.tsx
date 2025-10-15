@@ -59,8 +59,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
         checkUserRole(session.user.id);
+      } else {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -100,6 +101,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.warn('Error in checkUserRole:', error?.message || 'Unknown error');
       setIsAdmin(false);
       setSubscriptionTier('free');
+    } finally {
+      setLoading(false);
     }
   };
 
