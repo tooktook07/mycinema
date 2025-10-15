@@ -121,7 +121,7 @@ serve(async (req) => {
       throw new Error(`Failed to create sync history: ${syncError?.message}`);
     }
 
-    let imported = 0, updated = 0, failed = 0, skipped = 0;
+    let imported = 0, updated = 0, failed = 0, skipped = 0, removed = 0;
 
     try {
       // Get current cycle day (1-30)
@@ -256,6 +256,43 @@ serve(async (req) => {
         }
       }
 
+      // CLEANUP PHASE: Remove movies that don't meet quality threshold after refresh
+      addLog('Starting cleanup phase: checking all movies for quality compliance...');
+      
+      const { data: allMovies, error: fetchAllError } = await supabase
+        .from('movies')
+        .select('id, imdb_id, title, imdb_rating, rating, imdb_votes, vote_count');
+
+      if (fetchAllError) {
+        addLog(`⚠ Error fetching movies for cleanup: ${fetchAllError.message}`);
+      } else if (allMovies) {
+        addLog(`Checking ${allMovies.length} movies against quality threshold (6+ stars, 1000+ votes)...`);
+        
+        for (const movie of allMovies) {
+          // Prefer IMDB data, fallback to TMDB
+          const effectiveRating = movie.imdb_rating || movie.rating || 0;
+          const effectiveVotes = movie.imdb_votes || movie.vote_count || 0;
+
+          // Check if movie fails quality threshold (below 6 stars OR below 1000 votes)
+          if (effectiveRating < 6.0 || effectiveVotes < 1000) {
+            const { error: deleteError } = await supabase
+              .from('movies')
+              .delete()
+              .eq('id', movie.id);
+
+            if (deleteError) {
+              addLog(`✗ Error removing: "${movie.title}" - ${deleteError.message}`);
+              failed++;
+            } else {
+              removed++;
+              addLog(`✕ Removed: "${movie.title}" (Rating: ${effectiveRating}/10, Votes: ${effectiveVotes.toLocaleString()})`);
+            }
+          }
+        }
+        
+        addLog(`Cleanup complete: ${removed} movies removed for not meeting quality standards`);
+      }
+
       // Update sync history with results
       await supabase
         .from('sync_history')
@@ -266,11 +303,12 @@ serve(async (req) => {
           updated,
           failed,
           skipped,
+          removed,
           logs,
         })
         .eq('id', syncHistory.id);
 
-      addLog(`✓ Daily refresh pipeline completed: ${updated} updated, ${failed} failed`);
+      addLog(`✓ Daily refresh pipeline completed: ${updated} updated, ${removed} removed, ${failed} failed`);
 
       return new Response(
         JSON.stringify({
@@ -279,6 +317,7 @@ serve(async (req) => {
           updated,
           failed,
           skipped,
+          removed,
           logs,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -296,6 +335,7 @@ serve(async (req) => {
           updated,
           failed,
           skipped,
+          removed,
           logs,
         })
         .eq('id', syncHistory.id);

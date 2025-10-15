@@ -104,7 +104,7 @@ serve(async (req) => {
       throw new Error(`Failed to create sync history: ${syncError?.message}`);
     }
 
-    let imported = 0, updated = 0, failed = 0, skipped = 0;
+    let imported = 0, updated = 0, failed = 0, skipped = 0, removed = 0;
 
     try {
       const currentYear = new Date().getFullYear();
@@ -192,24 +192,22 @@ serve(async (req) => {
             addLog(`⚠ OMDb fetch failed for ${detailData.title}: ${omdbError}`);
           }
 
-          // Quality check - VERY lenient for new releases since they won't have many votes yet
+          // Quality check - 6+ stars and 1000+ votes (IMDB or TMDB fallback)
           const tmdbRating = detailData.vote_average || 0;
           const tmdbVotes = detailData.vote_count || 0;
 
-          // For new releases, only skip if BOTH sources have data AND both are below threshold
-          // This allows movies with no ratings yet (brand new releases) to be imported
-          const hasImdbData = imdbRating > 0 || imdbVotes > 0;
-          const hasTmdbData = tmdbRating > 0 || tmdbVotes > 0;
-          
-          const failsImdb = hasImdbData && (imdbRating < 3.0 && imdbVotes > 100);
-          const failsTmdb = hasTmdbData && (tmdbRating < 3.0 && tmdbVotes > 100);
+          // Prefer IMDB data, fallback to TMDB
+          const effectiveRating = imdbRating > 0 ? imdbRating : tmdbRating;
+          const effectiveVotes = imdbVotes > 0 ? imdbVotes : tmdbVotes;
 
-          // Only skip if movie has votes AND is poorly rated on BOTH platforms
-          if (failsImdb && failsTmdb) {
-            addLog(`⊘ Below quality threshold: ${detailData.title} (IMDB: ${imdbRating}/10 [${imdbVotes.toLocaleString()} votes], TMDB: ${tmdbRating}/10 [${tmdbVotes.toLocaleString()} votes])`);
+          // Must meet BOTH thresholds (6+ stars AND 1000+ votes)
+          if (effectiveRating < 6.0 || effectiveVotes < 1000) {
+            addLog(`⊘ Below quality threshold: ${detailData.title} (Rating: ${effectiveRating}/10, Votes: ${effectiveVotes.toLocaleString()})`);
             skipped++;
             continue;
           }
+
+          addLog(`✓ Meets quality threshold: ${detailData.title} (Rating: ${effectiveRating}/10, Votes: ${effectiveVotes.toLocaleString()})`);
 
           addLog(`Importing: ${detailData.title} (IMDB: ${imdbRating}/10, TMDB: ${tmdbRating}/10)`);
 
@@ -307,6 +305,43 @@ serve(async (req) => {
         }
       }
 
+      // CLEANUP PHASE: Remove existing movies that don't meet quality threshold
+      addLog('Starting cleanup phase: checking existing movies for quality compliance...');
+      
+      const { data: allMovies, error: fetchError } = await supabase
+        .from('movies')
+        .select('id, imdb_id, title, imdb_rating, rating, imdb_votes, vote_count');
+
+      if (fetchError) {
+        addLog(`⚠ Error fetching movies for cleanup: ${fetchError.message}`);
+      } else if (allMovies) {
+        addLog(`Checking ${allMovies.length} movies against quality threshold...`);
+        
+        for (const movie of allMovies) {
+          // Prefer IMDB data, fallback to TMDB
+          const effectiveRating = movie.imdb_rating || movie.rating || 0;
+          const effectiveVotes = movie.imdb_votes || movie.vote_count || 0;
+
+          // Check if movie fails quality threshold (below 6 stars OR below 1000 votes)
+          if (effectiveRating < 6.0 || effectiveVotes < 1000) {
+            const { error: deleteError } = await supabase
+              .from('movies')
+              .delete()
+              .eq('id', movie.id);
+
+            if (deleteError) {
+              addLog(`✗ Error removing: "${movie.title}" - ${deleteError.message}`);
+              failed++;
+            } else {
+              removed++;
+              addLog(`✕ Removed: "${movie.title}" (Rating: ${effectiveRating}/10, Votes: ${effectiveVotes.toLocaleString()})`);
+            }
+          }
+        }
+        
+        addLog(`Cleanup complete: ${removed} movies removed for not meeting quality standards`);
+      }
+
       // Update sync history with results
       await supabase
         .from('sync_history')
@@ -317,12 +352,13 @@ serve(async (req) => {
           updated,
           failed,
           skipped,
+          removed,
           total_found: movies.length,
           logs,
         })
         .eq('id', syncHistory.id);
 
-      addLog(`✓ New movies pipeline completed: ${imported} imported, ${skipped} skipped, ${failed} failed`);
+      addLog(`✓ New movies pipeline completed: ${imported} imported, ${removed} removed, ${skipped} skipped, ${failed} failed`);
 
       return new Response(
         JSON.stringify({
@@ -331,6 +367,7 @@ serve(async (req) => {
           updated,
           failed,
           skipped,
+          removed,
           total_found: movies.length,
           logs,
         }),
@@ -349,6 +386,7 @@ serve(async (req) => {
           updated,
           failed,
           skipped,
+          removed,
           logs,
         })
         .eq('id', syncHistory.id);
