@@ -16,10 +16,10 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.refresh-movies-pipeline]
-verify_jwt = true
+verify_jwt = false
 
 [functions.import-new-movies-pipeline]
-verify_jwt = true
+verify_jwt = false
 
 [functions.log-activity]
 verify_jwt = true

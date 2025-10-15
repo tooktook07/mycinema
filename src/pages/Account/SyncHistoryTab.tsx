@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Loader2, ChevronDown, AlertCircle, CheckCircle2, XCircle, AlertTriangle, RotateCw, Trash2, StopCircle, Bot, User, TrendingUp, Calendar, Clock, Database, Activity } from "lucide-react";
+import { Loader2, ChevronDown, AlertCircle, CheckCircle2, XCircle, AlertTriangle, RotateCw, Trash2, StopCircle, Bot, User, TrendingUp, Calendar, Clock, Database, Activity, Play, Upload } from "lucide-react";
 import { format, addHours } from "date-fns";
 import { useDevMode } from "@/contexts/DevModeContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -64,6 +64,37 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
   } | null>(null);
   const { devMode } = useDevMode();
   const { toast } = useToast();
+  const [testingPipeline, setTestingPipeline] = useState<string | null>(null);
+
+  const testPipeline = async (pipelineName: 'refresh-movies-pipeline' | 'import-new-movies-pipeline') => {
+    setTestingPipeline(pipelineName);
+    try {
+      const { data, error } = await supabase.functions.invoke(pipelineName, {
+        body: {}
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Pipeline Started",
+        description: `${pipelineName} executed successfully. Check the logs below.`,
+      });
+
+      // Refresh history after a short delay
+      setTimeout(() => {
+        fetchSyncHistory();
+      }, 2000);
+    } catch (error: any) {
+      console.error(`Error testing ${pipelineName}:`, error);
+      toast({
+        title: "Pipeline Failed",
+        description: error.message || "Failed to execute pipeline",
+        variant: "destructive",
+      });
+    } finally {
+      setTestingPipeline(null);
+    }
+  };
 
   // Calculate next cron job times (all times in UTC)
   const getNextCronRuns = (): CronJobSchedule[] => {
@@ -479,6 +510,57 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
               Run New Imports Now
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Manual Pipeline Testing */}
+      <Card className="border-blue-500/50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Play className="h-5 w-5" />
+            Manual Pipeline Testing
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Test the automated pipelines manually to verify they work correctly
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Button
+            onClick={() => testPipeline('refresh-movies-pipeline')}
+            disabled={testingPipeline === 'refresh-movies-pipeline'}
+            className="w-full"
+            variant="outline"
+          >
+            {testingPipeline === 'refresh-movies-pipeline' ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Testing Daily Refresh Pipeline...
+              </>
+            ) : (
+              <>
+                <RotateCw className="mr-2 h-4 w-4" />
+                Test Daily Refresh Pipeline
+              </>
+            )}
+          </Button>
+          <Button
+            onClick={() => testPipeline('import-new-movies-pipeline')}
+            disabled={testingPipeline === 'import-new-movies-pipeline'}
+            className="w-full"
+            variant="outline"
+          >
+            {testingPipeline === 'import-new-movies-pipeline' ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Testing New Movies Pipeline...
+              </>
+            ) : (
+              <>
+                <Upload className="mr-2 h-4 w-4" />
+                Test New Movies Pipeline
+              </>
+            )}
+          </Button>
         </CardContent>
       </Card>
 
