@@ -1,3 +1,22 @@
+/**
+ * ENRICH WITH OMDB PIPELINE
+ * 
+ * AUTHENTICATION FLOW:
+ * - Automated (cron): Uses service role key → finds first admin user → runs as that admin
+ * - Manual (UI): Uses user JWT → verifies admin role → runs as that user
+ * 
+ * REQUIREMENTS:
+ * - At least one user with 'admin' role must exist in user_roles table
+ * - OMDb API key configured
+ * - Respects OMDb daily API limit (1000 requests)
+ * 
+ * FUNCTIONALITY:
+ * - Enriches movies missing OMDb data
+ * - Fetches: IMDb rating, votes, Metascore, Box Office, Awards
+ * - Batch size: 50 movies (automated) or custom (manual)
+ * - Tracks API usage to prevent exceeding limits
+ * - Updates last_omdb_fetch timestamp
+ */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -17,12 +36,20 @@ serve(async (req) => {
     || 'unknown';
   const userAgent = req.headers.get('user-agent') || 'unknown';
 
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('✨ OMDB ENRICHMENT PIPELINE STARTED');
+  console.log(`📍 Client: ${clientIP}`);
+  console.log(`🌐 User Agent: ${userAgent}`);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
   try {
     // Parse and validate input parameters
     const body = await req.json();
     const batchSize = typeof body.batchSize === 'number' && body.batchSize >= 1 && body.batchSize <= 100 ? body.batchSize : 50;
     const forceRefresh = typeof body.forceRefresh === 'boolean' ? body.forceRefresh : false;
     const trigger_source = body.trigger_source === 'automated' ? 'automated' : 'manual';
+    
+    console.log(`📊 Parameters: batchSize=${batchSize}, forceRefresh=${forceRefresh}, trigger=${trigger_source}`);
     
     const OMDB_API_KEY = Deno.env.get("OMDB_API_KEY");
 
@@ -35,15 +62,18 @@ serve(async (req) => {
     );
 
     // Get authenticated user
+    console.log('🔐 Authenticating user...');
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     
     if (userError || !user) {
+      console.error('❌ Authentication failed:', userError?.message);
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    console.log(`🔍 Verifying admin role for user: ${user.id}`);
     // Verify admin role
     const { data: roleData } = await supabaseClient
       .from('user_roles')
@@ -53,11 +83,14 @@ serve(async (req) => {
       .single();
 
     if (!roleData) {
+      console.error('❌ User does not have admin role');
       return new Response(
         JSON.stringify({ error: 'Admin access required' }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    
+    console.log(`✅ Admin verified: ${user.email}`);
 
     if (!OMDB_API_KEY) {
       return new Response(

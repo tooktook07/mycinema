@@ -1,3 +1,24 @@
+/**
+ * IMPORT NEW MOVIES PIPELINE
+ * 
+ * AUTHENTICATION FLOW:
+ * - Automated (cron): Uses service role key → finds first admin user → runs as that admin
+ * - Manual (UI): Uses user JWT → verifies admin role → runs as that user
+ * 
+ * REQUIREMENTS:
+ * - At least one user with 'admin' role must exist in user_roles table
+ * - Service role key must be valid
+ * - TMDB API key configured
+ * - OMDb API key configured
+ * 
+ * FUNCTIONALITY:
+ * - Imports movies from last 60 days (5 pages from TMDB)
+ * - Applies quality filter: 6+ stars AND 1000+ votes
+ * - Fetches OMDb data before inserting
+ * - Downloads posters immediately
+ * - Tracks processed movies to avoid duplicates
+ * - Removes existing movies below quality threshold
+ */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
@@ -10,6 +31,17 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0].trim() 
+    || req.headers.get('x-real-ip')
+    || 'unknown';
+  const userAgent = req.headers.get('user-agent') || 'unknown';
+
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('✨ NEW MOVIES IMPORT PIPELINE STARTED');
+  console.log(`📍 Client: ${clientIP}`);
+  console.log(`🌐 User Agent: ${userAgent}`);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -37,7 +69,7 @@ serve(async (req) => {
 
     if (isServiceRole) {
       // Automated call - use first admin user
-      console.log('🤖 Automated execution via service role');
+      console.log('🤖 AUTOMATED EXECUTION via service role key');
       const { data: adminUser, error: adminError } = await supabase
         .from('user_roles')
         .select('user_id')
@@ -46,23 +78,30 @@ serve(async (req) => {
         .single();
       
       if (adminError || !adminUser) {
+        console.error('❌ CRITICAL: No admin user found for automated execution');
+        console.error('This means automated jobs cannot run!');
+        console.error('Please ensure at least one user has the admin role in user_roles table');
         return new Response(JSON.stringify({ error: 'No admin user found for automated execution' }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+      console.log(`✅ Using admin user: ${adminUser.user_id}`);
       userId = adminUser.user_id;
     } else {
       // Manual call - verify user is admin
+      console.log('👤 MANUAL EXECUTION via user JWT');
       const { data: { user }, error: authError } = await supabase.auth.getUser(token);
       
       if (authError || !user) {
+        console.error('❌ Authentication failed:', authError?.message);
         return new Response(JSON.stringify({ error: 'Unauthorized' }), {
           status: 401,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
+      console.log(`🔍 Verifying admin role for user: ${user.id}`);
       const { data: roleData } = await supabase
         .from('user_roles')
         .select('role')
@@ -71,12 +110,14 @@ serve(async (req) => {
         .single();
 
       if (!roleData) {
+        console.error('❌ User does not have admin role');
         return new Response(JSON.stringify({ error: 'Admin access required' }), {
           status: 403,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
       
+      console.log(`✅ Admin verified: ${user.email}`);
       userId = user.id;
     }
 
@@ -472,7 +513,13 @@ serve(async (req) => {
     }
 
   } catch (error) {
-    console.error('Error in import-new-movies-pipeline:', error);
+    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.error('❌ CRITICAL ERROR in import-new-movies-pipeline');
+    console.error('Error:', error);
+    if (error instanceof Error) {
+      console.error('Stack:', error.stack);
+    }
+    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : 'Unknown error',

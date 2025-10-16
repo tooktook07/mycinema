@@ -1,3 +1,21 @@
+/**
+ * STORE POSTERS PIPELINE
+ * 
+ * AUTHENTICATION FLOW:
+ * - Automated (cron): Uses service role key → finds first admin user → runs as that admin
+ * - Manual (UI): Uses user JWT → verifies admin role → runs as that user
+ * 
+ * REQUIREMENTS:
+ * - At least one user with 'admin' role must exist in user_roles table
+ * - Service role key must be valid
+ * - movie-posters storage bucket configured
+ * 
+ * FUNCTIONALITY:
+ * - Downloads missing posters (100 at a time)
+ * - Optimizes poster URLs to w342 size (perfect for display)
+ * - Uploads to Supabase Storage
+ * - Updates local_poster_url in movies table
+ */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
 
 const corsHeaders = {
@@ -15,9 +33,16 @@ Deno.serve(async (req) => {
     || 'unknown';
   const userAgent = req.headers.get('user-agent') || 'unknown';
 
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('🖼️ STORE POSTERS PIPELINE STARTED');
+  console.log(`📍 Client: ${clientIP}`);
+  console.log(`🌐 User Agent: ${userAgent}`);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.error('❌ Missing authorization header');
       throw new Error('Missing authorization header');
     }
 
@@ -26,20 +51,29 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const token = authHeader.replace('Bearer ', '');
+    
+    console.log('🔐 Authenticating user...');
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     
     if (authError || !user) {
+      console.error('❌ Authentication failed:', authError?.message);
       throw new Error('Unauthorized');
     }
 
+    console.log(`🔍 Verifying admin role for user: ${user.id}`);
     const { data: hasAdminRole } = await supabase
       .rpc('has_role', { _user_id: user.id, _role: 'admin' });
 
     if (!hasAdminRole) {
+      console.error('❌ User does not have admin role');
       throw new Error('Admin access required');
     }
 
+    console.log(`✅ Admin verified: ${user.email}`);
+
     const { limit = 100, offset = 0, syncHistoryId, trigger_source = 'manual' } = await req.json();
+    
+    console.log(`📊 Parameters: limit=${limit}, offset=${offset}, trigger=${trigger_source}`);
 
     console.log(`Starting optimized poster download for ${limit} movies, offset ${offset}`);
 
