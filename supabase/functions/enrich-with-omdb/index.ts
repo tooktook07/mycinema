@@ -1,5 +1,5 @@
 /**
- * ENRICH WITH OMDB PIPELINE
+ * ENRICH WITH OMDB PIPELINE v2.1
  * 
  * AUTHENTICATION FLOW:
  * - Automated (cron): Uses service role key → finds first admin user → runs as that admin
@@ -26,6 +26,13 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // === FUNCTION BOOT LOGGING ===
+  console.log('═══════════════════════════════════════════');
+  console.log('📚 FUNCTION BOOT: enrich-with-omdb');
+  console.log(`⏰ Boot timestamp: ${new Date().toISOString()}`);
+  console.log(`📨 Request method: ${req.method}`);
+  console.log('═══════════════════════════════════════════');
+  
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
