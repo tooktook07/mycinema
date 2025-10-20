@@ -19,11 +19,11 @@ Deno.serve(async (req) => {
     // Create admin client
     const supabase = createClient(supabaseUrl, serviceRoleKey);
     
-    // Update system_settings table with the service role key
+    // Update system_settings table with the service role key (wrap in object for proper jsonb storage)
     const { data, error } = await supabase
       .from('system_settings')
       .update({ 
-        value: JSON.stringify(serviceRoleKey),
+        value: { key: serviceRoleKey },
         updated_at: new Date().toISOString()
       })
       .eq('key', 'service_role_key')
