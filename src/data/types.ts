@@ -31,4 +31,7 @@ export interface Movie {
   awards?: string;
   dataSources?: { tmdb: boolean; omdb: boolean };
   lastOmdbFetch?: string;
+  // Timestamps
+  created_at?: string;
+  updated_at?: string;
 }

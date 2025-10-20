@@ -16,6 +16,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -36,7 +42,10 @@ import {
   ChevronRight,
   Database,
   Award,
-  Image as ImageIcon
+  Image as ImageIcon,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -52,6 +61,8 @@ export const MovieManagement = () => {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [sortBy, setSortBy] = useState<'created_at' | 'updated_at' | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   
   const [editMovie, setEditMovie] = useState<Movie | null>(null);
   const [syncMovie, setSyncMovie] = useState<Movie | null>(null);
@@ -76,9 +87,16 @@ export const MovieManagement = () => {
       // First, fetch basic movie data with pagination
       let movieQuery = supabase
         .from('movies')
-        .select('*', { count: 'exact' })
-        .order('title', { ascending: true })
-        .range(from, to);
+        .select('*', { count: 'exact' });
+
+      // Apply sorting
+      if (sortBy) {
+        movieQuery = movieQuery.order(sortBy, { ascending: sortDirection === 'asc' });
+      } else {
+        movieQuery = movieQuery.order('title', { ascending: true });
+      }
+
+      movieQuery = movieQuery.range(from, to);
 
       if (searchQuery) {
         movieQuery = movieQuery.ilike('title', `%${debouncedSearchQuery}%`);
@@ -258,7 +276,7 @@ export const MovieManagement = () => {
 
   useEffect(() => {
     fetchMovies();
-  }, [currentPage, debouncedSearchQuery]);
+  }, [currentPage, debouncedSearchQuery, sortBy, sortDirection]);
 
   useEffect(() => {
     fetchStats();
@@ -294,8 +312,62 @@ export const MovieManagement = () => {
 
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
+  const handleSort = (column: 'created_at' | 'updated_at') => {
+    if (sortBy === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortDirection('desc');
+    }
+    setCurrentPage(1);
+  };
+
+  const getSortIcon = (column: 'created_at' | 'updated_at') => {
+    if (sortBy !== column) return <ArrowUpDown className="h-3 w-3 ml-1" />;
+    return sortDirection === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />;
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getPipelineInfo = (movie: any, type: 'created' | 'updated') => {
+    const date = type === 'created' ? movie.created_at : movie.updated_at;
+    if (!date) return 'Unknown';
+
+    const info = [`${type === 'created' ? 'Created' : 'Updated'}: ${formatDate(date)}`];
+    
+    // Check data sources to infer pipeline
+    if (movie.data_sources?.omdb && movie.last_omdb_fetch) {
+      const omdbDate = new Date(movie.last_omdb_fetch);
+      const targetDate = new Date(date);
+      const diffMs = Math.abs(omdbDate.getTime() - targetDate.getTime());
+      if (diffMs < 60000) { // Within 1 minute
+        info.push('Pipeline: OMDb Enrichment');
+      }
+    }
+    
+    if (movie.local_poster_url) {
+      info.push('Has: Poster Storage');
+    }
+    
+    if (movie.data_sources?.tmdb) {
+      info.push('Source: TMDB Import');
+    }
+
+    return info.join('\n');
+  };
+
   return (
-    <div className="space-y-6">
+    <TooltipProvider>
+      <div className="space-y-6">
       <MovieStatsCard stats={stats} loading={statsLoading} />
 
       <div className="space-y-4">
@@ -333,6 +405,24 @@ export const MovieManagement = () => {
                     <TableHead>Genres</TableHead>
                     <TableHead>Users</TableHead>
                     <TableHead>Sources</TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => handleSort('created_at')}
+                    >
+                      <div className="flex items-center">
+                        Created
+                        {getSortIcon('created_at')}
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => handleSort('updated_at')}
+                    >
+                      <div className="flex items-center">
+                        Updated
+                        {getSortIcon('updated_at')}
+                      </div>
+                    </TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -395,6 +485,30 @@ export const MovieManagement = () => {
                             Poster
                           </Badge>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="text-xs text-muted-foreground cursor-help">
+                              {movie.created_at ? formatDate(movie.created_at).split(',')[0] : 'N/A'}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent className="whitespace-pre-line">
+                            {getPipelineInfo(movie, 'created')}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="text-xs text-muted-foreground cursor-help">
+                              {movie.updated_at ? formatDate(movie.updated_at).split(',')[0] : 'N/A'}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent className="whitespace-pre-line">
+                            {getPipelineInfo(movie, 'updated')}
+                          </TooltipContent>
+                        </Tooltip>
                       </TableCell>
                       <TableCell>
                         <div className="flex justify-end gap-2">
@@ -503,6 +617,7 @@ export const MovieManagement = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 };
