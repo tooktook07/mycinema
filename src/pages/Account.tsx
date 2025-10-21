@@ -85,7 +85,10 @@ const Account = () => {
           </TabsList>
 
           <TabsContent value="dashboard">
-            <SyncHistoryTab onRerunSync={handleRerunSync} />
+            <SyncHistoryTab 
+              onRerunSync={handleRerunSync}
+              onNavigateToSettings={() => setActiveTab('system')}
+            />
           </TabsContent>
 
           <TabsContent value="movies">

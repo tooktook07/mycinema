@@ -31,6 +31,7 @@ interface SyncHistoryRecord {
 
 interface SyncHistoryTabProps {
   onRerunSync: (filters: any) => void;
+  onNavigateToSettings?: () => void;
 }
 
 interface CronJobSchedule {
@@ -41,7 +42,7 @@ interface CronJobSchedule {
   emoji: string;
 }
 
-export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
+export const SyncHistoryTab = ({ onRerunSync, onNavigateToSettings }: SyncHistoryTabProps) => {
   const [syncHistory, setSyncHistory] = useState<SyncHistoryRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +53,11 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
     totalManual: number;
     automatedSuccessRate: number;
   }>({ totalAutomated: 0, totalManual: 0, automatedSuccessRate: 0 });
+  const [lastAutomatedRun, setLastAutomatedRun] = useState<{
+    timestamp: string | null;
+    hoursAgo: number | null;
+    status: 'healthy' | 'warning' | 'critical';
+  }>({ timestamp: null, hoursAgo: null, status: 'critical' });
   const [movieStats, setMovieStats] = useState<{
     totalMovies: number;
     moviesWithPosters: number;
@@ -197,7 +203,7 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
 
       const { data, error } = await supabase
         .from("sync_history")
-        .select("trigger_source, status")
+        .select("trigger_source, status, created_at")
         .gte("created_at", sevenDaysAgo.toISOString());
 
       if (error) throw error;
@@ -205,6 +211,25 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
       const automated = data?.filter(s => s.trigger_source === 'automated') || [];
       const manual = data?.filter(s => s.trigger_source === 'manual') || [];
       const automatedSuccess = automated.filter(s => s.status === 'completed').length;
+
+      // Calculate last automated run status
+      const lastAutomated = automated
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+
+      const hoursAgo = lastAutomated 
+        ? Math.floor((Date.now() - new Date(lastAutomated.created_at).getTime()) / (1000 * 60 * 60))
+        : null;
+
+      const status = !lastAutomated ? 'critical' 
+        : hoursAgo! > 48 ? 'critical'
+        : hoursAgo! > 24 ? 'warning'
+        : 'healthy';
+
+      setLastAutomatedRun({ 
+        timestamp: lastAutomated?.created_at || null, 
+        hoursAgo, 
+        status 
+      });
 
       setAutomationStats({
         totalAutomated: automated.length,
@@ -481,6 +506,100 @@ export const SyncHistoryTab = ({ onRerunSync }: SyncHistoryTabProps) => {
 
   return (
     <div className="space-y-6">
+      {/* Automation Health Alert */}
+      <Card className={`border-2 ${
+        lastAutomatedRun.status === 'critical' ? 'border-destructive bg-destructive/5' :
+        lastAutomatedRun.status === 'warning' ? 'border-yellow-500 bg-yellow-500/5' :
+        'border-green-500 bg-green-500/5'
+      }`}>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5" />
+            Automation Pipeline Health
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {lastAutomatedRun.timestamp ? (
+            <>
+              <div className="flex items-center gap-3">
+                {lastAutomatedRun.status === 'healthy' ? (
+                  <CheckCircle2 className="h-6 w-6 text-green-500 flex-shrink-0" />
+                ) : lastAutomatedRun.status === 'warning' ? (
+                  <AlertTriangle className="h-6 w-6 text-yellow-500 flex-shrink-0" />
+                ) : (
+                  <XCircle className="h-6 w-6 text-destructive flex-shrink-0" />
+                )}
+                <div className="flex-1">
+                  <p className="font-semibold text-base">
+                    {lastAutomatedRun.status === 'healthy' ? 'Healthy' :
+                     lastAutomatedRun.status === 'warning' ? 'Warning' : 'Critical Issue'}
+                  </p>
+                  <p className="text-sm">
+                    Last automated run: <span className="font-medium">{lastAutomatedRun.hoursAgo}h ago</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {format(new Date(lastAutomatedRun.timestamp), 'PPpp')}
+                  </p>
+                </div>
+              </div>
+              
+              {lastAutomatedRun.status !== 'healthy' && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="flex items-center justify-between gap-4">
+                    <span>
+                      Automated pipelines may be stuck! Last run was {lastAutomatedRun.hoursAgo}h ago.
+                      Expected runs every 24 hours.
+                    </span>
+                    {onNavigateToSettings && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={onNavigateToSettings}
+                        className="flex-shrink-0"
+                      >
+                        Fix Now →
+                      </Button>
+                    )}
+                  </AlertDescription>
+                </Alert>
+              )}
+            </>
+          ) : (
+            <Alert variant="destructive">
+              <XCircle className="h-4 w-4" />
+              <AlertDescription className="flex items-center justify-between gap-4">
+                <span>
+                  No automated runs detected! Pipelines are not working.
+                </span>
+                {onNavigateToSettings && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={onNavigateToSettings}
+                    className="flex-shrink-0"
+                  >
+                    Fix Now →
+                  </Button>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          <div className="pt-3 border-t">
+            <p className="text-sm font-medium mb-2 flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              Next scheduled run:
+            </p>
+            <div className="flex items-center gap-2 text-sm">
+              <span>{getNextCronRuns()[0]?.emoji}</span>
+              <span className="font-medium">{getNextCronRuns()[0]?.name}</span>
+              <span className="text-muted-foreground">{getTimeUntil(getNextCronRuns()[0]?.nextRun)}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Manual Pipeline Controls */}
       <Card className="border-primary/50 bg-primary/5">
         <CardHeader>
