@@ -500,7 +500,7 @@ export type Database = {
         }[]
       }
       get_automation_health: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           avg_duration_seconds: number
           runs: number
@@ -511,12 +511,9 @@ export type Database = {
           total_updated: number
         }[]
       }
-      get_current_sync_day: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
+      get_current_sync_day: { Args: never; Returns: number }
       get_decade_stats: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           count: number
           decade: number
@@ -527,28 +524,19 @@ export type Database = {
         Returns: number
       }
       get_genre_stats: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           count: number
           genre: string
         }[]
       }
-      get_service_role_key: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      get_service_role_key: { Args: never; Returns: string }
       get_user_activity_summary: {
         Args: { p_days?: number; p_user_id: string }
         Returns: Json
       }
-      get_user_stats: {
-        Args: { p_user_id: string }
-        Returns: Json
-      }
-      get_user_watchlist_count: {
-        Args: { p_user_id: string }
-        Returns: number
-      }
+      get_user_stats: { Args: { p_user_id: string }; Returns: Json }
+      get_user_watchlist_count: { Args: { p_user_id: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -556,14 +544,8 @@ export type Database = {
         }
         Returns: boolean
       }
-      increment_omdb_usage: {
-        Args: { usage_date: string }
-        Returns: undefined
-      }
-      update_sync_tracker_cycle: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      increment_omdb_usage: { Args: { usage_date: string }; Returns: undefined }
+      update_sync_tracker_cycle: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "user"
