@@ -27,6 +27,7 @@ const DiscoverMode = () => {
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
   const [showMilestone, setShowMilestone] = useState(true);
+  const [milestoneDismissed, setMilestoneDismissed] = useState(false);
 
   const recentStats = getRecentlyShownStats();
 
@@ -144,6 +145,12 @@ const DiscoverMode = () => {
       }
 
       markMoviesAsShown([currentMovie.id]);
+      
+      // Reset milestone display after rating to show it again
+      if (totalRated >= 10 && milestoneDismissed) {
+        setMilestoneDismissed(false);
+      }
+      
       await loadNextMovie();
     } catch (error) {
       console.error("Error saving rating:", error);
@@ -151,6 +158,13 @@ const DiscoverMode = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleDismissMilestone = async () => {
+    setMilestoneDismissed(true);
+    setShowMilestone(false);
+    setNavigationDirection('forward');
+    // Don't load next movie, just hide the milestone and show current movie
   };
 
   const handleSkip = async () => {
@@ -223,6 +237,22 @@ const DiscoverMode = () => {
         <div className="absolute inset-0 flex items-center justify-center bg-black">
           <Loader2 className="h-12 w-12 animate-spin text-white" />
         </div>
+      ) : totalRated > 10 && showMilestone && !milestoneDismissed ? (
+        <AnimatePresence mode="wait">
+          <motion.div
+            key="milestone"
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "-100%" }}
+            transition={{ duration: 0.4, ease: "easeInOut" }}
+            className="absolute inset-0"
+          >
+            <DiscoverMilestoneCard
+              totalRated={totalRated}
+              onDismiss={handleDismissMilestone}
+            />
+          </motion.div>
+        </AnimatePresence>
       ) : currentMovie ? (
         <>
           <AnimatePresence mode="wait">
@@ -243,13 +273,6 @@ const DiscoverMode = () => {
               />
             </motion.div>
           </AnimatePresence>
-
-          {showMilestone && (
-            <DiscoverMilestoneCard
-              totalRated={totalRated}
-              onDismiss={() => setShowMilestone(false)}
-            />
-          )}
 
           <div className="absolute bottom-0 left-0 right-0 z-50 bg-gradient-to-t from-black/95 via-black/80 to-transparent pt-8 pb-6 px-4 safe-area-bottom">
             <div className="grid grid-cols-3 gap-3 mb-3">
