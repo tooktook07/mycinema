@@ -44,6 +44,13 @@ const DiscoverMode = () => {
     loadNextMovie();
   }, [user]);
 
+  // Show milestone when we hit the threshold
+  useEffect(() => {
+    if (shouldShowMilestone()) {
+      setShowMilestone(true);
+    }
+  }, [totalRated]);
+
   const loadTotalRatings = async () => {
     if (!user) {
       setTotalRated(getGuestRatedCount());
