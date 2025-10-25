@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { MovieDiscoverCard } from "@/components/MovieDiscoverCard";
 import { MovieWatchlist } from "@/components/MovieWatchlist";
+import { DiscoverMilestoneCard } from "@/components/DiscoverMilestoneCard";
 import { getNextRecommendation, RecommendationMovie } from "@/lib/recommendationEngine";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -25,6 +26,7 @@ const DiscoverMode = () => {
   const [skippedIds, setSkippedIds] = useState<string[]>([]);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
+  const [showMilestone, setShowMilestone] = useState(true);
 
   const recentStats = getRecentlyShownStats();
 
@@ -241,6 +243,13 @@ const DiscoverMode = () => {
               />
             </motion.div>
           </AnimatePresence>
+
+          {showMilestone && (
+            <DiscoverMilestoneCard
+              totalRated={totalRated}
+              onDismiss={() => setShowMilestone(false)}
+            />
+          )}
 
           <div className="absolute bottom-0 left-0 right-0 z-50 bg-gradient-to-t from-black/95 via-black/80 to-transparent pt-8 pb-6 px-4 safe-area-bottom">
             <div className="grid grid-cols-3 gap-3 mb-3">
