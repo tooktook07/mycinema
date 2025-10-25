@@ -112,33 +112,251 @@ export async function getBatchRecommendations(
   excludeIds: string[] = [],
   guestRatings?: { movieId: string; rating: number }[],
 ): Promise<RecommendationMovie[]> {
-  // If guest user, use guest-specific recommendation
+  // ============= PHASE 1: GUEST USER BATCH OPTIMIZATION =============
   if (!userId && guestRatings) {
-    const results: RecommendationMovie[] = [];
-    const currentExcluded = [...excludeIds];
+    const meaningfulRatings = guestRatings.filter(
+      r => r.rating === 1 || r.rating === 5 || r.rating === 10
+    );
     
-    for (let i = 0; i < count; i++) {
-      const rec = await getNextRecommendationForGuest(guestRatings, currentExcluded);
-      if (!rec) break;
-      results.push(rec);
-      currentExcluded.push(rec.id);
+    if (meaningfulRatings.length >= MIN_RATINGS_FOR_PERSONALIZATION) {
+      // Calculate preferences ONCE
+      const weightedRatings = meaningfulRatings.map(rating => ({
+        movieId: rating.movieId,
+        weight: rating.rating === 10 ? RATING_WEIGHTS.LOVE :
+                rating.rating === 5 ? RATING_WEIGHTS.LIKE :
+                RATING_WEIGHTS.NOT_INTERESTED
+      }));
+      
+      // Fetch rated movies data ONCE
+      const { data: ratedMoviesData } = await supabase
+        .from("movies")
+        .select("id, genres, director, actors, keywords, original_language")
+        .in("id", weightedRatings.map(r => r.movieId));
+      
+      if (!ratedMoviesData || ratedMoviesData.length === 0) {
+        return getFallbackBatchRecommendations(count, excludeIds);
+      }
+      
+      // Build preference profiles ONCE
+      const genrePreferences: Record<string, number> = {};
+      const directorPreferences: Record<string, number> = {};
+      const actorPreferences: Record<string, number> = {};
+      const keywordPreferences: Record<string, number> = {};
+      const languagePreferences: Record<string, number> = {};
+      
+      ratedMoviesData.forEach((movie) => {
+        const weightData = weightedRatings.find((r) => r.movieId === movie.id);
+        if (!weightData) return;
+        
+        const weight = weightData.weight;
+        
+        (movie.genres || []).forEach((genre: string) => {
+          genrePreferences[genre] = (genrePreferences[genre] || 0) + weight;
+        });
+        
+        if (movie.director) {
+          directorPreferences[movie.director] = (directorPreferences[movie.director] || 0) + weight;
+        }
+        
+        if (movie.actors) {
+          movie.actors.split(",").forEach((actor: string) => {
+            const cleanActor = actor.trim();
+            if (cleanActor) {
+              actorPreferences[cleanActor] = (actorPreferences[cleanActor] || 0) + weight;
+            }
+          });
+        }
+        
+        (movie.keywords || []).forEach((keyword: string) => {
+          keywordPreferences[keyword] = (keywordPreferences[keyword] || 0) + weight;
+        });
+        
+        if (movie.original_language) {
+          languagePreferences[movie.original_language] = (languagePreferences[movie.original_language] || 0) + weight;
+        }
+      });
+      
+      // Use CACHED TF-IDF
+      const genreIDF = await getGenreIDF();
+      
+      // Create rating map for penalties
+      const ratingMap = new Map<string, number>();
+      guestRatings.forEach((r) => {
+        ratingMap.set(r.movieId, r.rating);
+      });
+      
+      // Fetch candidates ONCE (larger pool for batch)
+      let query = supabase
+        .from("movies")
+        .select(
+          "id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes, local_poster_url",
+        )
+        .or(
+          `imdb_rating.gte.${CANDIDATE_RATING_THRESHOLD},and(imdb_rating.is.null,rating.gte.${CANDIDATE_RATING_THRESHOLD})`,
+        )
+        .not("rating", "is", null);
+      
+      if (excludeIds.length > 0) {
+        query = query.not("id", "in", `(${excludeIds.join(",")})`);
+      }
+      
+      const { data: candidateMovies } = await query.limit(600);
+      
+      if (!candidateMovies || candidateMovies.length === 0) {
+        return getFallbackBatchRecommendations(count, excludeIds);
+      }
+      
+      // Calculate max weights for normalization
+      const maxGenreWeight = Math.max(...Object.values(genrePreferences).map(Math.abs), 1);
+      const maxDirectorWeight = Math.max(...Object.values(directorPreferences).map(Math.abs), 1);
+      const maxActorWeight = Math.max(...Object.values(actorPreferences).map(Math.abs), 1);
+      const maxKeywordWeight = Math.max(...Object.values(keywordPreferences).map(Math.abs), 1);
+      const maxLangWeight = Math.max(...Object.values(languagePreferences).map(Math.abs), 1);
+      
+      // Score all candidates ONCE
+      const moviesWithScores = candidateMovies.map((movie) => {
+        let score = 0;
+        
+        // TF-IDF Genre scoring
+        let genreScore = 0;
+        (movie.genres || []).forEach((genre: string) => {
+          const preference = genrePreferences[genre];
+          if (preference) {
+            const tf = preference;
+            const idf = genreIDF[genre] || 0;
+            genreScore += tf * idf;
+          }
+        });
+        const normalizedGenreScore = maxGenreWeight > 0 ? genreScore / maxGenreWeight : 0;
+        score += normalizedGenreScore * WEIGHTS.GENRE;
+        
+        // Director scoring
+        if (movie.director && directorPreferences[movie.director]) {
+          const directorWeight = directorPreferences[movie.director];
+          score += (directorWeight / maxDirectorWeight) * WEIGHTS.DIRECTOR;
+        }
+        
+        // Actor scoring
+        let actorScore = 0;
+        if (movie.actors) {
+          movie.actors.split(",").forEach((actor: string) => {
+            const cleanActor = actor.trim();
+            const preference = actorPreferences[cleanActor];
+            if (preference) {
+              actorScore += preference;
+            }
+          });
+        }
+        if (maxActorWeight > 0) {
+          score += (actorScore / maxActorWeight) * WEIGHTS.ACTOR;
+        }
+        
+        // Keyword scoring
+        let keywordScore = 0;
+        (movie.keywords || []).forEach((keyword: string) => {
+          const preference = keywordPreferences[keyword];
+          if (preference) {
+            keywordScore += preference;
+          }
+        });
+        if (maxKeywordWeight > 0) {
+          score += (keywordScore / maxKeywordWeight) * WEIGHTS.KEYWORD;
+        }
+        
+        // Language scoring
+        if (movie.original_language && languagePreferences[movie.original_language]) {
+          const langWeight = languagePreferences[movie.original_language];
+          score += (langWeight / maxLangWeight) * WEIGHTS.LANGUAGE;
+        }
+        
+        const popularityBoost = Math.min((movie.vote_count || 0) / 10000, 0.1);
+        score += popularityBoost;
+        
+        // Apply penalty system
+        let penaltyMultiplier = 1.0;
+        (movie.genres || []).forEach((genre: string) => {
+          const preference = genrePreferences[genre];
+          if (preference) {
+            if (preference <= -4.0) {
+              penaltyMultiplier = Math.min(penaltyMultiplier, 0.2);
+            } else if (preference <= -2.0) {
+              penaltyMultiplier = Math.min(penaltyMultiplier, 0.5);
+            } else if (preference < 0) {
+              penaltyMultiplier = Math.min(penaltyMultiplier, 0.7);
+            }
+          }
+        });
+        
+        if (ratingMap.has(movie.id)) {
+          const userRating = ratingMap.get(movie.id);
+          if (userRating === 10) {
+            penaltyMultiplier = Math.min(penaltyMultiplier, 0.2);
+          } else if (userRating === 5) {
+            penaltyMultiplier = Math.min(penaltyMultiplier, 0.4);
+          } else if (userRating === 1) {
+            penaltyMultiplier = Math.min(penaltyMultiplier, 0.15);
+          }
+        }
+        
+        score *= penaltyMultiplier;
+        
+        return { ...movie, similarityScore: score };
+      });
+      
+      // Get top matches
+      const topMatches = moviesWithScores
+        .sort((a, b) => b.similarityScore - a.similarityScore)
+        .slice(0, Math.min(count * 2, 40));
+      
+      if (!topMatches || topMatches.length === 0) {
+        return getFallbackBatchRecommendations(count, excludeIds);
+      }
+      
+      // Randomly select from top matches
+      const results: RecommendationMovie[] = [];
+      const selectedIds = new Set<string>();
+      
+      while (results.length < count && topMatches.length > 0) {
+        const randomIndex = Math.floor(Math.random() * topMatches.length);
+        const selected = topMatches.splice(randomIndex, 1)[0];
+        
+        if (!selectedIds.has(selected.id)) {
+          selectedIds.add(selected.id);
+          results.push({
+            id: selected.id,
+            title: selected.title,
+            year: selected.year,
+            poster: selected.poster || "",
+            local_poster_url: selected.local_poster_url,
+            rating: selected.rating || 0,
+            imdbRating: selected.imdb_rating,
+            imdbVotes: selected.imdb_votes,
+            plot: selected.plot || "",
+            imdbId: selected.imdb_id,
+            voteCount: selected.vote_count,
+            originalLanguage: selected.original_language,
+            genre: selected.genres || [],
+            actors: selected.actors || "",
+            director: selected.director || "",
+            runtime: selected.runtime || "",
+            writing: selected.writing || "",
+            sound: selected.sound || "",
+            keywords: selected.keywords || [],
+          });
+        }
+      }
+      
+      markMoviesAsShown(results.map(r => r.id));
+      return results;
+    } else {
+      // Guest without enough ratings - use fallback
+      return getFallbackBatchRecommendations(count, excludeIds);
     }
-    
-    return results;
   }
 
+  // ============= PHASE 2: FALLBACK BATCH OPTIMIZATION =============
   if (!userId) {
-    const results: RecommendationMovie[] = [];
-    const currentExcluded = [...excludeIds];
-    
-    for (let i = 0; i < count; i++) {
-      const rec = await getFallbackRecommendation(currentExcluded);
-      if (!rec) break;
-      results.push(rec);
-      currentExcluded.push(rec.id);
-    }
-    
-    return results;
+    return getFallbackBatchRecommendations(count, excludeIds);
   }
 
   try {
@@ -226,17 +444,7 @@ export async function getBatchRecommendations(
           );
 
         if (!ratedMoviesData || ratedMoviesData.length === 0) {
-          const results: RecommendationMovie[] = [];
-          const currentExcluded = [...allExcludedIds];
-          
-          for (let i = 0; i < count; i++) {
-            const rec = await getFallbackRecommendation(currentExcluded);
-            if (!rec) break;
-            results.push(rec);
-            currentExcluded.push(rec.id);
-          }
-          
-          return results;
+          return getFallbackBatchRecommendations(count, allExcludedIds);
         }
 
         // Build weighted preference profiles
@@ -473,17 +681,7 @@ export async function getBatchRecommendations(
       return results;
     } else {
       // Fallback for users with few ratings
-      const results: RecommendationMovie[] = [];
-      const currentExcluded = [...allExcludedIds];
-      
-      for (let i = 0; i < count; i++) {
-        const rec = await getFallbackRecommendation(currentExcluded);
-        if (!rec) break;
-        results.push(rec);
-        currentExcluded.push(rec.id);
-      }
-      
-      return results;
+      return getFallbackBatchRecommendations(count, allExcludedIds);
     }
   } catch (error) {
     console.error("Error getting batch recommendations:", error);
@@ -821,6 +1019,62 @@ export async function getNextRecommendation(
   }
 }
 
+// ============= PHASE 2: FALLBACK BATCH RECOMMENDATIONS =============
+async function getFallbackBatchRecommendations(count: number, excludeIds: string[]): Promise<RecommendationMovie[]> {
+  // Get recently shown movies to exclude
+  const recentlyShownIds = getRecentlyShownMovieIds();
+  const allExcludedIds = [...excludeIds, ...recentlyShownIds];
+
+  // Fetch larger pool ONCE
+  let query = supabase
+    .from("movies")
+    .select(
+      "id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes, local_poster_url",
+    )
+    .or(`imdb_rating.gte.7.0,and(imdb_rating.is.null,rating.gte.7.0)`)
+    .not("rating", "is", null)
+    .order("imdb_rating", { ascending: false, nullsFirst: false })
+    .order("vote_count", { ascending: false });
+
+  if (allExcludedIds.length > 0) {
+    query = query.not("id", "in", `(${allExcludedIds.join(",")})`);
+  }
+
+  const { data: movies } = await query.limit(Math.min(count * 5, 100));
+
+  if (!movies || movies.length === 0) return [];
+
+  // Shuffle and return requested count
+  const shuffled = [...movies].sort(() => Math.random() - 0.5);
+  const selectedMovies = shuffled.slice(0, count);
+  
+  // Mark as shown
+  markMoviesAsShown(selectedMovies.map(m => m.id));
+  
+  // Map to recommendation format
+  return selectedMovies.map((movie) => ({
+    id: movie.id,
+    title: movie.title,
+    year: movie.year,
+    poster: movie.poster || "",
+    local_poster_url: movie.local_poster_url,
+    rating: movie.rating || 0,
+    imdbRating: movie.imdb_rating,
+    imdbVotes: movie.imdb_votes,
+    plot: movie.plot || "",
+    imdbId: movie.imdb_id,
+    voteCount: movie.vote_count,
+    originalLanguage: movie.original_language,
+    genre: movie.genres || [],
+    actors: movie.actors || "",
+    director: movie.director || "",
+    runtime: movie.runtime || "",
+    writing: movie.writing || "",
+    sound: movie.sound || "",
+    keywords: movie.keywords || [],
+  }));
+}
+
 async function getFallbackRecommendation(excludeIds: string[]): Promise<RecommendationMovie | null> {
   // Get recently shown movies to exclude
   const recentlyShownIds = getRecentlyShownMovieIds();
@@ -1129,23 +1383,8 @@ async function getNextRecommendationForGuest(
         }
       });
 
-      // Phase 2: Calculate TF-IDF for genres
-      const { data: allMoviesGenres } = await supabase.from("movies").select("genres").not("genres", "is", null);
-
-      const totalMovies = allMoviesGenres?.length || 1;
-      const genreDocumentCounts: Record<string, number> = {};
-
-      allMoviesGenres?.forEach((movie) => {
-        const uniqueGenres = new Set(movie.genres || []);
-        uniqueGenres.forEach((genre) => {
-          genreDocumentCounts[genre] = (genreDocumentCounts[genre] || 0) + 1;
-        });
-      });
-
-      const genreIDF: Record<string, number> = {};
-      Object.keys(genreDocumentCounts).forEach((genre) => {
-        genreIDF[genre] = Math.log(totalMovies / genreDocumentCounts[genre]);
-      });
+      // Use CACHED TF-IDF
+      const genreIDF = await getGenreIDF();
 
       // Fetch candidate movies (prioritize IMDb ratings)
       let query = supabase
