@@ -61,7 +61,7 @@ export const MovieManagement = () => {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [sortBy, setSortBy] = useState<'created_at' | 'updated_at' | null>(null);
+  const [sortBy, setSortBy] = useState<'created_at' | 'updated_at' | null>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   
   const [editMovie, setEditMovie] = useState<Movie | null>(null);
