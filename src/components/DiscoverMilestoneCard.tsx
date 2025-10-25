@@ -38,14 +38,14 @@ export const DiscoverMilestoneCard = ({ totalRated, onDismiss }: DiscoverMilesto
           <X className="h-4 w-4" />
         </Button>
 
-        <div className="bg-gradient-to-br from-primary via-primary/90 to-primary/80 rounded-2xl p-8 text-center space-y-6">
+        <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-black rounded-2xl p-8 text-center space-y-6 border border-white/10">
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="mx-auto w-20 h-20 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center"
+            className="mx-auto w-20 h-20 rounded-full bg-primary/20 backdrop-blur-md flex items-center justify-center"
           >
-            <Sparkles className="h-10 w-10 text-white" />
+            <Sparkles className="h-10 w-10 text-primary" />
           </motion.div>
 
           <div className="space-y-2">
@@ -71,13 +71,13 @@ export const DiscoverMilestoneCard = ({ totalRated, onDismiss }: DiscoverMilesto
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="bg-white/10 backdrop-blur-md rounded-xl p-4 space-y-2"
+            className="bg-primary/10 backdrop-blur-md rounded-xl p-4 space-y-2 border border-primary/20"
           >
             <div className="flex items-center justify-center gap-2 text-white">
-              <TrendingUp className="h-5 w-5" />
+              <TrendingUp className="h-5 w-5 text-primary" />
               <p className="text-sm font-medium">Your personalized recommendations are ready!</p>
             </div>
-            <p className="text-white/80 text-xs">
+            <p className="text-white/70 text-xs">
               The more you rate, the better your recommendations become
             </p>
           </motion.div>
@@ -90,7 +90,6 @@ export const DiscoverMilestoneCard = ({ totalRated, onDismiss }: DiscoverMilesto
           >
             <Button
               size="lg"
-              variant="secondary"
               onClick={() => navigate("/")}
               className="w-full text-base font-semibold"
             >
@@ -99,9 +98,9 @@ export const DiscoverMilestoneCard = ({ totalRated, onDismiss }: DiscoverMilesto
             </Button>
             <Button
               size="lg"
-              variant="ghost"
+              variant="outline"
               onClick={onDismiss}
-              className="w-full text-white hover:bg-white/20 text-base"
+              className="w-full text-white hover:bg-white/10 border-white/20 text-base"
             >
               Continue Rating
             </Button>
