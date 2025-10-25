@@ -18,7 +18,7 @@ export const DiscoverMilestoneCard = ({ totalRated, onDismiss }: DiscoverMilesto
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-6"
+      className="absolute inset-0 z-50 flex items-center justify-center bg-black p-6"
       onClick={onDismiss}
     >
       <motion.div
@@ -26,19 +26,19 @@ export const DiscoverMilestoneCard = ({ totalRated, onDismiss }: DiscoverMilesto
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
         transition={{ delay: 0.1 }}
-        className="relative max-w-md w-full"
+        className="relative w-full h-full flex items-center justify-center"
         onClick={(e) => e.stopPropagation()}
       >
         <Button
           variant="ghost"
           size="icon"
           onClick={onDismiss}
-          className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-white/10 text-white hover:bg-white/20 z-10"
+          className="absolute top-4 right-4 h-10 w-10 rounded-full bg-white/10 text-white hover:bg-white/20 z-10"
         >
-          <X className="h-4 w-4" />
+          <X className="h-5 w-5" />
         </Button>
 
-        <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-black rounded-2xl p-8 text-center space-y-6 border border-white/10">
+        <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-black w-full h-full flex flex-col items-center justify-center text-center space-y-6 p-8">
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -71,7 +71,7 @@ export const DiscoverMilestoneCard = ({ totalRated, onDismiss }: DiscoverMilesto
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="bg-primary/10 backdrop-blur-md rounded-xl p-4 space-y-2 border border-primary/20"
+            className="bg-primary/10 backdrop-blur-md rounded-xl p-4 space-y-2 border border-primary/20 max-w-md w-full"
           >
             <div className="flex items-center justify-center gap-2 text-white">
               <TrendingUp className="h-5 w-5 text-primary" />
@@ -86,7 +86,7 @@ export const DiscoverMilestoneCard = ({ totalRated, onDismiss }: DiscoverMilesto
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="flex flex-col gap-3 pt-2"
+            className="flex flex-col gap-3 pt-2 max-w-md w-full"
           >
             <Button
               size="lg"
