@@ -74,7 +74,6 @@ export const DiscoverMilestoneCard = ({ totalRated, onDismiss }: DiscoverMilesto
             className="bg-primary/10 backdrop-blur-md rounded-xl p-4 space-y-2 border border-primary/20 max-w-md w-full"
           >
             <div className="flex items-center justify-center gap-2 text-white">
-              <TrendingUp className="h-5 w-5 text-primary" />
               <p className="text-sm font-medium">Your personalized recommendations are ready!</p>
             </div>
             <p className="text-white/70 text-xs">
