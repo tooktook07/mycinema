@@ -34,7 +34,7 @@ import {
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 import { getGuestRatedCount, getGuestRatings } from "@/lib/guestRatings";
-import { getNextRecommendation } from "@/lib/recommendationEngine";
+import { getBatchRecommendations } from "@/lib/recommendationEngine";
 interface Stats {
   totalMovies: number;
   avgMovieRating: number;
@@ -246,48 +246,38 @@ const Index = () => {
       const recentlyShownIds = getRecentlyShownMovieIds();
       const allExcludedIds = [...excludeIds, ...recentlyShownIds];
 
-      // Fetch recommendations using the Advanced Recommendation Engine
-      const newRecommendations: Recommendation[] = [];
-      const fetchedIds = new Set<string>(allExcludedIds);
-
       // Get guest ratings if user is not logged in
       const guestRatings = user ? undefined : getGuestRatings();
 
-      // Fetch 20 recommendations using the advanced engine
-      for (let i = 0; i < RECOMMENDATIONS_COUNT; i++) {
-        const movie = await getNextRecommendation(
-          user?.id || null,
-          Array.from(fetchedIds),
-          guestRatings
-        );
+      // Use batch recommendations for much better performance
+      const results = await getBatchRecommendations(
+        user?.id || null,
+        RECOMMENDATIONS_COUNT,
+        allExcludedIds,
+        guestRatings
+      );
 
-        if (!movie) break; // No more recommendations available
-
-        // Add to fetched IDs to avoid duplicates
-        fetchedIds.add(movie.id);
-
-        // Convert to Recommendation format
-        newRecommendations.push({
-          id: movie.id,
-          title: movie.title,
-          year: movie.year,
-          poster: movie.poster || "",
-          rating: movie.rating || 0,
-          plot: movie.plot || "",
-          imdbId: movie.imdbId,
-          voteCount: movie.voteCount,
-          originalLanguage: movie.originalLanguage,
-          genre: movie.genre || [],
-          actors: movie.actors || "",
-          director: movie.director || "",
-          runtime: movie.runtime || "",
-          writing: movie.writing || "",
-          sound: movie.sound || "",
-          keywords: movie.keywords || [],
-          imdbRating: movie.imdbRating,
-          imdbVotes: movie.imdbVotes,
-        });
-      }
+      // Map to Recommendation type
+      const newRecommendations: Recommendation[] = results.map(rec => ({
+        id: rec.id,
+        title: rec.title,
+        year: rec.year,
+        poster: rec.poster || "",
+        rating: rec.rating || 0,
+        plot: rec.plot || "",
+        imdbId: rec.imdbId,
+        voteCount: rec.voteCount,
+        originalLanguage: rec.originalLanguage,
+        genre: rec.genre || [],
+        actors: rec.actors || "",
+        director: rec.director || "",
+        runtime: rec.runtime || "",
+        writing: rec.writing || "",
+        sound: rec.sound || "",
+        keywords: rec.keywords || [],
+        imdbRating: rec.imdbRating,
+        imdbVotes: rec.imdbVotes,
+      }));
 
       setRecommendations((prev) => (append ? [...prev, ...newRecommendations] : newRecommendations));
       setTotalMoviesViewed((prev) => prev + newRecommendations.length);
@@ -298,11 +288,6 @@ const Index = () => {
         .select("*", { count: "exact", head: true })
         .not("rating", "is", null);
       setTotalAvailableMovies(count || 0);
-
-      // Mark newly shown movies
-      if (newRecommendations.length > 0) {
-        markMoviesAsShown(newRecommendations.map(m => m.id));
-      }
     } catch (error) {
       console.error("Error fetching recommendations:", error);
       setRecommendations([]);
