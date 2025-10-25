@@ -33,7 +33,8 @@ import {
 } from "@/lib/recentlyShownTracker";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
-import { getGuestRatedCount } from "@/lib/guestRatings";
+import { getGuestRatedCount, getGuestRatings } from "@/lib/guestRatings";
+import { getNextRecommendation } from "@/lib/recommendationEngine";
 interface Stats {
   totalMovies: number;
   avgMovieRating: number;
@@ -80,19 +81,7 @@ interface Recommendation {
   imdbVotes?: number;
   metascore?: number;
 }
-const RATING_THRESHOLD = 7.0; // User's liked movies threshold
-const CANDIDATE_RATING_THRESHOLD = 5.0; // Minimum quality for recommendations
 const RECOMMENDATIONS_COUNT = 20;
-const MIN_RATINGS_FOR_PERSONALIZATION = 5; // Minimum ratings needed for similarity algorithm
-
-// Similarity weights
-const WEIGHTS = {
-  GENRE: 0.35,
-  DIRECTOR: 0.2,
-  ACTOR: 0.2,
-  KEYWORD: 0.15,
-  LANGUAGE: 0.1,
-};
 const Index = () => {
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
@@ -255,349 +244,64 @@ const Index = () => {
     try {
       // Get recently shown movies to exclude
       const recentlyShownIds = getRecentlyShownMovieIds();
+      const allExcludedIds = [...excludeIds, ...recentlyShownIds];
 
-      // Fetch user's rated movies if logged in OR guest ratings from localStorage
-      let userLikedMovies: any[] = [];
-      const ratingMap = new Map<string, number>();
-      const watchlistSet = new Set<string>();
+      // Fetch recommendations using the Advanced Recommendation Engine
+      const newRecommendations: Recommendation[] = [];
+      const fetchedIds = new Set<string>(allExcludedIds);
 
-      if (user && user.id !== "dev-user-id") {
-        const { data: userRatings } = await supabase
-          .from("user_ratings")
-          .select("media_id, user_rating, in_watchlist")
-          .eq("user_id", user.id)
-          .eq("media_type", "movie");
+      // Get guest ratings if user is not logged in
+      const guestRatings = user ? undefined : getGuestRatings();
 
-        // Create maps for quick lookup during scoring
-        (userRatings || []).forEach((r) => {
-          if (r.user_rating) {
-            ratingMap.set(r.media_id, r.user_rating);
-          }
-          if (r.in_watchlist) {
-            watchlistSet.add(r.media_id);
-          }
+      // Fetch 20 recommendations using the advanced engine
+      for (let i = 0; i < RECOMMENDATIONS_COUNT; i++) {
+        const movie = await getNextRecommendation(
+          user?.id || null,
+          Array.from(fetchedIds),
+          guestRatings
+        );
+
+        if (!movie) break; // No more recommendations available
+
+        // Add to fetched IDs to avoid duplicates
+        fetchedIds.add(movie.id);
+
+        // Convert to Recommendation format
+        newRecommendations.push({
+          id: movie.id,
+          title: movie.title,
+          year: movie.year,
+          poster: movie.poster || "",
+          rating: movie.rating || 0,
+          plot: movie.plot || "",
+          imdbId: movie.imdbId,
+          voteCount: movie.voteCount,
+          originalLanguage: movie.originalLanguage,
+          genre: movie.genre || [],
+          actors: movie.actors || "",
+          director: movie.director || "",
+          runtime: movie.runtime || "",
+          writing: movie.writing || "",
+          sound: movie.sound || "",
+          keywords: movie.keywords || [],
+          imdbRating: movie.imdbRating,
+          imdbVotes: movie.imdbVotes,
         });
-
-        // Get movies the user liked (rating 5 or 10) with full details
-        const likedRatings = Array.from(ratingMap.entries())
-          .filter(([_, rating]) => rating === 5 || rating === 10)
-          .map(([movieId, _]) => ({ media_id: movieId }));
-
-        if (likedRatings.length >= MIN_RATINGS_FOR_PERSONALIZATION) {
-          const { data: likedMoviesData } = await supabase
-            .from("movies")
-            .select("genres, director, actors, keywords, original_language")
-            .in(
-              "id",
-              likedRatings.map((r) => r.media_id),
-            );
-
-          userLikedMovies = likedMoviesData || [];
-        }
-      } else {
-        // For guests, check localStorage ratings
-        const { getGuestRatings } = await import("@/lib/guestRatings");
-        const guestRatings = getGuestRatings();
-
-        if (guestRatings.length > 0) {
-          guestRatings.forEach((r) => {
-            ratingMap.set(r.movieId, r.rating);
-          });
-
-          // Get movies the guest liked (rating 5 or 10) with full details
-          const likedRatings = Array.from(ratingMap.entries())
-            .filter(([_, rating]) => rating === 5 || rating === 10)
-            .map(([movieId, _]) => ({ movieId }));
-
-          if (likedRatings.length >= MIN_RATINGS_FOR_PERSONALIZATION) {
-            const { data: likedMoviesData } = await supabase
-              .from("movies")
-              .select("genres, director, actors, keywords, original_language")
-              .in(
-                "id",
-                likedRatings.map((r) => r.movieId),
-              );
-
-            userLikedMovies = likedMoviesData || [];
-          }
-        }
       }
 
-      const ratedMovieIds = Array.from(ratingMap.keys());
+      setRecommendations((prev) => (append ? [...prev, ...newRecommendations] : newRecommendations));
+      setTotalMoviesViewed((prev) => prev + newRecommendations.length);
 
-      // If user has enough ratings, use similarity algorithm
-      if (userLikedMovies.length >= MIN_RATINGS_FOR_PERSONALIZATION) {
-        // Analyze user preferences
-        const genreCounts: Record<string, number> = {};
-        const directorCounts: Record<string, number> = {};
-        const actorCounts: Record<string, number> = {};
-        const keywordCounts: Record<string, number> = {};
-        const languageCounts: Record<string, number> = {};
+      // Calculate total available movies
+      const { count } = await supabase
+        .from("movies")
+        .select("*", { count: "exact", head: true })
+        .not("rating", "is", null);
+      setTotalAvailableMovies(count || 0);
 
-        userLikedMovies.forEach((movie) => {
-          // Count genres
-          (movie.genres || []).forEach((genre: string) => {
-            genreCounts[genre] = (genreCounts[genre] || 0) + 1;
-          });
-
-          // Count directors
-          if (movie.director) {
-            directorCounts[movie.director] = (directorCounts[movie.director] || 0) + 1;
-          }
-
-          // Count actors (split by comma)
-          if (movie.actors) {
-            movie.actors.split(",").forEach((actor: string) => {
-              const cleanActor = actor.trim();
-              if (cleanActor) {
-                actorCounts[cleanActor] = (actorCounts[cleanActor] || 0) + 1;
-              }
-            });
-          }
-
-          // Count keywords
-          (movie.keywords || []).forEach((keyword: string) => {
-            keywordCounts[keyword] = (keywordCounts[keyword] || 0) + 1;
-          });
-
-          // Count languages
-          if (movie.original_language) {
-            languageCounts[movie.original_language] = (languageCounts[movie.original_language] || 0) + 1;
-          }
-        });
-
-        // Fetch candidate movies (decent quality) - prioritize IMDb ratings
-        // Include recently shown movies in exclusion list (but NOT rated movies - they get penalties instead)
-        const allExcludedIds = [...excludeIds, ...recentlyShownIds];
-        let candidateQuery = supabase
-          .from("movies")
-          .select(
-            "id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes, metascore",
-          )
-          .or(
-            `imdb_rating.gte.${CANDIDATE_RATING_THRESHOLD},and(imdb_rating.is.null,rating.gte.${CANDIDATE_RATING_THRESHOLD})`,
-          )
-          .not("rating", "is", null);
-
-        if (allExcludedIds.length > 0) {
-          candidateQuery = candidateQuery.not("id", "in", `(${allExcludedIds.join(",")})`);
-        }
-
-        const { data: candidateMovies } = await candidateQuery.limit(1000);
-
-        // Calculate similarity scores
-        const moviesWithScores = (candidateMovies || []).map((movie) => {
-          let score = 0;
-
-          // Boost for IMDb-verified movies
-          if ((movie as any).imdb_rating) {
-            score += 0.5;
-          }
-
-          // Genre similarity
-          const genreMatches = (movie.genres || []).filter((g: string) => genreCounts[g]).length;
-          const genreWeight = genreMatches / Math.max(Object.keys(genreCounts).length, 1);
-          score += genreWeight * WEIGHTS.GENRE;
-
-          // Director similarity
-          if (movie.director && directorCounts[movie.director]) {
-            score += WEIGHTS.DIRECTOR;
-          }
-
-          // Actor similarity
-          let actorMatches = 0;
-          if (movie.actors) {
-            const movieActors = movie.actors.split(",").map((a: string) => a.trim());
-            actorMatches = movieActors.filter((a: string) => actorCounts[a]).length;
-          }
-          const actorWeight = Math.min(actorMatches / 3, 1); // Cap at 3 matching actors
-          score += actorWeight * WEIGHTS.ACTOR;
-
-          // Keyword similarity
-          const keywordMatches = (movie.keywords || []).filter((k: string) => keywordCounts[k]).length;
-          const keywordWeight = Math.min(keywordMatches / 3, 1); // Cap at 3 matching keywords
-          score += keywordWeight * WEIGHTS.KEYWORD;
-
-          // Language similarity
-          if (movie.original_language && languageCounts[movie.original_language]) {
-            score += WEIGHTS.LANGUAGE;
-          }
-
-          // Slight boost for popularity (normalized vote count)
-          const popularityBoost = Math.min((movie.vote_count || 0) / 10000, 0.1);
-          score += popularityBoost;
-
-          // Apply graduated penalties
-          let penaltyMultiplier = 1.0;
-
-          // Apply watchlist penalty (movies user wants to watch)
-          if (watchlistSet.has(movie.id)) {
-            penaltyMultiplier = Math.min(penaltyMultiplier, 0.4); // 60% reduction
-          }
-
-          // Apply already-rated penalty (strongest penalty)
-          if (ratingMap.has(movie.id)) {
-            const userRating = ratingMap.get(movie.id);
-
-            if (userRating === 10) {
-              // LOVE: reduce by 80% (user already loved this)
-              penaltyMultiplier = Math.min(penaltyMultiplier, 0.2);
-            } else if (userRating === 5) {
-              // LIKE: reduce by 60% (user already liked this)
-              penaltyMultiplier = Math.min(penaltyMultiplier, 0.4);
-            } else if (userRating === 1) {
-              // NOT_INTERESTED: reduce by 85% (user disliked this)
-              penaltyMultiplier = Math.min(penaltyMultiplier, 0.15);
-            }
-          }
-
-          score *= penaltyMultiplier;
-
-          return { ...movie, similarityScore: score };
-        });
-
-        // Sort by similarity score and select top 50 matches for diversity
-        const TOP_MATCHES_POOL = 50;
-        const topMatches = moviesWithScores
-          .sort((a, b) => b.similarityScore - a.similarityScore)
-          .slice(0, Math.min(TOP_MATCHES_POOL, moviesWithScores.length));
-
-        // Randomly shuffle and select final recommendations
-        const shuffled = topMatches.sort(() => Math.random() - 0.5);
-        const topRecommendations = shuffled.slice(0, RECOMMENDATIONS_COUNT).map((movie) => ({
-          id: movie.id,
-          title: movie.title,
-          year: movie.year,
-          poster: movie.poster || "",
-          rating: movie.rating || 0,
-          plot: movie.plot || "",
-          imdbId: movie.imdb_id,
-          voteCount: movie.vote_count,
-          originalLanguage: movie.original_language,
-          genre: movie.genres || [],
-          actors: movie.actors || "",
-          director: movie.director || "",
-          runtime: movie.runtime || "",
-          writing: movie.writing || "",
-          sound: movie.sound || "",
-          keywords: movie.keywords || [],
-          imdbRating: (movie as any).imdb_rating,
-          imdbVotes: (movie as any).imdb_votes,
-          metascore: (movie as any).metascore,
-        }));
-
-        setRecommendations((prev) => (append ? [...prev, ...topRecommendations] : topRecommendations));
-        setTotalMoviesViewed((prev) => prev + topRecommendations.length);
-
-        // Calculate total available movies
-        const { count } = await supabase
-          .from("movies")
-          .select("*", { count: "exact", head: true })
-          .or(
-            `imdb_rating.gte.${CANDIDATE_RATING_THRESHOLD},and(imdb_rating.is.null,rating.gte.${CANDIDATE_RATING_THRESHOLD})`,
-          )
-          .not("rating", "is", null)
-          .not("id", "in", `(${[...ratedMovieIds, ...watchlistSet].join(",")})`);
-        setTotalAvailableMovies(count || 0);
-      } else {
-        // Fallback: Show top-rated movies for users/guests with few/no ratings
-        // Include recently shown movies in exclusion list (but NOT rated movies)
-        const allExcludedIds = [...excludeIds, ...recentlyShownIds];
-
-        // Tier 1: Try high-rated movies (7.0+)
-        let fallbackQuery = supabase
-          .from("movies")
-          .select(
-            "id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes, metascore",
-          )
-          .or(`imdb_rating.gte.${RATING_THRESHOLD},and(imdb_rating.is.null,rating.gte.${RATING_THRESHOLD})`)
-          .not("rating", "is", null)
-          .order("imdb_rating", { ascending: false, nullsFirst: false })
-          .order("vote_count", { ascending: false });
-
-        if (allExcludedIds.length > 0) {
-          fallbackQuery = fallbackQuery.not("id", "in", `(${allExcludedIds.join(",")})`);
-        }
-
-        let { data: topMovies, error } = await fallbackQuery.limit(200);
-
-        // Tier 2: If no high-rated movies, try all movies with any rating
-        if (!topMovies || topMovies.length === 0) {
-          fallbackQuery = supabase
-            .from("movies")
-            .select(
-              "id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes, metascore",
-            )
-            .not("rating", "is", null)
-            .order("imdb_rating", { ascending: false, nullsFirst: false })
-            .order("vote_count", { ascending: false });
-
-          if (allExcludedIds.length > 0) {
-            fallbackQuery = fallbackQuery.not("id", "in", `(${allExcludedIds.join(",")})`);
-          }
-
-          const result = await fallbackQuery.limit(200);
-          topMovies = result.data;
-          error = result.error;
-        }
-
-        // Tier 3: If still nothing, ignore recently shown (only exclude explicitly passed excludeIds)
-        if (!topMovies || topMovies.length === 0) {
-          fallbackQuery = supabase
-            .from("movies")
-            .select(
-              "id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes, metascore",
-            )
-            .not("rating", "is", null)
-            .order("imdb_rating", { ascending: false, nullsFirst: false })
-            .order("vote_count", { ascending: false });
-
-          if (excludeIds.length > 0) {
-            fallbackQuery = fallbackQuery.not("id", "in", `(${excludeIds.join(",")})`);
-          }
-
-          const result = await fallbackQuery.limit(200);
-          topMovies = result.data;
-          error = result.error;
-        }
-
-        if (error) throw error;
-
-        const filteredMovies = topMovies || [];
-
-        // Randomly select from top-rated
-        const shuffled = filteredMovies.sort(() => Math.random() - 0.5);
-        const selected = shuffled.slice(0, RECOMMENDATIONS_COUNT).map((movie) => ({
-          id: movie.id,
-          title: movie.title,
-          year: movie.year,
-          poster: movie.poster || "",
-          rating: movie.rating || 0,
-          plot: movie.plot || "",
-          imdbId: movie.imdb_id,
-          voteCount: movie.vote_count,
-          originalLanguage: movie.original_language,
-          genre: movie.genres || [],
-          actors: movie.actors || "",
-          director: movie.director || "",
-          runtime: movie.runtime || "",
-          writing: movie.writing || "",
-          sound: movie.sound || "",
-          keywords: movie.keywords || [],
-          imdbRating: (movie as any).imdb_rating,
-          imdbVotes: (movie as any).imdb_votes,
-          metascore: (movie as any).metascore,
-        }));
-
-        setRecommendations((prev) => (append ? [...prev, ...selected] : selected));
-        setTotalMoviesViewed((prev) => prev + selected.length);
-
-        // Calculate total available movies
-        const { count } = await supabase
-          .from("movies")
-          .select("*", { count: "exact", head: true })
-          .not("rating", "is", null);
-        setTotalAvailableMovies(count || 0);
+      // Mark newly shown movies
+      if (newRecommendations.length > 0) {
+        markMoviesAsShown(newRecommendations.map(m => m.id));
       }
     } catch (error) {
       console.error("Error fetching recommendations:", error);
@@ -790,9 +494,9 @@ const Index = () => {
             </h2>
             <p className="text-sm text-muted-foreground">
               {user
-                ? stats?.userRatingsCount && stats.userRatingsCount >= MIN_RATINGS_FOR_PERSONALIZATION
+                ? stats?.userRatingsCount && stats.userRatingsCount >= 5
                   ? "Based on your ratings and preferences, we think you'll love these movies"
-                  : `Rate ${MIN_RATINGS_FOR_PERSONALIZATION}+ movies to get personalized AI recommendations`
+                  : `Rate 5+ movies to get personalized AI recommendations`
                 : "Discover highly-rated movies from our collection"}
             </p>
           </div>
