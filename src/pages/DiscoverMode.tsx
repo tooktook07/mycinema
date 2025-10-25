@@ -27,7 +27,15 @@ const DiscoverMode = () => {
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
   const [showMilestone, setShowMilestone] = useState(true);
-  const [milestoneDismissed, setMilestoneDismissed] = useState(false);
+  const [lastMilestoneShown, setLastMilestoneShown] = useState(0);
+
+  // Calculate if we should show milestone: first at 10, then every 20 (30, 50, 70, etc.)
+  const shouldShowMilestone = () => {
+    if (totalRated <= 10) return false;
+    if (totalRated > 10 && lastMilestoneShown === 0) return true; // First milestone at >10
+    if (totalRated >= lastMilestoneShown + 20) return true; // Every 20 after that
+    return false;
+  };
 
   const recentStats = getRecentlyShownStats();
 
@@ -146,11 +154,6 @@ const DiscoverMode = () => {
 
       markMoviesAsShown([currentMovie.id]);
       
-      // Reset milestone display after rating to show it again
-      if (totalRated >= 10 && milestoneDismissed) {
-        setMilestoneDismissed(false);
-      }
-      
       await loadNextMovie();
     } catch (error) {
       console.error("Error saving rating:", error);
@@ -161,10 +164,9 @@ const DiscoverMode = () => {
   };
 
   const handleDismissMilestone = async () => {
-    setMilestoneDismissed(true);
+    setLastMilestoneShown(totalRated);
     setShowMilestone(false);
     setNavigationDirection('forward');
-    // Don't load next movie, just hide the milestone and show current movie
   };
 
   const handleSkip = async () => {
@@ -237,7 +239,7 @@ const DiscoverMode = () => {
         <div className="absolute inset-0 flex items-center justify-center bg-black">
           <Loader2 className="h-12 w-12 animate-spin text-white" />
         </div>
-      ) : totalRated > 10 && showMilestone && !milestoneDismissed ? (
+      ) : shouldShowMilestone() && showMilestone ? (
         <AnimatePresence mode="wait">
           <motion.div
             key="milestone"
