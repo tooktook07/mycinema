@@ -185,8 +185,8 @@ export async function getBatchRecommendations(
         ratingMap.set(r.movieId, r.rating);
       });
       
-      // Fetch candidates ONCE (larger pool for batch)
-      let query = supabase
+      // Fetch candidates ONCE (larger pool for batch, no exclusion filter)
+      const { data: candidateMovies } = await supabase
         .from("movies")
         .select(
           "id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes, local_poster_url",
@@ -194,15 +194,13 @@ export async function getBatchRecommendations(
         .or(
           `imdb_rating.gte.${CANDIDATE_RATING_THRESHOLD},and(imdb_rating.is.null,rating.gte.${CANDIDATE_RATING_THRESHOLD})`,
         )
-        .not("rating", "is", null);
+        .not("rating", "is", null)
+        .limit(900); // Increased for client-side filtering
       
-      if (excludeIds.length > 0) {
-        query = query.not("id", "in", `(${excludeIds.join(",")})`);
-      }
+      // Filter out excluded IDs client-side
+      const filteredCandidates = (candidateMovies || []).filter(m => !excludeIds.includes(m.id));
       
-      const { data: candidateMovies } = await query.limit(600);
-      
-      if (!candidateMovies || candidateMovies.length === 0) {
+      if (!filteredCandidates || filteredCandidates.length === 0) {
         return getFallbackBatchRecommendations(count, excludeIds);
       }
       
@@ -214,7 +212,7 @@ export async function getBatchRecommendations(
       const maxLangWeight = Math.max(...Object.values(languagePreferences).map(Math.abs), 1);
       
       // Score all candidates ONCE
-      const moviesWithScores = candidateMovies.map((movie) => {
+      const moviesWithScores = filteredCandidates.map((movie) => {
         let score = 0;
         
         // TF-IDF Genre scoring
@@ -501,8 +499,8 @@ export async function getBatchRecommendations(
       // Get cached TF-IDF scores
       const genreIDF = await getGenreIDF();
 
-      // Fetch candidate movies (larger pool for batch)
-      let query = supabase
+      // Fetch candidate movies (larger pool for batch, no exclusion filter)
+      const { data: candidateMovies } = await supabase
         .from("movies")
         .select(
           "id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes, local_poster_url",
@@ -510,15 +508,13 @@ export async function getBatchRecommendations(
         .or(
           `imdb_rating.gte.${CANDIDATE_RATING_THRESHOLD},and(imdb_rating.is.null,rating.gte.${CANDIDATE_RATING_THRESHOLD})`,
         )
-        .not("rating", "is", null);
+        .not("rating", "is", null)
+        .limit(1200); // Increased for client-side filtering
 
-      if (allExcludedIds.length > 0) {
-        query = query.not("id", "in", `(${allExcludedIds.join(",")})`);
-      }
+      // Filter out excluded IDs client-side
+      const filteredCandidates = (candidateMovies || []).filter(m => !allExcludedIds.includes(m.id));
 
-      const { data: candidateMovies } = await query.limit(800); // Larger pool for batch
-
-      if (!candidateMovies || candidateMovies.length === 0) {
+      if (!filteredCandidates || filteredCandidates.length === 0) {
         return [];
       }
 
@@ -530,7 +526,7 @@ export async function getBatchRecommendations(
       const maxLangWeight = Math.max(...Object.values(languagePreferences).map(Math.abs), 1);
 
       // Calculate similarity scores for all candidates
-      const moviesWithScores = candidateMovies.map((movie) => {
+      const moviesWithScores = filteredCandidates.map((movie) => {
         let score = 0;
 
         const effectiveRating = movie.imdb_rating || movie.rating;
@@ -828,8 +824,8 @@ export async function getNextRecommendation(
       // Phase 2: Use cached TF-IDF for genres
       const genreIDF = await getGenreIDF();
 
-      // Fetch candidate movies (prioritize IMDb ratings)
-      let query = supabase
+      // Fetch candidate movies (prioritize IMDb ratings, no exclusion filter)
+      const { data: candidateMovies } = await supabase
         .from("movies")
         .select(
           "id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes",
@@ -837,15 +833,13 @@ export async function getNextRecommendation(
         .or(
           `imdb_rating.gte.${CANDIDATE_RATING_THRESHOLD},and(imdb_rating.is.null,rating.gte.${CANDIDATE_RATING_THRESHOLD})`,
         )
-        .not("rating", "is", null);
+        .not("rating", "is", null)
+        .limit(750); // Increased for client-side filtering
 
-      if (allExcludedIds.length > 0) {
-        query = query.not("id", "in", `(${allExcludedIds.join(",")})`);
-      }
+      // Filter out excluded IDs client-side
+      const filteredCandidates = (candidateMovies || []).filter(m => !allExcludedIds.includes(m.id));
 
-      const { data: candidateMovies } = await query.limit(500); // Increased for more variety
-
-      if (!candidateMovies || candidateMovies.length === 0) {
+      if (!filteredCandidates || filteredCandidates.length === 0) {
         return null;
       }
 
@@ -857,7 +851,7 @@ export async function getNextRecommendation(
       const maxLangWeight = Math.max(...Object.values(languagePreferences).map(Math.abs), 1);
 
       // Calculate similarity scores with weighted preferences
-      const moviesWithScores = candidateMovies.map((movie) => {
+      const moviesWithScores = filteredCandidates.map((movie) => {
         let score = 0;
 
         // Use IMDB rating if available, otherwise TMDB rating
@@ -1025,8 +1019,8 @@ async function getFallbackBatchRecommendations(count: number, excludeIds: string
   const recentlyShownIds = getRecentlyShownMovieIds();
   const allExcludedIds = [...excludeIds, ...recentlyShownIds];
 
-  // Fetch larger pool ONCE
-  let query = supabase
+  // Fetch larger pool ONCE (no exclusion filter)
+  const { data: movies } = await supabase
     .from("movies")
     .select(
       "id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes, local_poster_url",
@@ -1034,18 +1028,16 @@ async function getFallbackBatchRecommendations(count: number, excludeIds: string
     .or(`imdb_rating.gte.7.0,and(imdb_rating.is.null,rating.gte.7.0)`)
     .not("rating", "is", null)
     .order("imdb_rating", { ascending: false, nullsFirst: false })
-    .order("vote_count", { ascending: false });
+    .order("vote_count", { ascending: false })
+    .limit(Math.min(count * 8, 150)); // Increased for client-side filtering
 
-  if (allExcludedIds.length > 0) {
-    query = query.not("id", "in", `(${allExcludedIds.join(",")})`);
-  }
+  // Filter out excluded IDs client-side
+  const filteredMovies = (movies || []).filter(m => !allExcludedIds.includes(m.id));
 
-  const { data: movies } = await query.limit(Math.min(count * 5, 100));
-
-  if (!movies || movies.length === 0) return [];
+  if (!filteredMovies || filteredMovies.length === 0) return [];
 
   // Shuffle and return requested count
-  const shuffled = [...movies].sort(() => Math.random() - 0.5);
+  const shuffled = [...filteredMovies].sort(() => Math.random() - 0.5);
   const selectedMovies = shuffled.slice(0, count);
   
   // Mark as shown
@@ -1080,68 +1072,56 @@ async function getFallbackRecommendation(excludeIds: string[]): Promise<Recommen
   const recentlyShownIds = getRecentlyShownMovieIds();
   const allExcludedIds = [...excludeIds, ...recentlyShownIds];
 
-  // Tier 1: Try high-rated movies (7.0+) excluding recently shown
-  let query = supabase
+  // Tier 1: Try high-rated movies (7.0+), no exclusion filter
+  let { data: movies } = await supabase
     .from("movies")
     .select(
       "id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes",
     )
     .or(`imdb_rating.gte.7.0,and(imdb_rating.is.null,rating.gte.7.0)`)
-    .not("rating", "is", null);
+    .not("rating", "is", null)
+    .order("imdb_rating", { ascending: false, nullsFirst: false })
+    .order("vote_count", { ascending: false })
+    .limit(100); // Increased for client-side filtering
 
-  // Prefer IMDb-verified movies for new users
-  query = query.order("imdb_rating", { ascending: false, nullsFirst: false });
-  query = query.order("vote_count", { ascending: false });
+  // Filter out excluded IDs client-side
+  let filteredMovies = (movies || []).filter(m => !allExcludedIds.includes(m.id));
 
-  if (allExcludedIds.length > 0) {
-    query = query.not("id", "in", `(${allExcludedIds.join(",")})`);
-  }
-
-  let { data: movies } = await query.limit(50);
-
-  // Tier 2: If no high-rated movies, try all movies with any rating (excluding recently shown)
-  if (!movies || movies.length === 0) {
-    query = supabase
+  // Tier 2: If no filtered high-rated movies, try all movies with any rating
+  if (!filteredMovies || filteredMovies.length === 0) {
+    const { data: allMovies } = await supabase
       .from("movies")
       .select(
         "id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes",
       )
       .not("rating", "is", null)
       .order("imdb_rating", { ascending: false, nullsFirst: false })
-      .order("vote_count", { ascending: false });
+      .order("vote_count", { ascending: false })
+      .limit(100);
 
-    if (allExcludedIds.length > 0) {
-      query = query.not("id", "in", `(${allExcludedIds.join(",")})`);
-    }
-
-    const result = await query.limit(50);
-    movies = result.data;
+    filteredMovies = (allMovies || []).filter(m => !allExcludedIds.includes(m.id));
   }
 
   // Tier 3: If still nothing, ignore recently shown (only exclude explicitly passed excludeIds)
-  if (!movies || movies.length === 0) {
-    query = supabase
+  if (!filteredMovies || filteredMovies.length === 0) {
+    const { data: allMovies } = await supabase
       .from("movies")
       .select(
         "id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes",
       )
       .not("rating", "is", null)
       .order("imdb_rating", { ascending: false, nullsFirst: false })
-      .order("vote_count", { ascending: false });
+      .order("vote_count", { ascending: false })
+      .limit(100);
 
-    if (excludeIds.length > 0) {
-      query = query.not("id", "in", `(${excludeIds.join(",")})`);
-    }
-
-    const result = await query.limit(50);
-    movies = result.data;
+    filteredMovies = (allMovies || []).filter(m => !excludeIds.includes(m.id));
   }
 
-  if (!movies || movies.length === 0) return null;
+  if (!filteredMovies || filteredMovies.length === 0) return null;
 
   // Randomly select from available movies
-  const randomIndex = Math.floor(Math.random() * movies.length);
-  const movie = movies[randomIndex];
+  const randomIndex = Math.floor(Math.random() * filteredMovies.length);
+  const movie = filteredMovies[randomIndex];
 
   // Mark this recommendation as shown
   markMoviesAsShown([movie.id]);
