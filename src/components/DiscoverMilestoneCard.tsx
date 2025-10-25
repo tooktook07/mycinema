@@ -100,7 +100,7 @@ export const DiscoverMilestoneCard = ({ totalRated, onDismiss }: DiscoverMilesto
               size="lg"
               variant="outline"
               onClick={onDismiss}
-              className="w-full text-white hover:bg-white/10 border-white/20 text-base"
+              className="w-full bg-background text-foreground hover:bg-accent hover:text-accent-foreground border-border text-base"
             >
               Continue Rating
             </Button>
