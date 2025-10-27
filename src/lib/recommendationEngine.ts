@@ -1019,26 +1019,91 @@ async function getFallbackBatchRecommendations(count: number, excludeIds: string
   const recentlyShownIds = getRecentlyShownMovieIds();
   const allExcludedIds = [...excludeIds, ...recentlyShownIds];
 
-  // Fetch larger pool ONCE (no exclusion filter)
-  const { data: movies } = await supabase
+  // Fetch movies from multiple rating tiers for diversity
+  const { data: tier1Movies } = await supabase
     .from("movies")
     .select(
       "id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes, local_poster_url",
     )
-    .or(`imdb_rating.gte.7.0,and(imdb_rating.is.null,rating.gte.7.0)`)
+    .gte("imdb_rating", 8.0)
     .not("rating", "is", null)
-    .order("imdb_rating", { ascending: false, nullsFirst: false })
+    .order("imdb_rating", { ascending: false })
     .order("vote_count", { ascending: false })
-    .limit(Math.min(count * 8, 150)); // Increased for client-side filtering
+    .limit(300);
 
-  // Filter out excluded IDs client-side
-  const filteredMovies = (movies || []).filter(m => !allExcludedIds.includes(m.id));
+  const { data: tier2Movies } = await supabase
+    .from("movies")
+    .select(
+      "id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes, local_poster_url",
+    )
+    .gte("imdb_rating", 7.5)
+    .lt("imdb_rating", 8.0)
+    .not("rating", "is", null)
+    .order("imdb_rating", { ascending: false })
+    .order("vote_count", { ascending: false })
+    .limit(350);
 
-  if (!filteredMovies || filteredMovies.length === 0) return [];
+  const { data: tier3Movies } = await supabase
+    .from("movies")
+    .select(
+      "id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes, local_poster_url",
+    )
+    .gte("imdb_rating", 7.0)
+    .lt("imdb_rating", 7.5)
+    .not("rating", "is", null)
+    .order("imdb_rating", { ascending: false })
+    .order("vote_count", { ascending: false })
+    .limit(350);
 
-  // Shuffle and return requested count
-  const shuffled = [...filteredMovies].sort(() => Math.random() - 0.5);
-  const selectedMovies = shuffled.slice(0, count);
+  // Combine all tiers
+  const allMovies = [...(tier1Movies || []), ...(tier2Movies || []), ...(tier3Movies || [])];
+
+  // Filter out excluded IDs
+  const filteredMovies = allMovies.filter(m => !allExcludedIds.includes(m.id));
+
+  // Pool exhaustion check
+  if (filteredMovies.length === 0) {
+    return []; // Signal exhaustion
+  }
+
+  // Group by genre for diversity
+  const genreGroups: Record<string, typeof filteredMovies> = {};
+  filteredMovies.forEach(movie => {
+    (movie.genres || []).forEach((genre: string) => {
+      if (!genreGroups[genre]) {
+        genreGroups[genre] = [];
+      }
+      genreGroups[genre].push(movie);
+    });
+  });
+
+  // Randomly select from different genres
+  const selectedMovies: typeof filteredMovies = [];
+  const genreKeys = Object.keys(genreGroups);
+  const usedMovieIds = new Set<string>();
+
+  while (selectedMovies.length < count && selectedMovies.length < filteredMovies.length) {
+    // Pick a random genre
+    const randomGenre = genreKeys[Math.floor(Math.random() * genreKeys.length)];
+    const genreMovies = genreGroups[randomGenre];
+
+    if (genreMovies && genreMovies.length > 0) {
+      // Pick a random movie from this genre that hasn't been used
+      const availableMovies = genreMovies.filter(m => !usedMovieIds.has(m.id));
+      if (availableMovies.length > 0) {
+        const randomMovie = availableMovies[Math.floor(Math.random() * availableMovies.length)];
+        selectedMovies.push(randomMovie);
+        usedMovieIds.add(randomMovie.id);
+      }
+    }
+  }
+
+  // If we couldn't get enough movies from genre diversity, fill with random
+  if (selectedMovies.length < count) {
+    const remainingMovies = filteredMovies.filter(m => !usedMovieIds.has(m.id));
+    const shuffled = [...remainingMovies].sort(() => Math.random() - 0.5);
+    selectedMovies.push(...shuffled.slice(0, count - selectedMovies.length));
+  }
   
   // Mark as shown
   markMoviesAsShown(selectedMovies.map(m => m.id));

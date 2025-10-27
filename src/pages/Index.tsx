@@ -10,6 +10,8 @@ import {
   Sparkles,
   RefreshCw,
   X,
+  CheckCircle2,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -103,6 +105,7 @@ const Index = () => {
     return localStorage.getItem("discover_cta_dismissed") === "true";
   });
   const [guestRatingCount, setGuestRatingCount] = useState(0);
+  const [isPoolExhausted, setIsPoolExhausted] = useState(false);
   // Modal state
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -258,6 +261,13 @@ const Index = () => {
         allExcludedIds,
         guestRatings
       );
+
+      // Check for pool exhaustion
+      if (results.length === 0) {
+        setIsPoolExhausted(true);
+        setLoadingRecommendations(false);
+        return;
+      }
 
       // Map to Recommendation type
       const newRecommendations: Recommendation[] = results.map(rec => ({
@@ -581,40 +591,65 @@ const Index = () => {
       {recommendations.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 z-50 border-t backdrop-blur-md bg-background/95 shadow-lg">
           <div className="container mx-auto max-w-7xl px-4 py-4">
-            <div className="flex flex-col gap-3">
-              {/* Progress Bar */}
-              <div className="space-y-2">
-                <Progress value={progressPercentage} className="h-2" />
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    Showing {totalMoviesViewed} of ~{totalAvailableMovies} movies
-                  </span>
-                  <span className="text-muted-foreground font-medium">{Math.round(progressPercentage)}%</span>
+            {isPoolExhausted ? (
+              <div className="flex flex-col items-center gap-3 py-2">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <CheckCircle2 className="h-5 w-5 text-green-500" />
+                  <span className="text-lg font-medium">No More Movies</span>
                 </div>
-              </div>
-
-              {/* Load More Button */}
-              <div className="flex justify-center">
+                <p className="text-sm text-muted-foreground text-center">
+                  You've explored all available recommendations! Rate more movies to unlock personalized suggestions.
+                </p>
                 <Button
-                  onClick={handleShowMoreRecommendations}
-                  disabled={loadingRecommendations || isLoadingMore}
-                  size="lg"
-                  className="min-w-[280px]"
+                  onClick={() => {
+                    setIsPoolExhausted(false);
+                    setExcludedRecommendationIds([]);
+                    clearOldestHalfOfTracking();
+                    fetchRecommendations([], false);
+                  }}
+                  variant="outline"
+                  size="sm"
                 >
-                  {isLoadingMore ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Loading More...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      Load More Recommendations
-                    </>
-                  )}
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Start Over
                 </Button>
               </div>
-            </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {/* Progress Bar */}
+                <div className="space-y-2">
+                  <Progress value={progressPercentage} className="h-2" />
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      Showing {totalMoviesViewed} of ~{totalAvailableMovies} movies
+                    </span>
+                    <span className="text-muted-foreground font-medium">{Math.round(progressPercentage)}%</span>
+                  </div>
+                </div>
+
+                {/* Load More Button */}
+                <div className="flex justify-center">
+                  <Button
+                    onClick={handleShowMoreRecommendations}
+                    disabled={loadingRecommendations || isLoadingMore}
+                    size="lg"
+                    className="min-w-[280px]"
+                  >
+                    {isLoadingMore ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Loading More...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Load More Recommendations
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
