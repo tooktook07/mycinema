@@ -12,7 +12,7 @@
  * - OMDb API key configured
  * 
  * FUNCTIONALITY:
- * - Imports movies from last 60 days (5 pages from TMDB)
+ * - Imports movies from last 3 years (5 pages from TMDB, catches "sleeper hits")
  * - Applies quality filter: 6+ stars AND 1000+ votes
  * - Fetches OMDb data before inserting
  * - Downloads posters immediately
@@ -155,15 +155,15 @@ serve(async (req) => {
     let imported = 0, updated = 0, failed = 0, skipped = 0, removed = 0, alreadyChecked = 0;
 
     try {
-      // Calculate date range: last 60 days
+      // Calculate date range: last 3 years (to catch "sleeper hits")
       const today = new Date();
-      const sixtyDaysAgo = new Date(today);
-      sixtyDaysAgo.setDate(today.getDate() - 60);
+      const threeYearsAgo = new Date(today);
+      threeYearsAgo.setDate(today.getDate() - (3 * 365));
       
       const todayStr = today.toISOString().split('T')[0];
-      const sixtyDaysAgoStr = sixtyDaysAgo.toISOString().split('T')[0];
+      const threeYearsAgoStr = threeYearsAgo.toISOString().split('T')[0];
       
-      addLog(`Fetching movies released between ${sixtyDaysAgoStr} and ${todayStr}`);
+      addLog(`Fetching movies released between ${threeYearsAgoStr} and ${todayStr}`);
 
       let allMovies: any[] = [];
       
@@ -171,7 +171,7 @@ serve(async (req) => {
       for (let page = 1; page <= 5; page++) {
         try {
           const tmdbResponse = await fetch(
-            `https://api.themoviedb.org/3/discover/movie?api_key=${tmdbApiKey}&release_date.gte=${sixtyDaysAgoStr}&release_date.lte=${todayStr}&sort_by=popularity.desc&vote_count.gte=50&page=${page}`
+            `https://api.themoviedb.org/3/discover/movie?api_key=${tmdbApiKey}&release_date.gte=${threeYearsAgoStr}&release_date.lte=${todayStr}&sort_by=popularity.desc&vote_count.gte=50&page=${page}`
           );
 
           if (!tmdbResponse.ok) {
