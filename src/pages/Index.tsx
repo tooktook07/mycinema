@@ -109,6 +109,8 @@ const Index = () => {
 
   // Track if recommendations have been loaded to prevent auto-reload on tab switch
   const recommendationsLoadedRef = useRef(false);
+  // Track refs for scroll-to functionality
+  const movieRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
 
   useEffect(() => {
     fetchStats();
@@ -299,9 +301,18 @@ const Index = () => {
   const handleShowMoreRecommendations = async () => {
     setIsLoadingMore(true);
     const currentIds = recommendations.map((r) => r.id);
+    const scrollToIndex = recommendations.length; // Store the index where new items will start
     setExcludedRecommendationIds([...excludedRecommendationIds, ...currentIds]);
     await fetchRecommendations([...excludedRecommendationIds, ...currentIds], true);
     setIsLoadingMore(false);
+    
+    // Scroll to the first new item after a short delay to ensure DOM is updated
+    setTimeout(() => {
+      const targetElement = movieRefs.current[scrollToIndex];
+      if (targetElement) {
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
   };
 
   const handleRefreshRecommendations = async () => {
@@ -526,30 +537,31 @@ const Index = () => {
             <>
               <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4">
                 {recommendations?.map((movie, index) => (
-                  <MovieCard
-                    key={movie.id}
-                    id={movie.id}
-                    title={movie.title}
-                    year={movie.year}
-                    rating={movie.rating}
-                    genre={movie.genre}
-                    poster={movie.poster}
-                    imdbId={movie.imdbId}
-                    imdbRating={movie.imdbRating}
-                    imdbVotes={movie.imdbVotes}
-                    metascore={movie.metascore}
-                    plot={movie.plot}
-                    voteCount={movie.voteCount}
-                    originalLanguage={movie.originalLanguage}
-                    actors={movie.actors}
-                    director={movie.director}
-                    runtime={movie.runtime}
-                    writing={movie.writing}
-                    sound={movie.sound}
-                    keywords={movie.keywords}
-                    enableViewportTracking={true}
-                    onOpenDetail={handleOpenDetail}
-                  />
+                  <div key={movie.id} ref={(el) => (movieRefs.current[index] = el)}>
+                    <MovieCard
+                      id={movie.id}
+                      title={movie.title}
+                      year={movie.year}
+                      rating={movie.rating}
+                      genre={movie.genre}
+                      poster={movie.poster}
+                      imdbId={movie.imdbId}
+                      imdbRating={movie.imdbRating}
+                      imdbVotes={movie.imdbVotes}
+                      metascore={movie.metascore}
+                      plot={movie.plot}
+                      voteCount={movie.voteCount}
+                      originalLanguage={movie.originalLanguage}
+                      actors={movie.actors}
+                      director={movie.director}
+                      runtime={movie.runtime}
+                      writing={movie.writing}
+                      sound={movie.sound}
+                      keywords={movie.keywords}
+                      enableViewportTracking={true}
+                      onOpenDetail={handleOpenDetail}
+                    />
+                  </div>
                 ))}
               </div>
               
