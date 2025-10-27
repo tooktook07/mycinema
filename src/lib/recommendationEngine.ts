@@ -1137,79 +1137,126 @@ async function getFallbackRecommendation(excludeIds: string[]): Promise<Recommen
   const recentlyShownIds = getRecentlyShownMovieIds();
   const allExcludedIds = [...excludeIds, ...recentlyShownIds];
 
-  // Tier 1: Try high-rated movies (7.0+), no exclusion filter
-  let { data: movies } = await supabase
+  // Fetch movies from multiple rating tiers for diversity
+  const { data: tier1Movies } = await supabase
     .from("movies")
     .select(
       "id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes",
     )
-    .or(`imdb_rating.gte.7.0,and(imdb_rating.is.null,rating.gte.7.0)`)
+    .gte("imdb_rating", 8.0)
     .not("rating", "is", null)
-    .order("imdb_rating", { ascending: false, nullsFirst: false })
+    .order("imdb_rating", { ascending: false })
     .order("vote_count", { ascending: false })
-    .limit(100); // Increased for client-side filtering
+    .limit(300);
 
-  // Filter out excluded IDs client-side
-  let filteredMovies = (movies || []).filter(m => !allExcludedIds.includes(m.id));
+  const { data: tier2Movies } = await supabase
+    .from("movies")
+    .select(
+      "id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes",
+    )
+    .gte("imdb_rating", 7.5)
+    .lt("imdb_rating", 8.0)
+    .not("rating", "is", null)
+    .order("imdb_rating", { ascending: false })
+    .order("vote_count", { ascending: false })
+    .limit(350);
 
-  // Tier 2: If no filtered high-rated movies, try all movies with any rating
-  if (!filteredMovies || filteredMovies.length === 0) {
-    const { data: allMovies } = await supabase
-      .from("movies")
-      .select(
-        "id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes",
-      )
-      .not("rating", "is", null)
-      .order("imdb_rating", { ascending: false, nullsFirst: false })
-      .order("vote_count", { ascending: false })
-      .limit(100);
+  const { data: tier3Movies } = await supabase
+    .from("movies")
+    .select(
+      "id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes",
+    )
+    .gte("imdb_rating", 7.0)
+    .lt("imdb_rating", 7.5)
+    .not("rating", "is", null)
+    .order("imdb_rating", { ascending: false })
+    .order("vote_count", { ascending: false })
+    .limit(350);
 
-    filteredMovies = (allMovies || []).filter(m => !allExcludedIds.includes(m.id));
+  // Combine all tiers
+  const allMovies = [...(tier1Movies || []), ...(tier2Movies || []), ...(tier3Movies || [])];
+
+  // Filter out excluded IDs
+  const filteredMovies = allMovies.filter(m => !allExcludedIds.includes(m.id));
+
+  // Pool exhaustion check
+  if (filteredMovies.length === 0) {
+    return null; // Signal exhaustion
   }
 
-  // Tier 3: If still nothing, ignore recently shown (only exclude explicitly passed excludeIds)
-  if (!filteredMovies || filteredMovies.length === 0) {
-    const { data: allMovies } = await supabase
-      .from("movies")
-      .select(
-        "id, title, year, genres, poster, rating, plot, imdb_id, vote_count, original_language, actors, director, runtime, writing, sound, keywords, imdb_rating, imdb_votes",
-      )
-      .not("rating", "is", null)
-      .order("imdb_rating", { ascending: false, nullsFirst: false })
-      .order("vote_count", { ascending: false })
-      .limit(100);
+  // Group by genre for diversity
+  const genreGroups: Record<string, typeof filteredMovies> = {};
+  filteredMovies.forEach(movie => {
+    (movie.genres || []).forEach((genre: string) => {
+      if (!genreGroups[genre]) {
+        genreGroups[genre] = [];
+      }
+      genreGroups[genre].push(movie);
+    });
+  });
 
-    filteredMovies = (allMovies || []).filter(m => !excludeIds.includes(m.id));
+  // Randomly select from a random genre
+  const genreKeys = Object.keys(genreGroups);
+  if (genreKeys.length === 0) {
+    return null;
   }
 
-  if (!filteredMovies || filteredMovies.length === 0) return null;
+  const randomGenre = genreKeys[Math.floor(Math.random() * genreKeys.length)];
+  const genreMovies = genreGroups[randomGenre];
 
-  // Randomly select from available movies
-  const randomIndex = Math.floor(Math.random() * filteredMovies.length);
-  const movie = filteredMovies[randomIndex];
+  if (!genreMovies || genreMovies.length === 0) {
+    // Fallback to any random movie if genre selection fails
+    const randomIndex = Math.floor(Math.random() * filteredMovies.length);
+    const movie = filteredMovies[randomIndex];
+    markMoviesAsShown([movie.id]);
+    
+    return {
+      id: movie.id,
+      title: movie.title,
+      year: movie.year,
+      poster: movie.poster || "",
+      rating: movie.rating || 0,
+      imdbRating: movie.imdb_rating,
+      imdbVotes: movie.imdb_votes,
+      plot: movie.plot || "",
+      imdbId: movie.imdb_id,
+      voteCount: movie.vote_count,
+      originalLanguage: movie.original_language,
+      genre: movie.genres || [],
+      actors: movie.actors || "",
+      director: movie.director || "",
+      runtime: movie.runtime || "",
+      writing: movie.writing || "",
+      sound: movie.sound || "",
+      keywords: movie.keywords || [],
+    };
+  }
+
+  // Pick a random movie from the selected genre
+  const randomMovie = genreMovies[Math.floor(Math.random() * genreMovies.length)];
 
   // Mark this recommendation as shown
-  markMoviesAsShown([movie.id]);
+  markMoviesAsShown([randomMovie.id]);
 
   return {
-    id: movie.id,
-    title: movie.title,
-    year: movie.year,
-    poster: movie.poster || "",
-    rating: movie.rating || 0,
-    imdbRating: movie.imdb_rating,
-    imdbVotes: movie.imdb_votes,
-    plot: movie.plot || "",
-    imdbId: movie.imdb_id,
-    voteCount: movie.vote_count,
-    originalLanguage: movie.original_language,
-    genre: movie.genres || [],
-    actors: movie.actors || "",
-    director: movie.director || "",
-    runtime: movie.runtime || "",
-    writing: movie.writing || "",
-    sound: movie.sound || "",
-    keywords: movie.keywords || [],
+    id: randomMovie.id,
+    title: randomMovie.title,
+    year: randomMovie.year,
+    poster: randomMovie.poster || "",
+    rating: randomMovie.rating || 0,
+    imdbRating: randomMovie.imdb_rating,
+    imdbVotes: randomMovie.imdb_votes,
+    plot: randomMovie.plot || "",
+    imdbId: randomMovie.imdb_id,
+    voteCount: randomMovie.vote_count,
+    originalLanguage: randomMovie.original_language,
+    genre: randomMovie.genres || [],
+    actors: randomMovie.actors || "",
+    director: randomMovie.director || "",
+    runtime: randomMovie.runtime || "",
+    writing: randomMovie.writing || "",
+    sound: randomMovie.sound || "",
+    keywords: randomMovie.keywords || [],
   };
 }
 
