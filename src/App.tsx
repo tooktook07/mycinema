@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import { Navigation } from "@/components/Navigation";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -99,23 +100,25 @@ const AppRoutes = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="dark" storageKey="cinematch-theme">
-      <TooltipProvider>
-        <AuthProvider>
-          <DevModeProvider>
-            <AccessibilityProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <FilterProvider>
-                  <AppRoutes />
-                </FilterProvider>
-              </BrowserRouter>
-            </AccessibilityProvider>
-          </DevModeProvider>
-        </AuthProvider>
-      </TooltipProvider>
-    </ThemeProvider>
+    <HelmetProvider>
+      <ThemeProvider defaultTheme="dark" storageKey="cinematch-theme">
+        <TooltipProvider>
+          <AuthProvider>
+            <DevModeProvider>
+              <AccessibilityProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
+                  <FilterProvider>
+                    <AppRoutes />
+                  </FilterProvider>
+                </BrowserRouter>
+              </AccessibilityProvider>
+            </DevModeProvider>
+          </AuthProvider>
+        </TooltipProvider>
+      </ThemeProvider>
+    </HelmetProvider>
   </QueryClientProvider>
 );
 

@@ -13,6 +13,8 @@ import {
   CheckCircle2,
   RotateCcw,
 } from "lucide-react";
+import { SEOHead } from "@/components/SEO/SEOHead";
+import { generateOrganizationSchema } from "@/components/SEO/schemas/OrganizationSchema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -366,8 +368,15 @@ const Index = () => {
   const progressPercentage =
     totalAvailableMovies > 0 ? Math.min((totalMoviesViewed / totalAvailableMovies) * 100, 100) : 0;
 
+  const organizationSchema = generateOrganizationSchema();
+  
   return (
     <div className="min-h-screen pb-32">
+      <SEOHead
+        title="CineMatch - Discover Your Perfect Movie Match with AI Recommendations"
+        description="Discover personalized movie recommendations powered by AI. Browse thousands of movies, rate your favorites, and get intelligent suggestions tailored to your taste. Join CineMatch today!"
+        schema={organizationSchema}
+      />
       {/* Smart Welcome Banner - Guest Only (shown first) */}
       {!user && !isGuestBannerDismissed && (
         <div className="relative border-b px-4 py-8 bg-gradient-to-br from-primary/10 via-primary/5 to-background">

@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef } from "react";
 import { MovieDetailModal } from "@/components/MovieDetailModal";
 import { decodeArchiveSlug, toTitleCase } from "@/lib/urlUtils";
+import { SEOHead } from "@/components/SEO/SEOHead";
+import { generateBreadcrumbSchema } from "@/components/SEO/schemas/BreadcrumbSchema";
 
 const MOVIES_PER_PAGE = 48;
 
@@ -180,24 +182,47 @@ const GenreArchive = () => {
 
   const hasMore = data?.hasMore || false;
 
+  // SEO data
+  const seoTitle = `${displayGenreName} Movies - Browse ${displayGenreName} Genre | CineMatch`;
+  const seoDescription = `Discover the best ${displayGenreName} movies. Browse our collection of ${countData || 'hundreds of'} ${displayGenreName} films with ratings, cast, and detailed information.`;
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { name: 'Home', url: '/' },
+    { name: 'Movies', url: '/movies' },
+    { name: `${displayGenreName} Genre`, url: `/genre/${genreName}` },
+  ]);
+
   if ((isLoading || !isFetched) && offset === 0) {
     return (
-      <ArchiveLayout
-        title={displayGenreName}
-        breadcrumbs={[{ label: displayGenreName, href: `/genre/${genreName}` }]}
-        movieCount={0}
-      >
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {Array.from({ length: 48 }).map((_, idx) => (
-            <Skeleton key={idx} className="aspect-[2/3] rounded-lg" />
-          ))}
-        </div>
-      </ArchiveLayout>
+      <>
+        <SEOHead
+          title={seoTitle}
+          description={seoDescription}
+          schema={breadcrumbSchema}
+        />
+        
+        <ArchiveLayout
+          title={displayGenreName}
+          breadcrumbs={[{ label: displayGenreName, href: `/genre/${genreName}` }]}
+          movieCount={0}
+        >
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 48 }).map((_, idx) => (
+              <Skeleton key={idx} className="aspect-[2/3] rounded-lg" />
+            ))}
+          </div>
+        </ArchiveLayout>
+      </>
     );
   }
 
   return (
     <>
+      <SEOHead
+        title={seoTitle}
+        description={seoDescription}
+        schema={breadcrumbSchema}
+      />
+      
       <ArchiveLayout
         title={displayGenreName}
         description={`Explore the best ${decodedGenreName} films`}

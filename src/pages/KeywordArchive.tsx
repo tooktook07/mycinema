@@ -136,19 +136,36 @@ const KeywordArchive = () => {
 
   const hasMore = data?.hasMore || false;
 
+  // SEO data
+  const seoTitle = `${displayKeyword} Movies - Browse Keyword "${displayKeyword}" | CineMatch`;
+  const seoDescription = `Explore movies tagged with "${displayKeyword}". Discover films featuring ${displayKeyword} with detailed information and ratings.`;
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { name: 'Home', url: '/' },
+    { name: 'Movies', url: '/movies' },
+    { name: displayKeyword, url: `/keyword/${keyword}` },
+  ]);
+
   if ((isLoading || !isFetched) && offset === 0) {
     return (
-      <ArchiveLayout
-        title={`Movies tagged: ${displayKeyword}`}
-        breadcrumbs={[{ label: displayKeyword, href: `/keyword/${keyword}` }]}
-        movieCount={0}
-      >
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {Array.from({ length: 48 }).map((_, idx) => (
-            <Skeleton key={idx} className="aspect-[2/3] rounded-lg" />
-          ))}
-        </div>
-      </ArchiveLayout>
+      <>
+        <SEOHead
+          title={seoTitle}
+          description={seoDescription}
+          schema={breadcrumbSchema}
+        />
+        
+        <ArchiveLayout
+          title={`Movies tagged: ${displayKeyword}`}
+          breadcrumbs={[{ label: displayKeyword, href: `/keyword/${keyword}` }]}
+          movieCount={0}
+        >
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 48 }).map((_, idx) => (
+              <Skeleton key={idx} className="aspect-[2/3] rounded-lg" />
+            ))}
+          </div>
+        </ArchiveLayout>
+      </>
     );
   }
 

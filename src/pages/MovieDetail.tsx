@@ -8,6 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { SEOHead } from "@/components/SEO/SEOHead";
+import { generateMovieSchema } from "@/components/SEO/schemas/MovieSchema";
+import { generateBreadcrumbSchema } from "@/components/SEO/schemas/BreadcrumbSchema";
 import {
   Star,
   ExternalLink,
@@ -126,19 +129,6 @@ const MovieDetail = () => {
     loadRating();
   }, [movie?.id, user]);
 
-  // Update page title and meta tags
-  useEffect(() => {
-    if (movie) {
-      document.title = `${movie.title} (${movie.year}) - CineMatch`;
-      
-      // Set meta description
-      const metaDescription = document.querySelector('meta[name="description"]');
-      if (metaDescription && movie.plot) {
-        metaDescription.setAttribute('content', movie.plot.substring(0, 160));
-      }
-    }
-  }, [movie]);
-
   const handleRate = async (ratingValue: number) => {
     if (!movie?.id) return;
     setSaving(true);
@@ -192,6 +182,39 @@ const MovieDetail = () => {
   const googleSearchUrl = movie
     ? `https://www.google.com/search?q=${encodeURIComponent(movie.title)}+${movie.year}`
     : "";
+  
+  // Generate SEO data
+  const movieSEO = movie ? {
+    title: `${movie.title} (${movie.year}) - ${movie.imdb_rating || movie.rating ? `IMDb ${movie.imdb_rating || movie.rating}/10` : ''} | CineMatch`,
+    description: movie.plot 
+      ? `${movie.plot.substring(0, 140)}... ${movie.director ? `Directed by ${movie.director}.` : ''} ${movie.genres?.join(', ') || ''}`
+      : `Watch ${movie.title} (${movie.year}). ${movie.genres?.join(', ') || 'Movie'} ${movie.director ? `directed by ${movie.director}` : ''}.`,
+    image: imageProps?.src || undefined,
+    imageAlt: `${movie.title} (${movie.year}) movie poster`,
+  } : null;
+
+  const movieSchema = movie ? generateMovieSchema({
+    title: movie.title,
+    year: movie.year,
+    plot: movie.plot || undefined,
+    poster: imageProps?.src || movie.poster || undefined,
+    genres: movie.genres || undefined,
+    director: movie.director || undefined,
+    actors: movie.actors || undefined,
+    imdbRating: movie.imdb_rating || undefined,
+    imdbVotes: movie.imdb_votes || undefined,
+    rating: movie.rating || undefined,
+    voteCount: movie.vote_count || undefined,
+    runtime: movie.runtime || undefined,
+    releaseDate: movie.year ? `${movie.year}-01-01` : undefined,
+    imdbId: movie.imdb_id || undefined,
+  }) : null;
+
+  const breadcrumbSchema = movie ? generateBreadcrumbSchema([
+    { name: 'Home', url: '/' },
+    { name: 'Movies', url: '/movies' },
+    { name: movie.title, url: `/movie/${slug}` },
+  ]) : null;
   
   const formatCurrency = (amount: number | null | undefined) => {
     if (!amount) return "N/A";
@@ -251,6 +274,17 @@ const MovieDetail = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {movieSEO && (
+        <SEOHead
+          title={movieSEO.title}
+          description={movieSEO.description}
+          image={movieSEO.image}
+          imageAlt={movieSEO.imageAlt}
+          type="video.movie"
+          schema={movieSchema ? { ...movieSchema, ...{ breadcrumb: breadcrumbSchema } } : undefined}
+        />
+      )}
+      
       <div className="container mx-auto px-4 py-6 max-w-6xl">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
