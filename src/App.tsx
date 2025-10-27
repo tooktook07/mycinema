@@ -12,6 +12,7 @@ import { AccessibilityProvider } from "@/contexts/AccessibilityContext";
 import { DevModeSwitcher } from "@/components/DevModeSwitcher";
 import { AccessibilityWidget } from "@/components/AccessibilityWidget";
 import { ReadingGuide } from "@/components/accessibility/ReadingGuide";
+import { usePageTracking } from "@/hooks/usePageTracking";
 import Index from "./pages/Index";
 import Movies from "./pages/Movies";
 import Account from "./pages/Account";
@@ -32,6 +33,8 @@ import YearArchive from "./pages/YearArchive";
 const queryClient = new QueryClient();
 
 const AppRoutes = () => {
+  usePageTracking();
+  
   return (
     <>
       <Navigation />
