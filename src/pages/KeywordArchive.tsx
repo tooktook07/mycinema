@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { MovieDetailModal } from "@/components/MovieDetailModal";
 import { decodeArchiveSlug, toTitleCase } from "@/lib/urlUtils";
+import { SEOHead } from "@/components/SEO/SEOHead";
+import { generateBreadcrumbSchema } from "@/components/SEO/schemas/BreadcrumbSchema";
 
 const MOVIES_PER_PAGE = 48;
 

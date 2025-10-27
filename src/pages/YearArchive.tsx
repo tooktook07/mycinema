@@ -7,6 +7,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { MovieDetailModal } from "@/components/MovieDetailModal";
+import { SEOHead } from "@/components/SEO/SEOHead";
+import { generateBreadcrumbSchema } from "@/components/SEO/schemas/BreadcrumbSchema";
 
 const MOVIES_PER_PAGE = 48;
 
@@ -83,9 +85,25 @@ const YearArchive = () => {
 
   const hasMore = data?.hasMore || false;
 
+  // SEO data
+  const seoTitle = `${yearNumber} Movies - Best Films from ${yearNumber} | CineMatch`;
+  const seoDescription = `Discover the best movies from ${yearNumber}. Browse ${countData || displayedMovies.length} films released in ${yearNumber} with ratings averaging ${avgRating}/10. Complete movie list with cast, ratings, and details on CineMatch.`;
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { name: 'Home', url: '/' },
+    { name: 'Movies', url: '/movies' },
+    { name: `${yearNumber}`, url: `/year/${year}` },
+  ]);
+
   if ((isLoading || !isFetched) && offset === 0) {
     return (
-      <ArchiveLayout
+      <>
+        <SEOHead
+          title={seoTitle}
+          description={seoDescription}
+          schema={breadcrumbSchema}
+        />
+        
+        <ArchiveLayout
         title={`Movies from ${yearNumber}`}
         breadcrumbs={[{ label: yearNumber.toString(), href: `/year/${year}` }]}
         movieCount={0}
@@ -96,11 +114,18 @@ const YearArchive = () => {
           ))}
         </div>
       </ArchiveLayout>
+    </>
     );
   }
 
   return (
     <>
+      <SEOHead
+        title={seoTitle}
+        description={seoDescription}
+        schema={breadcrumbSchema}
+      />
+      
       <ArchiveLayout
         title={`Movies from ${yearNumber}`}
         description={`Average rating: ${avgRating}/10`}

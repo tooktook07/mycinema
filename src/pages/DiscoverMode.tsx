@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { saveGuestRating, getGuestRatings, getGuestRatedCount, saveGuestSkipped, getGuestSkipped } from "@/lib/guestRatings";
 import { clearOldestHalfOfTracking, canClearOlderEntries, clearRecentlyShown, getRecentlyShownStats, markMoviesAsShown } from "@/lib/recentlyShownTracker";
+import { SEOHead } from "@/components/SEO/SEOHead";
 
 const DiscoverMode = () => {
   const navigate = useNavigate();
@@ -236,6 +237,11 @@ const DiscoverMode = () => {
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-black">
+      <SEOHead
+        title="Discover Movies - Swipe & Rate to Find Your Perfect Match | CineMatch"
+        description="Rate movies with simple swipes to get AI-powered recommendations. Discover your next favorite film by rating movies you love. Join thousands finding their perfect movie match on CineMatch."
+      />
+      
       <div 
         className="relative h-screen w-full max-w-md overflow-hidden bg-black"
         onTouchStart={handleTouchStart}

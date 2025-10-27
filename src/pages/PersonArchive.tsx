@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import { MovieDetailModal } from "@/components/MovieDetailModal";
 import { decodeArchiveSlug, toTitleCase } from "@/lib/urlUtils";
+import { SEOHead } from "@/components/SEO/SEOHead";
+import { generateBreadcrumbSchema } from "@/components/SEO/schemas/BreadcrumbSchema";
 
 const MOVIES_PER_PAGE = 48;
 
@@ -140,8 +142,29 @@ const PersonArchive = () => {
   const hasWriter = writerMovies.length > 0;
   const defaultTab = "all";
 
+  // SEO data
+  const roles = [];
+  if (hasDirector) roles.push('director');
+  if (hasActor) roles.push('actor');
+  if (hasWriter) roles.push('writer');
+  const rolesText = roles.length > 0 ? roles.join(', ') : 'filmmaker';
+  
+  const seoTitle = `${displayName} Movies - Complete Filmography | CineMatch`;
+  const seoDescription = `Explore ${displayName}'s complete filmography. ${countData || displayedMovies.length} movies featuring ${displayName} as ${rolesText}. Browse ratings, cast details, and more on CineMatch.`;
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { name: 'Home', url: '/' },
+    { name: 'Movies', url: '/movies' },
+    { name: displayName, url: `/person/${personName}` },
+  ]);
+
   return (
     <>
+      <SEOHead
+        title={seoTitle}
+        description={seoDescription}
+        schema={breadcrumbSchema}
+      />
+      
       <ArchiveLayout
         title={displayName}
         description="Filmography"

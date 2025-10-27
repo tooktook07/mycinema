@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Bookmark, Film } from "lucide-react";
 import { useState } from "react";
+import { SEOHead } from "@/components/SEO/SEOHead";
 
 const Watchlist = () => {
   const { user } = useAuth();
@@ -76,6 +77,12 @@ const Watchlist = () => {
 
   return (
     <div className="min-h-screen">
+      <SEOHead
+        title="My Watchlist - Saved Movies to Watch | CineMatch"
+        description="View and manage your personal movie watchlist. Keep track of movies you want to watch and never forget a great film recommendation."
+        noindex={true}
+      />
+      
       <div className="container mx-auto max-w-7xl px-4 py-8">
         <div className="flex items-center gap-3 mb-8">
           <Bookmark className="h-8 w-8" />

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search, X, Info } from "lucide-react";
+import { SEOHead } from "@/components/SEO/SEOHead";
 import {
   Dialog,
   DialogContent,
@@ -314,6 +315,11 @@ const Movies = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="Browse Movies - Search & Explore Thousands of Films | CineMatch"
+        description="Search and explore thousands of movies with detailed information, ratings, cast, and crew. Filter by genre, year, rating, and more. Find your next favorite movie on CineMatch."
+      />
+      
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Search Bar */}
         <div className="mb-6">
