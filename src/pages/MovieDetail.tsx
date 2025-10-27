@@ -66,20 +66,24 @@ const MovieDetail = () => {
       
       const { titlePattern, year } = parsedSlug;
       
+      // Fetch all movies from the given year
       const { data: movies, error } = await supabase
         .from("movies")
         .select("*")
-        .ilike("title", `%${titlePattern}%`)
         .eq("year", year);
 
       if (error) throw error;
       if (!movies || movies.length === 0) throw new Error("Movie not found");
 
-      // Pick best match (exact title match if multiple results)
+      // Normalize title pattern for comparison (remove special chars)
+      const normalizedPattern = titlePattern.toLowerCase().replace(/[^a-z0-9]/g, '');
+      
+      // Find movie by normalized title match
       const movie = movies.find(m => 
-        m.title.toLowerCase().replace(/[^a-z0-9]/g, '') === 
-        titlePattern.toLowerCase().replace(/[^a-z0-9]/g, '')
-      ) || movies[0];
+        m.title.toLowerCase().replace(/[^a-z0-9]/g, '') === normalizedPattern
+      );
+
+      if (!movie) throw new Error("Movie not found");
 
       return movie;
     },
