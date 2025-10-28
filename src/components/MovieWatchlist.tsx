@@ -153,7 +153,7 @@ export const MovieWatchlist = ({ movieId, movieTitle, iconOnly = false, preloade
         variant={inWatchlist ? "default" : variant}
         onClick={handleClick}
         disabled={isLoading}
-        className={`h-7 sm:h-9 text-[10px] sm:text-sm px-2 sm:px-4 ${className || ''}`}
+        className={className || 'h-7 sm:h-9 text-[10px] sm:text-sm px-2 sm:px-4'}
       >
         <Bookmark className={`h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 ${inWatchlist ? 'fill-current' : ''}`} />
         <span className="hidden sm:inline">{inWatchlist ? 'In Watchlist' : 'Add to Watchlist'}</span>
