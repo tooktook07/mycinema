@@ -348,7 +348,7 @@ const DiscoverMode = () => {
                   size="lg"
                   onClick={handleSkip}
                   disabled={saving}
-                  className="flex-1 h-11 flex items-center justify-center gap-2 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border-white/20"
+                  className="flex-1 h-11 flex items-center justify-center gap-2 bg-white/10 backdrop-blur-md text-white border-white/20"
                 >
                   <span>Next Movie</span>
                   <SkipForward className="h-5 w-5" />
