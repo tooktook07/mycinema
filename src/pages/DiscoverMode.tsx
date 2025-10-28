@@ -10,8 +10,20 @@ import { DiscoverMilestoneCard } from "@/components/DiscoverMilestoneCard";
 import { getNextRecommendation, RecommendationMovie } from "@/lib/recommendationEngine";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { saveGuestRating, getGuestRatings, getGuestRatedCount, saveGuestSkipped, getGuestSkipped } from "@/lib/guestRatings";
-import { clearOldestHalfOfTracking, canClearOlderEntries, clearRecentlyShown, getRecentlyShownStats, markMoviesAsShown } from "@/lib/recentlyShownTracker";
+import {
+  saveGuestRating,
+  getGuestRatings,
+  getGuestRatedCount,
+  saveGuestSkipped,
+  getGuestSkipped,
+} from "@/lib/guestRatings";
+import {
+  clearOldestHalfOfTracking,
+  canClearOlderEntries,
+  clearRecentlyShown,
+  getRecentlyShownStats,
+  markMoviesAsShown,
+} from "@/lib/recentlyShownTracker";
 import { SEOHead } from "@/components/SEO/SEOHead";
 
 const DiscoverMode = () => {
@@ -19,7 +31,7 @@ const DiscoverMode = () => {
   const { user } = useAuth();
   const [currentMovie, setCurrentMovie] = useState<RecommendationMovie | null>(null);
   const [movieHistory, setMovieHistory] = useState<RecommendationMovie[]>([]);
-  const [navigationDirection, setNavigationDirection] = useState<'forward' | 'backward'>('forward');
+  const [navigationDirection, setNavigationDirection] = useState<"forward" | "backward">("forward");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [totalRated, setTotalRated] = useState(0);
@@ -57,15 +69,15 @@ const DiscoverMode = () => {
       setTotalRated(getGuestRatedCount());
       return;
     }
-    
+
     try {
       const { count } = await supabase
-        .from('user_ratings')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('media_type', 'movie')
-        .not('user_rating', 'is', null);
-      
+        .from("user_ratings")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("media_type", "movie")
+        .not("user_rating", "is", null);
+
       setTotalRated(count || 0);
     } catch (error) {
       console.error("Error loading total ratings:", error);
@@ -74,29 +86,29 @@ const DiscoverMode = () => {
 
   const loadNextMovie = async () => {
     setLoading(true);
-    setNavigationDirection('forward');
+    setNavigationDirection("forward");
     try {
       let movie: RecommendationMovie | null = null;
-      
+
       if (user) {
         movie = await getNextRecommendation(user.id, skippedIds);
       } else {
         const guestRatings = getGuestRatings();
         const guestSkipped = getGuestSkipped();
         const allSkipped = [...skippedIds, ...guestSkipped];
-        
+
         movie = await getNextRecommendation(
-          null, 
+          null,
           allSkipped,
-          guestRatings.map(r => ({ movieId: r.movieId, rating: r.rating }))
+          guestRatings.map((r) => ({ movieId: r.movieId, rating: r.rating })),
         );
       }
-      
+
       // Add current movie to history before showing new one
       if (currentMovie) {
-        setMovieHistory(prev => [...prev, currentMovie]);
+        setMovieHistory((prev) => [...prev, currentMovie]);
       }
-      
+
       setCurrentMovie(movie);
     } catch (error) {
       console.error("Error loading recommendation:", error);
@@ -108,19 +120,19 @@ const DiscoverMode = () => {
 
   const handlePrevious = () => {
     if (movieHistory.length === 0 || saving) return;
-    
+
     setSaving(true);
-    setNavigationDirection('backward');
+    setNavigationDirection("backward");
     try {
       // Get the last movie from history
       const prevMovie = movieHistory[movieHistory.length - 1];
-      
+
       // Remove it from history
-      setMovieHistory(prev => prev.slice(0, -1));
-      
+      setMovieHistory((prev) => prev.slice(0, -1));
+
       // Set it as current movie
       setCurrentMovie(prevMovie);
-      
+
       toast.info("⬅️ Previous movie");
     } finally {
       setSaving(false);
@@ -129,29 +141,30 @@ const DiscoverMode = () => {
 
   const handleRate = async (rating: number) => {
     if (!currentMovie || saving) return;
-    
+
     setSaving(true);
     try {
       if (user) {
-        const { error } = await supabase
-          .from('user_ratings')
-          .upsert({
+        const { error } = await supabase.from("user_ratings").upsert(
+          {
             user_id: user.id,
             media_id: currentMovie.id,
-            media_type: 'movie',
+            media_type: "movie",
             user_rating: rating,
-          }, {
-            onConflict: 'user_id,media_id,media_type'
-          });
+          },
+          {
+            onConflict: "user_id,media_id,media_type",
+          },
+        );
 
         if (error) throw error;
       } else {
         saveGuestRating(currentMovie.id, rating);
       }
 
-      setTotalRated(prev => prev + 1);
-      setSessionRatings(prev => prev + 1);
-      
+      setTotalRated((prev) => prev + 1);
+      setSessionRatings((prev) => prev + 1);
+
       if (rating === 10) {
         toast.success("❤️ Love this!");
       } else if (rating === 5) {
@@ -161,7 +174,7 @@ const DiscoverMode = () => {
       }
 
       markMoviesAsShown([currentMovie.id]);
-      
+
       await loadNextMovie();
     } catch (error) {
       console.error("Error saving rating:", error);
@@ -174,23 +187,23 @@ const DiscoverMode = () => {
   const handleDismissMilestone = async () => {
     setLastMilestoneShown(totalRated);
     setShowMilestone(false);
-    setNavigationDirection('forward');
+    setNavigationDirection("forward");
   };
 
   const handleSkip = async () => {
     if (!currentMovie || saving) return;
-    
+
     setSaving(true);
-    setNavigationDirection('forward');
-    
+    setNavigationDirection("forward");
+
     try {
       const newSkipped = [...skippedIds, currentMovie.id];
       setSkippedIds(newSkipped);
-      
+
       if (!user) {
         saveGuestSkipped(newSkipped);
       }
-      
+
       markMoviesAsShown([currentMovie.id]);
       await loadNextMovie();
     } finally {
@@ -224,7 +237,7 @@ const DiscoverMode = () => {
     const screenHeight = window.innerHeight;
     const topZoneThreshold = screenHeight * 0.3; // Top 30%
     const bottomZoneStart = screenHeight * 0.5; // Bottom 50%
-    
+
     // Check if tap started in top 30%
     if (touchStart <= topZoneThreshold) {
       handlePrevious();
@@ -241,153 +254,150 @@ const DiscoverMode = () => {
         title="Discover Movies - Swipe & Rate to Find Your Perfect Match | CineMatch"
         description="Rate movies with simple swipes to get AI-powered recommendations. Discover your next favorite film by rating movies you love. Join thousands finding their perfect movie match on CineMatch."
       />
-      
-      <div 
+
+      <div
         className="relative h-screen w-full max-w-md overflow-hidden bg-black"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-      {loading && !currentMovie ? (
-        <div className="absolute inset-0 flex items-center justify-center bg-black">
-          <Loader2 className="h-12 w-12 animate-spin text-white" />
-        </div>
-      ) : shouldShowMilestone() && showMilestone ? (
-        <AnimatePresence mode="wait">
-          <motion.div
-            key="milestone"
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "-100%" }}
-            transition={{ duration: 0.4, ease: "easeInOut" }}
-            className="absolute inset-0"
-          >
-            <DiscoverMilestoneCard
-              totalRated={totalRated}
-              onDismiss={handleDismissMilestone}
-            />
-          </motion.div>
-        </AnimatePresence>
-      ) : currentMovie ? (
-        <>
+        {loading && !currentMovie ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-black">
+            <Loader2 className="h-12 w-12 animate-spin text-white" />
+          </div>
+        ) : shouldShowMilestone() && showMilestone ? (
           <AnimatePresence mode="wait">
             <motion.div
-              key={currentMovie.id}
-              initial={{ y: navigationDirection === 'backward' ? "-100%" : "100%" }}
+              key="milestone"
+              initial={{ y: "100%" }}
               animate={{ y: 0 }}
-              exit={{ y: navigationDirection === 'backward' ? "100%" : "-100%" }}
+              exit={{ y: "-100%" }}
               transition={{ duration: 0.4, ease: "easeInOut" }}
               className="absolute inset-0"
             >
-              <MovieDiscoverCard
-                movie={currentMovie}
-                totalRated={totalRated}
-                sessionRatings={sessionRatings}
-                recentStats={recentStats}
-                enableViewportTracking={false}
-              />
+              <DiscoverMilestoneCard totalRated={totalRated} onDismiss={handleDismissMilestone} />
             </motion.div>
           </AnimatePresence>
-
-          <div className="absolute bottom-0 left-0 right-0 z-50 bg-gradient-to-t from-black/95 via-black/80 to-transparent pt-8 pb-6 px-4 safe-area-bottom">
-            <div className="grid grid-cols-3 gap-3 mb-3">
-              <Button
-                size="lg"
-                variant="outline"
-                className="flex flex-col gap-1 h-16 bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-red-500/80 hover:text-white hover:border-red-500/80"
-                onClick={() => handleRate(1)}
-                disabled={saving}
+        ) : currentMovie ? (
+          <>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentMovie.id}
+                initial={{ y: navigationDirection === "backward" ? "-100%" : "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: navigationDirection === "backward" ? "100%" : "-100%" }}
+                transition={{ duration: 0.4, ease: "easeInOut" }}
+                className="absolute inset-0"
               >
-                <X className="h-6 w-6" />
-                <span className="text-xs">Not for me</span>
-              </Button>
+                <MovieDiscoverCard
+                  movie={currentMovie}
+                  totalRated={totalRated}
+                  sessionRatings={sessionRatings}
+                  recentStats={recentStats}
+                  enableViewportTracking={false}
+                />
+              </motion.div>
+            </AnimatePresence>
 
-              <Button
-                size="lg"
-                variant="outline"
-                className="flex flex-col gap-1 h-16 bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-blue-500/80 hover:text-white hover:border-blue-500/80"
-                onClick={() => handleRate(5)}
-                disabled={saving}
-              >
-                <ThumbsUp className="h-6 w-6" />
-                <span className="text-xs">I like it</span>
-              </Button>
+            <div className="absolute bottom-0 left-0 right-0 z-50 bg-gradient-to-t from-black/95 via-black/80 to-transparent pt-8 pb-6 px-4 safe-area-bottom">
+              <div className="grid grid-cols-3 gap-3 mb-3">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="flex flex-col gap-1 h-16 bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-red-500/80 hover:text-white hover:border-red-500/80"
+                  onClick={() => handleRate(1)}
+                  disabled={saving}
+                >
+                  <X className="h-6 w-6" />
+                  <span className="text-xs">Not for me</span>
+                </Button>
 
-              <Button
-                size="lg"
-                variant="outline"
-                className="flex flex-col gap-1 h-16 bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-pink-500/80 hover:text-white hover:border-pink-500/80"
-                onClick={() => handleRate(10)}
-                disabled={saving}
-              >
-                <Heart className="h-6 w-6" />
-                <span className="text-xs">Love it!</span>
-              </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="flex flex-col gap-1 h-16 bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-blue-500/80 hover:text-white hover:border-blue-500/80"
+                  onClick={() => handleRate(5)}
+                  disabled={saving}
+                >
+                  <ThumbsUp className="h-6 w-6" />
+                  <span className="text-xs">I like it</span>
+                </Button>
+
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="flex flex-col gap-1 h-16 bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-pink-500/80 hover:text-white hover:border-pink-500/80"
+                  onClick={() => handleRate(10)}
+                  disabled={saving}
+                >
+                  <Heart className="h-6 w-6" />
+                  <span className="text-xs">Love it!</span>
+                </Button>
+              </div>
+
+              <div className="flex gap-3">
+                <MovieWatchlist
+                  movieId={currentMovie.id}
+                  movieTitle={currentMovie.title}
+                  className="flex-1 h-11 flex items-center justify-center gap-2 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border-white/20"
+                  variant="outline"
+                />
+
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={handleSkip}
+                  disabled={saving}
+                  className="flex-1 h-11 flex items-center justify-center gap-2 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border-white/20"
+                >
+                  <span>Next Movie</span>
+                  <SkipForward className="h-5 w-5" />
+                </Button>
+              </div>
             </div>
+          </>
+        ) : (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-black via-gray-900 to-black p-6 text-center">
+            <Film className="h-20 w-20 text-white/50 mb-4" />
+            <h2 className="text-2xl font-bold text-white mb-2">No More Movies</h2>
+            <p className="text-white/70 mb-6 max-w-md">
+              You've seen all available recommendations. Try refreshing or clearing history.
+            </p>
 
-            <div className="flex gap-3">
-              <MovieWatchlist
-                movieId={currentMovie.id}
-                movieTitle={currentMovie.title}
-                className="flex-1 h-11 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border-white/20"
-                variant="outline"
-              />
+            <div className="flex flex-col gap-3 w-full max-w-sm">
+              {canClearOlderEntries() && (
+                <Button
+                  onClick={handleRefreshRecommendations}
+                  variant="outline"
+                  size="lg"
+                  className="w-full bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border-white/20"
+                >
+                  <RefreshCw className="mr-2 h-5 w-5" />
+                  Refresh Recommendations
+                </Button>
+              )}
 
               <Button
+                onClick={handleClearAllHistory}
                 variant="outline"
                 size="lg"
-                onClick={handleSkip}
-                disabled={saving}
-                className="flex-1 h-11 flex items-center justify-center gap-2 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border-white/20"
+                className="w-full bg-white/10 backdrop-blur-md text-white hover:bg-red-500/80 border-white/20"
               >
-                <span>Next Movie</span>
-                <SkipForward className="h-5 w-5" />
+                <Trash2 className="mr-2 h-5 w-5" />
+                Clear All History
               </Button>
-            </div>
-          </div>
-        </>
-      ) : (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-black via-gray-900 to-black p-6 text-center">
-          <Film className="h-20 w-20 text-white/50 mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-2">No More Movies</h2>
-          <p className="text-white/70 mb-6 max-w-md">
-            You've seen all available recommendations. Try refreshing or clearing history.
-          </p>
-          
-          <div className="flex flex-col gap-3 w-full max-w-sm">
-            {canClearOlderEntries() && (
+
               <Button
-                onClick={handleRefreshRecommendations}
+                onClick={() => navigate("/movies")}
                 variant="outline"
                 size="lg"
                 className="w-full bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border-white/20"
               >
-                <RefreshCw className="mr-2 h-5 w-5" />
-                Refresh Recommendations
+                Browse All Movies
               </Button>
-            )}
-            
-            <Button
-              onClick={handleClearAllHistory}
-              variant="outline"
-              size="lg"
-              className="w-full bg-white/10 backdrop-blur-md text-white hover:bg-red-500/80 border-white/20"
-            >
-              <Trash2 className="mr-2 h-5 w-5" />
-              Clear All History
-            </Button>
-
-            <Button
-              onClick={() => navigate('/movies')}
-              variant="outline"
-              size="lg"
-              className="w-full bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border-white/20"
-            >
-              Browse All Movies
-            </Button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
     </div>
   );
