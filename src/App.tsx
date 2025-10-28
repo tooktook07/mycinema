@@ -30,6 +30,10 @@ import GenreArchive from "./pages/GenreArchive";
 import PersonArchive from "./pages/PersonArchive";
 import KeywordArchive from "./pages/KeywordArchive";
 import YearArchive from "./pages/YearArchive";
+import LanguageArchive from "./pages/LanguageArchive";
+import CompanyArchive from "./pages/CompanyArchive";
+import CountryArchive from "./pages/CountryArchive";
+import StreamingArchive from "./pages/StreamingArchive";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +51,10 @@ const AppRoutes = () => {
         <Route path="/person/:personName" element={<PersonArchive />} />
         <Route path="/keyword/:keyword" element={<KeywordArchive />} />
         <Route path="/year/:year" element={<YearArchive />} />
+        <Route path="/language/:language" element={<LanguageArchive />} />
+        <Route path="/company/:company" element={<CompanyArchive />} />
+        <Route path="/country/:country" element={<CountryArchive />} />
+        <Route path="/streaming/:provider" element={<StreamingArchive />} />
         <Route path="/discover" element={<DiscoverMode />} />
         <Route path="/watchlist" element={<Watchlist />} />
         <Route path="/signup" element={<SignUp />} />

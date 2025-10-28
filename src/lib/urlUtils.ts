@@ -78,6 +78,10 @@ export const getLanguageUrl = (language: string): string => {
   return `/language/${toUrlSlug(language)}`;
 };
 
+export const getStreamingUrl = (provider: string): string => {
+  return `/streaming/${toUrlSlug(provider)}`;
+};
+
 export const getDecadeUrl = (year: number): string => {
   const decade = Math.floor(year / 10) * 10;
   return `/decade/${decade}s`;

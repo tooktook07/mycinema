@@ -41,7 +41,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Card } from "@/components/ui/card";
 import { getRecentlyShownMovieIds, markMoviesAsShown } from "@/lib/recentlyShownTracker";
 import { Link } from "react-router-dom";
-import { getMovieUrl, getGenreUrl, getPersonUrl, getKeywordUrl, getYearUrl } from "@/lib/urlUtils";
+import { getMovieUrl, getGenreUrl, getPersonUrl, getKeywordUrl, getYearUrl, getLanguageUrl, getCompanyUrl, getCountryUrl, getStreamingUrl } from "@/lib/urlUtils";
 
 interface MovieDetailModalProps {
   isOpen: boolean;
@@ -757,12 +757,11 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                               <p className="text-[8px] sm:text-xs text-muted-foreground mb-0.5">Streaming</p>
                               <div className="flex flex-wrap gap-0.5">
                                 {watchProviders.flatrate.map((provider: any) => (
-                                  <div
-                                    key={provider.provider_id}
-                                    className="flex items-center gap-0.5 text-[8px] sm:text-xs bg-muted rounded px-1 py-0.5"
-                                  >
-                                    {provider.provider_name}
-                                  </div>
+                                  <Link key={provider.provider_id} to={getStreamingUrl(provider.provider_name)}>
+                                    <div className="flex items-center gap-0.5 text-[8px] sm:text-xs bg-muted rounded px-1 py-0.5 hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors">
+                                      {provider.provider_name}
+                                    </div>
+                                  </Link>
                                 ))}
                               </div>
                             </div>
@@ -925,9 +924,11 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                         </h4>
                         <div className="flex flex-wrap gap-0.5">
                           {movie.production_companies.map((company: any, idx: number) => (
-                            <Badge key={idx} variant="outline" className="text-[8px] sm:text-xs px-1 py-0 h-4 sm:h-5">
-                              {company.name || company}
-                            </Badge>
+                            <Link key={idx} to={getCompanyUrl(company.name || company)}>
+                              <Badge variant="outline" className="text-[8px] sm:text-xs px-1 py-0 h-4 sm:h-5 hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors">
+                                {company.name || company}
+                              </Badge>
+                            </Link>
                           ))}
                         </div>
                       </Card>
@@ -944,9 +945,11 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                           </h4>
                           <div className="flex flex-wrap gap-0.5">
                             {movie.production_countries.map((country: any, idx: number) => (
-                              <Badge key={idx} variant="outline" className="text-[8px] sm:text-xs px-1 py-0 h-4 sm:h-5">
-                                {country.name || country}
-                              </Badge>
+                              <Link key={idx} to={getCountryUrl(country.name || country)}>
+                                <Badge variant="outline" className="text-[8px] sm:text-xs px-1 py-0 h-4 sm:h-5 hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors">
+                                  {country.name || country}
+                                </Badge>
+                              </Link>
                             ))}
                           </div>
                         </Card>
@@ -962,9 +965,11 @@ export const MovieDetailModal = ({ isOpen, onClose, movieId, onNavigateToMovie }
                           </h4>
                           <div className="flex flex-wrap gap-0.5">
                             {movie.spoken_languages.map((lang: any, idx: number) => (
-                              <Badge key={idx} variant="outline" className="text-[8px] sm:text-xs px-1 py-0 h-4 sm:h-5">
-                                {lang.english_name || lang.name || lang}
-                              </Badge>
+                              <Link key={idx} to={getLanguageUrl(lang.english_name || lang.name || lang)}>
+                                <Badge variant="outline" className="text-[8px] sm:text-xs px-1 py-0 h-4 sm:h-5 hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors">
+                                  {lang.english_name || lang.name || lang}
+                                </Badge>
+                              </Link>
                             ))}
                           </div>
                         </Card>

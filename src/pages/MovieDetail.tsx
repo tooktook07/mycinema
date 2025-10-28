@@ -39,7 +39,7 @@ import { useEffectiveAuth } from "@/contexts/DevModeContext";
 import { saveGuestRating, getGuestRatings } from "@/lib/guestRatings";
 import { getSimilarMovies } from "@/lib/recommendationEngine";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { parseMovieSlug, getMovieUrl, getGenreUrl, getPersonUrl, getKeywordUrl, getYearUrl } from "@/lib/urlUtils";
+import { parseMovieSlug, getMovieUrl, getGenreUrl, getPersonUrl, getKeywordUrl, getYearUrl, getLanguageUrl, getCompanyUrl, getCountryUrl, getStreamingUrl } from "@/lib/urlUtils";
 
 const MovieDetail = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -530,12 +530,11 @@ const MovieDetail = () => {
                             <p className="text-xs text-muted-foreground mb-1">Streaming</p>
                             <div className="flex flex-wrap gap-1">
                               {watchProviders.flatrate.map((provider: any) => (
-                                <div
-                                  key={provider.provider_id}
-                                  className="text-xs bg-muted rounded px-2 py-1"
-                                >
-                                  {provider.provider_name}
-                                </div>
+                                <Link key={provider.provider_id} to={getStreamingUrl(provider.provider_name)}>
+                                  <div className="text-xs bg-muted rounded px-2 py-1 hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors">
+                                    {provider.provider_name}
+                                  </div>
+                                </Link>
                               ))}
                             </div>
                           </div>
@@ -680,9 +679,11 @@ const MovieDetail = () => {
                     </h4>
                     <div className="flex flex-wrap gap-1">
                       {movie.production_companies.map((company: any, idx: number) => (
-                        <Badge key={idx} variant="secondary">
-                          {company.name}
-                        </Badge>
+                        <Link key={idx} to={getCompanyUrl(company.name)}>
+                          <Badge variant="secondary" className="hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors">
+                            {company.name}
+                          </Badge>
+                        </Link>
                       ))}
                     </div>
                   </Card>
@@ -697,9 +698,11 @@ const MovieDetail = () => {
                     </h4>
                     <div className="flex flex-wrap gap-1">
                       {movie.production_countries.map((country: any, idx: number) => (
-                        <Badge key={idx} variant="secondary">
-                          {country.name}
-                        </Badge>
+                        <Link key={idx} to={getCountryUrl(country.name)}>
+                          <Badge variant="secondary" className="hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors">
+                            {country.name}
+                          </Badge>
+                        </Link>
                       ))}
                     </div>
                   </Card>
@@ -714,9 +717,11 @@ const MovieDetail = () => {
                     </h4>
                     <div className="flex flex-wrap gap-1">
                       {movie.spoken_languages.map((lang: any, idx: number) => (
-                        <Badge key={idx} variant="secondary">
-                          {lang.english_name || lang.name}
-                        </Badge>
+                        <Link key={idx} to={getLanguageUrl(lang.english_name || lang.name)}>
+                          <Badge variant="secondary" className="hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors">
+                            {lang.english_name || lang.name}
+                          </Badge>
+                        </Link>
                       ))}
                     </div>
                   </Card>
