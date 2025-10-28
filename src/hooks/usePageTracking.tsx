@@ -31,11 +31,15 @@ export const usePageTracking = () => {
 
     // Send page_view event to GA4
     if (typeof window.gtag !== 'undefined') {
-      window.gtag('event', 'page_view', {
-        page_title: pageTitle,
-        page_location: window.location.href,
-        page_path: location.pathname + location.search,
-      });
+      try {
+        window.gtag('event', 'page_view', {
+          page_title: pageTitle,
+          page_location: window.location.href,
+          page_path: location.pathname + location.search,
+        });
+      } catch (error) {
+        console.error('GA tracking error:', error);
+      }
     }
   }, [location]);
 };
