@@ -21,6 +21,10 @@ export const usePageTracking = () => {
       if (pathname.startsWith('/person/')) return 'Person Archive - CineMatch';
       if (pathname.startsWith('/keyword/')) return 'Keyword Archive - CineMatch';
       if (pathname.startsWith('/year/')) return 'Year Archive - CineMatch';
+      if (pathname.startsWith('/language/')) return 'Language Archive - CineMatch';
+      if (pathname.startsWith('/company/')) return 'Production Company Archive - CineMatch';
+      if (pathname.startsWith('/country/')) return 'Country Archive - CineMatch';
+      if (pathname.startsWith('/streaming/')) return 'Streaming Service Archive - CineMatch';
       return 'CineMatch';
     };
 
@@ -29,17 +33,24 @@ export const usePageTracking = () => {
     // Update document title
     document.title = pageTitle;
 
-    // Send page_view event to GA4
-    if (typeof window.gtag !== 'undefined') {
-      try {
-        window.gtag('event', 'page_view', {
-          page_title: pageTitle,
-          page_location: window.location.href,
-          page_path: location.pathname + location.search,
-        });
-      } catch (error) {
-        console.error('GA tracking error:', error);
+    // Send page_view event to GA4 with retry logic
+    const sendPageView = () => {
+      if (typeof window.gtag !== 'undefined') {
+        try {
+          window.gtag('event', 'page_view', {
+            page_title: pageTitle,
+            page_location: window.location.href,
+            page_path: location.pathname + location.search,
+          });
+        } catch (error) {
+          console.error('GA tracking error:', error);
+        }
+      } else {
+        // Retry after a short delay if gtag is not loaded yet
+        setTimeout(sendPageView, 100);
       }
-    }
+    };
+
+    sendPageView();
   }, [location]);
 };
