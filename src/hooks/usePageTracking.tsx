@@ -33,31 +33,27 @@ export const usePageTracking = () => {
     // Update document title
     document.title = pageTitle;
 
-    // Send page_view event to GA4 with retry logic (max 10 attempts)
-    let retryCount = 0;
-    const maxRetries = 10;
-    
-    const sendPageView = () => {
-      if (typeof window.gtag !== 'undefined') {
-        try {
-          window.gtag('event', 'page_view', {
+    // Use gtag config update instead of manual events
+    // This is more reliable for SPAs
+    if (typeof window.gtag !== 'undefined') {
+      window.gtag('config', 'G-7MCMFEBTTZ', {
+        page_title: pageTitle,
+        page_path: location.pathname + location.search,
+        page_location: window.location.href
+      });
+    } else {
+      // Fallback: wait a bit and try again (only once)
+      const timer = setTimeout(() => {
+        if (typeof window.gtag !== 'undefined') {
+          window.gtag('config', 'G-7MCMFEBTTZ', {
             page_title: pageTitle,
-            page_location: window.location.href,
             page_path: location.pathname + location.search,
+            page_location: window.location.href
           });
-          console.log('GA4 page view tracked:', pageTitle);
-        } catch (error) {
-          console.error('GA tracking error:', error);
         }
-      } else if (retryCount < maxRetries) {
-        // Retry after a short delay if gtag is not loaded yet
-        retryCount++;
-        setTimeout(sendPageView, 100);
-      } else {
-        console.warn('GA4 gtag not available after', maxRetries, 'attempts');
-      }
-    };
-
-    sendPageView();
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
   }, [location]);
 };
