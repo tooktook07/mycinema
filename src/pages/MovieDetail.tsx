@@ -66,27 +66,17 @@ const MovieDetail = () => {
       
       const { titlePattern, year } = parsedSlug;
       
-      // Split title pattern into individual words for better matching
-      const words = titlePattern.split(' ').filter(w => w.length > 0);
+      // Normalize the pattern for matching
+      const normalizedPattern = titlePattern.toLowerCase().replace(/[^a-z0-9]/g, '');
       
-      // Build query with multiple ilike conditions for each word
-      let query = supabase
+      // Get all movies from that year
+      const { data: movies, error } = await supabase
         .from("movies")
         .select("*")
         .eq("year", year);
-      
-      // Add ilike condition for each word to handle special characters
-      words.forEach(word => {
-        query = query.ilike("title", `%${word}%`);
-      });
-
-      const { data: movies, error } = await query;
 
       if (error) throw error;
       if (!movies || movies.length === 0) throw new Error("Movie not found");
-
-      // Normalize title for exact matching (handles special characters)
-      const normalizedPattern = titlePattern.toLowerCase().replace(/[^a-z0-9]/g, '');
       
       // Find best match by normalized title
       const movie = movies.find(m => 
