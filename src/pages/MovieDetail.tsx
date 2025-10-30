@@ -66,12 +66,21 @@ const MovieDetail = () => {
       
       const { titlePattern, year } = parsedSlug;
       
-      // Fetch movies with fuzzy title match for the given year
-      const { data: movies, error } = await supabase
+      // Split title pattern into individual words for better matching
+      const words = titlePattern.split(' ').filter(w => w.length > 0);
+      
+      // Build query with multiple ilike conditions for each word
+      let query = supabase
         .from("movies")
         .select("*")
-        .ilike("title", `%${titlePattern}%`)
         .eq("year", year);
+      
+      // Add ilike condition for each word to handle special characters
+      words.forEach(word => {
+        query = query.ilike("title", `%${word}%`);
+      });
+
+      const { data: movies, error } = await query;
 
       if (error) throw error;
       if (!movies || movies.length === 0) throw new Error("Movie not found");
