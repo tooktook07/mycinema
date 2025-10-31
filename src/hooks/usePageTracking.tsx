@@ -35,10 +35,18 @@ export const usePageTracking = () => {
     document.title = pageTitle;
 
     // Send page view event to GA4 using react-ga4
-    ReactGA.send({ 
-      hitType: "pageview", 
-      page: location.pathname + location.search,
-      title: pageTitle
-    });
+    try {
+      ReactGA.send({ 
+        hitType: "pageview", 
+        page: location.pathname + location.search,
+        title: pageTitle
+      });
+      console.log('GA4 Page View Tracked:', { 
+        title: pageTitle, 
+        path: location.pathname + location.search 
+      });
+    } catch (error) {
+      console.error('GA4 tracking error:', error);
+    }
   }, [location]);
 };

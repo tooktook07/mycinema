@@ -38,12 +38,28 @@ import ReactGA from "react-ga4";
 
 const queryClient = new QueryClient();
 
-// Initialize Google Analytics 4
-ReactGA.initialize('G-7MCMFEBTTZ', {
-  gaOptions: {
-    send_page_view: false  // We'll send page views manually in usePageTracking
+// Initialize Google Analytics 4 with proper timing
+const initializeGA = () => {
+  try {
+    ReactGA.initialize('G-7MCMFEBTTZ', {
+      gaOptions: {
+        send_page_view: false
+      }
+    });
+    console.log('GA4 initialized successfully');
+  } catch (error) {
+    console.error('GA4 initialization error:', error);
   }
-});
+};
+
+// Wait for gtag to be available before initializing
+if (typeof window !== 'undefined') {
+  if (window.gtag) {
+    initializeGA();
+  } else {
+    window.addEventListener('load', initializeGA);
+  }
+}
 
 const AppRoutes = () => {
   usePageTracking();
