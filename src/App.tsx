@@ -43,7 +43,9 @@ const initializeGA = () => {
   try {
     ReactGA.initialize('G-7MCMFEBTTZ', {
       gaOptions: {
-        send_page_view: false
+        send_page_view: false,
+        cookie_domain: 'auto',
+        cookie_flags: 'SameSite=None;Secure'
       }
     });
     console.log('GA4 initialized successfully');
