@@ -38,29 +38,18 @@ import ReactGA from "react-ga4";
 
 const queryClient = new QueryClient();
 
-// Initialize Google Analytics 4 with proper timing
-const initializeGA = () => {
-  try {
-    ReactGA.initialize('G-7MCMFEBTTZ', {
-      gaOptions: {
-        send_page_view: false,
-        cookie_domain: 'auto',
-        cookie_flags: 'SameSite=None;Secure'
-      }
-    });
-    console.log('GA4 initialized successfully');
-  } catch (error) {
-    console.error('GA4 initialization error:', error);
-  }
-};
-
-// Wait for gtag to be available before initializing
-if (typeof window !== 'undefined') {
-  if (window.gtag) {
-    initializeGA();
-  } else {
-    window.addEventListener('load', initializeGA);
-  }
+// Initialize Google Analytics 4
+try {
+  ReactGA.initialize('G-7MCMFEBTTZ', {
+    gaOptions: {
+      send_page_view: false,
+      cookie_domain: 'auto',
+      cookie_flags: 'SameSite=None;Secure'
+    }
+  });
+  console.log('GA4 initialized successfully with react-ga4');
+} catch (error) {
+  console.error('GA4 initialization error:', error);
 }
 
 const AppRoutes = () => {
