@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import ReactGA from 'react-ga4';
 
 export const usePageTracking = () => {
   const location = useLocation();
@@ -33,27 +34,11 @@ export const usePageTracking = () => {
     // Update document title
     document.title = pageTitle;
 
-    // Use gtag config update instead of manual events
-    // This is more reliable for SPAs
-    if (typeof window.gtag !== 'undefined') {
-      window.gtag('config', 'G-7MCMFEBTTZ', {
-        page_title: pageTitle,
-        page_path: location.pathname + location.search,
-        page_location: window.location.href
-      });
-    } else {
-      // Fallback: wait a bit and try again (only once)
-      const timer = setTimeout(() => {
-        if (typeof window.gtag !== 'undefined') {
-          window.gtag('config', 'G-7MCMFEBTTZ', {
-            page_title: pageTitle,
-            page_path: location.pathname + location.search,
-            page_location: window.location.href
-          });
-        }
-      }, 100);
-      
-      return () => clearTimeout(timer);
-    }
+    // Send page view event to GA4 using react-ga4
+    ReactGA.send({ 
+      hitType: "pageview", 
+      page: location.pathname + location.search,
+      title: pageTitle
+    });
   }, [location]);
 };

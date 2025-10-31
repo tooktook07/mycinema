@@ -34,8 +34,16 @@ import LanguageArchive from "./pages/LanguageArchive";
 import CompanyArchive from "./pages/CompanyArchive";
 import CountryArchive from "./pages/CountryArchive";
 import StreamingArchive from "./pages/StreamingArchive";
+import ReactGA from "react-ga4";
 
 const queryClient = new QueryClient();
+
+// Initialize Google Analytics 4
+ReactGA.initialize('G-7MCMFEBTTZ', {
+  gaOptions: {
+    send_page_view: false  // We'll send page views manually in usePageTracking
+  }
+});
 
 const AppRoutes = () => {
   usePageTracking();
