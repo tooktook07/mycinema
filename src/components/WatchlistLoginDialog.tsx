@@ -1,7 +1,8 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Bookmark, Star, Heart, TrendingUp } from "lucide-react";
+import { Bookmark, X } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface WatchlistLoginDialogProps {
   open: boolean;
@@ -18,75 +19,97 @@ export const WatchlistLoginDialog = ({ open, onOpenChange }: WatchlistLoginDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg border-primary/20">
-        <DialogHeader className="space-y-3">
-          <div className="mx-auto w-16 h-16 rounded-full bg-primary/20 backdrop-blur-md flex items-center justify-center">
-            <Bookmark className="h-8 w-8 text-primary" />
-          </div>
-          <DialogTitle className="text-2xl text-center">Save Your Favorites</DialogTitle>
-          <DialogDescription className="text-base text-center">
-            Create a free account to unlock your personal watchlist and personalized recommendations!
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="w-full h-full max-w-none max-h-none p-0 gap-0 border-0 bg-transparent">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="absolute inset-0 flex items-center justify-center bg-black/95 p-6"
+          onClick={() => onOpenChange(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.9, y: 20 }}
+            transition={{ delay: 0.1 }}
+            className="relative w-full max-w-lg flex flex-col items-center text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onOpenChange(false)}
+              className="absolute -top-2 right-0 h-10 w-10 rounded-full bg-white/10 text-white hover:bg-white/20 z-10"
+            >
+              <X className="h-5 w-5" />
+            </Button>
 
-        <div className="space-y-3 py-4">
-          <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
-            <div className="rounded-full bg-primary/10 p-2 mt-0.5">
-              <Bookmark className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-sm">Save Movies</h4>
-              <p className="text-xs text-muted-foreground">
-                Keep track of movies you want to watch
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+              className="mx-auto w-24 h-24 rounded-full bg-[#6B7045] flex items-center justify-center mb-6"
+            >
+              <Bookmark className="h-12 w-12 text-[#F4C430]" />
+            </motion.div>
+
+            <motion.h2
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="text-3xl md:text-4xl font-bold text-white mb-4"
+            >
+              Save Your Favorites! 🎬
+            </motion.h2>
+
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="text-white/90 text-lg mb-6"
+            >
+              Create a free account to unlock your watchlist
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="bg-[#6B7045]/20 backdrop-blur-md rounded-xl p-6 space-y-2 border border-[#6B7045]/40 w-full mb-6"
+            >
+              <p className="text-white font-medium text-base">
+                Unlock personalized recommendations!
               </p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
-            <div className="rounded-full bg-primary/10 p-2 mt-0.5">
-              <Star className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-sm">Rate & Review</h4>
-              <p className="text-xs text-muted-foreground">
-                Share your opinions on movies you've watched
+              <p className="text-white/70 text-sm">
+                The more you save and rate, the better your recommendations become
               </p>
-            </div>
-          </div>
+            </motion.div>
 
-          <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
-            <div className="rounded-full bg-primary/10 p-2 mt-0.5">
-              <TrendingUp className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-sm">Personalized Recommendations</h4>
-              <p className="text-xs text-muted-foreground">
-                Get movie suggestions based on your taste
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
-            <div className="rounded-full bg-primary/10 p-2 mt-0.5">
-              <Heart className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-sm">Sync Across Devices</h4>
-              <p className="text-xs text-muted-foreground">
-                Access your watchlist anywhere, anytime
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-2 pt-2">
-          <Button onClick={handleSignUp} size="lg" className="w-full font-semibold">
-            Create Free Account
-          </Button>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Maybe Later
-          </Button>
-        </div>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="flex flex-col gap-3 w-full"
+            >
+              <Button
+                size="lg"
+                onClick={handleSignUp}
+                className="w-full text-base font-semibold bg-[#F4C430] text-black hover:bg-[#F4C430]/90"
+              >
+                <Bookmark className="h-5 w-5 mr-2" />
+                Create Free Account
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                className="w-full bg-white text-black hover:bg-white/90 border-0 text-base font-semibold"
+              >
+                Maybe Later
+              </Button>
+            </motion.div>
+          </motion.div>
+        </motion.div>
       </DialogContent>
     </Dialog>
   );

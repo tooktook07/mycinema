@@ -1,7 +1,7 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Crown, Infinity, Zap, Star } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Crown, X } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface WatchlistUpgradeDialogProps {
   open: boolean;
@@ -11,78 +11,97 @@ interface WatchlistUpgradeDialogProps {
 export const WatchlistUpgradeDialog = ({ open, onOpenChange }: WatchlistUpgradeDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg border-primary/20">
-        <DialogHeader className="space-y-3">
-          <div className="mx-auto w-16 h-16 rounded-full bg-primary/20 backdrop-blur-md flex items-center justify-center">
-            <Crown className="h-8 w-8 text-primary" />
-          </div>
-          <DialogTitle className="text-2xl text-center">Upgrade to Pro</DialogTitle>
-          <DialogDescription className="text-base text-center">
-            You've reached your watchlist limit (10/10 movies). Upgrade to Pro for unlimited access!
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="w-full h-full max-w-none max-h-none p-0 gap-0 border-0 bg-transparent">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="absolute inset-0 flex items-center justify-center bg-black/95 p-6"
+          onClick={() => onOpenChange(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.9, y: 20 }}
+            transition={{ delay: 0.1 }}
+            className="relative w-full max-w-lg flex flex-col items-center text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onOpenChange(false)}
+              className="absolute -top-2 right-0 h-10 w-10 rounded-full bg-white/10 text-white hover:bg-white/20 z-10"
+            >
+              <X className="h-5 w-5" />
+            </Button>
 
-        <div className="space-y-4 py-4">
-          <div className="rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 p-4 border border-primary/20">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-bold">Pro Plan</h3>
-              <Badge variant="default" className="gap-1">
-                <Crown className="h-3 w-3" />
-                Premium
-              </Badge>
-            </div>
-            <div className="text-3xl font-bold mb-1">Coming Soon</div>
-            <p className="text-sm text-muted-foreground">Full access to all Pro features</p>
-          </div>
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+              className="mx-auto w-24 h-24 rounded-full bg-[#6B7045] flex items-center justify-center mb-6"
+            >
+              <Crown className="h-12 w-12 text-[#F4C430]" />
+            </motion.div>
 
-          <div className="space-y-2">
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
-              <div className="rounded-full bg-primary/10 p-2 mt-0.5">
-                <Infinity className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <h4 className="font-semibold text-sm">Unlimited Watchlist</h4>
-                <p className="text-xs text-muted-foreground">
-                  Save as many movies as you want
-                </p>
-              </div>
-            </div>
+            <motion.h2
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="text-3xl md:text-4xl font-bold text-white mb-4"
+            >
+              Watchlist Full! 👑
+            </motion.h2>
 
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
-              <div className="rounded-full bg-primary/10 p-2 mt-0.5">
-                <Zap className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <h4 className="font-semibold text-sm">Advanced Features</h4>
-                <p className="text-xs text-muted-foreground">
-                  Access to premium filters and recommendations
-                </p>
-              </div>
-            </div>
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="text-white/90 text-lg mb-6"
+            >
+              You've saved <span className="font-bold">10/10 movies</span>
+            </motion.p>
 
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
-              <div className="rounded-full bg-primary/10 p-2 mt-0.5">
-                <Star className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <h4 className="font-semibold text-sm">Early Access</h4>
-                <p className="text-xs text-muted-foreground">
-                  Be the first to try new features
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="bg-[#6B7045]/20 backdrop-blur-md rounded-xl p-6 space-y-2 border border-[#6B7045]/40 w-full mb-6"
+            >
+              <p className="text-white font-medium text-base">
+                Upgrade to Pro for unlimited watchlist!
+              </p>
+              <p className="text-white/70 text-sm">
+                Coming soon: Save unlimited movies and unlock premium features
+              </p>
+            </motion.div>
 
-        <div className="flex flex-col gap-2 pt-2">
-          <Button disabled size="lg" className="w-full font-semibold">
-            <Crown className="h-4 w-4 mr-2" />
-            Upgrade to Pro (Coming Soon)
-          </Button>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Continue with Free Plan
-          </Button>
-        </div>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="flex flex-col gap-3 w-full"
+            >
+              <Button
+                disabled
+                size="lg"
+                className="w-full text-base font-semibold bg-[#F4C430] text-black hover:bg-[#F4C430]/90"
+              >
+                <Crown className="h-5 w-5 mr-2" />
+                Upgrade to Pro (Coming Soon)
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                className="w-full bg-white text-black hover:bg-white/90 border-0 text-base font-semibold"
+              >
+                Continue with Free Plan
+              </Button>
+            </motion.div>
+          </motion.div>
+        </motion.div>
       </DialogContent>
     </Dialog>
   );
