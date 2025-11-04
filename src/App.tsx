@@ -73,7 +73,6 @@ const AppRoutes = () => {
         <Route path="/watchlist" element={<Watchlist />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/auth" element={<Login />} /> {/* Redirect old /auth to /login */}
         <Route path="/account" element={<Account />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/help" element={<Help />} /> {/* Help documentation - no nav link */}
