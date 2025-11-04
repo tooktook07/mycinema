@@ -20,7 +20,8 @@ export const WatchlistLoginDialog = ({ open, onOpenChange }: WatchlistLoginDialo
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-full h-full max-w-none max-h-none p-0 gap-0 border-0 bg-transparent [&>button]:hidden">
-        <div className="relative h-screen w-full max-w-md overflow-hidden bg-black">
+        <div className="flex justify-center items-center min-h-screen bg-black z-50">
+          <div className="relative h-screen w-full max-w-md overflow-hidden bg-black">
           <div className="absolute inset-0">
             <motion.div
               initial={{ opacity: 0 }}
@@ -108,6 +109,7 @@ export const WatchlistLoginDialog = ({ open, onOpenChange }: WatchlistLoginDialo
                 </div>
               </div>
             </motion.div>
+            </div>
           </div>
         </div>
       </DialogContent>
