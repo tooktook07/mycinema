@@ -19,17 +19,17 @@ export const WatchlistLoginDialog = ({ open, onOpenChange }: WatchlistLoginDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full h-full max-w-none max-h-none p-0 gap-0 border-0 bg-transparent [&>button]:hidden">
-        <div className="flex justify-center items-center min-h-screen bg-black z-50">
+      <DialogContent className="fixed inset-0 z-[100] w-full h-full max-w-none max-h-none p-0 gap-0 border-0 bg-transparent [&>button]:hidden">
+        <div className="flex justify-center items-center min-h-screen bg-black z-[100]">
           <div className="relative h-screen w-full max-w-md overflow-hidden bg-black">
-          <div className="absolute inset-0">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 z-50 flex items-center justify-center bg-black p-6"
-              onClick={onOpenChange ? () => onOpenChange(false) : undefined}
-            >
+            <div className="absolute inset-0">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 z-[100] flex items-center justify-center bg-black p-6"
+                onClick={onOpenChange ? () => onOpenChange(false) : undefined}
+              >
               <div className="relative w-full h-full flex items-center justify-center">
                 <Button
                   variant="ghost"
