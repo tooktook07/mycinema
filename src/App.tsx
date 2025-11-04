@@ -17,7 +17,6 @@ import { usePageTracking } from "@/hooks/usePageTracking";
 import Index from "./pages/Index";
 import Movies from "./pages/Movies";
 import Account from "./pages/Account";
-import Auth from "./pages/Auth";
 import SignUp from "./pages/SignUp";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
