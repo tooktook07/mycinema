@@ -34,17 +34,26 @@ export const usePageTracking = () => {
     // Update document title
     document.title = pageTitle;
 
-    // Send page view event to GA4 using react-ga4
+    // Send page view event to GA4 using native gtag (better Firefox compatibility)
     try {
-      ReactGA.send({ 
-        hitType: "pageview", 
-        page: location.pathname + location.search,
-        title: pageTitle
-      });
-      console.log('GA4 Page View Tracked:', { 
-        title: pageTitle, 
-        path: location.pathname + location.search 
-      });
+      // Check if gtag is available and not blocked
+      if (typeof window.gtag === 'function') {
+        window.gtag('event', 'page_view', {
+          page_path: location.pathname + location.search,
+          page_title: pageTitle,
+        });
+        console.log('GA4 Page View Tracked (gtag):', { 
+          title: pageTitle, 
+          path: location.pathname + location.search,
+          gtag_available: true,
+          dataLayer_available: !!window.dataLayer
+        });
+      } else {
+        console.warn('GA4 gtag unavailable (blocked or not loaded):', {
+          gtag_exists: typeof window.gtag,
+          dataLayer_exists: !!window.dataLayer
+        });
+      }
     } catch (error) {
       console.error('GA4 tracking error:', error);
     }

@@ -43,7 +43,11 @@ try {
     gaOptions: {
       send_page_view: false,
       cookie_domain: 'auto',
-      cookie_flags: 'SameSite=None;Secure'
+      // Use SameSite=Lax for non-HTTPS (better Firefox compatibility)
+      cookie_flags: window.location.protocol === 'https:' ? 'SameSite=None;Secure' : 'SameSite=Lax'
+    },
+    gtagOptions: {
+      debug_mode: import.meta.env.DEV,
     }
   });
   console.log('GA4 initialized successfully with react-ga4');
