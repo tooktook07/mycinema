@@ -2,6 +2,7 @@ import { Settings } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ActivityLogs } from "./ActivityLogs";
 import { GeneralSettings } from "./GeneralSettings";
+import { CookieSettings } from "./CookieSettings";
 
 export const SystemSettings = () => {
   return (
@@ -24,8 +25,9 @@ export const SystemSettings = () => {
         <div className="lg:col-span-2">
           <ActivityLogs />
         </div>
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 space-y-6">
           <GeneralSettings />
+          <CookieSettings />
         </div>
       </div>
     </div>
