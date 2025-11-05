@@ -10,9 +10,11 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { DevModeProvider } from "@/contexts/DevModeContext";
 import { FilterProvider } from "@/contexts/FilterContext";
 import { AccessibilityProvider } from "@/contexts/AccessibilityContext";
+import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
 import { DevModeSwitcher } from "@/components/DevModeSwitcher";
 import { AccessibilityWidget } from "@/components/AccessibilityWidget";
 import { ReadingGuide } from "@/components/accessibility/ReadingGuide";
+import { CookieConsent } from "@/components/CookieConsent";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import Index from "./pages/Index";
 import Movies from "./pages/Movies";
@@ -37,23 +39,25 @@ import ReactGA from "react-ga4";
 
 const queryClient = new QueryClient();
 
-// Initialize Google Analytics 4
-try {
-  ReactGA.initialize('G-7MCMFEBTTZ', {
-    gaOptions: {
-      send_page_view: false,
-      cookie_domain: 'auto',
-      // Use SameSite=Lax for non-HTTPS (better Firefox compatibility)
-      cookie_flags: window.location.protocol === 'https:' ? 'SameSite=None;Secure' : 'SameSite=Lax'
-    },
-    gtagOptions: {
-      debug_mode: import.meta.env.DEV,
-    }
-  });
-  console.log('GA4 initialized successfully with react-ga4');
-} catch (error) {
-  console.error('GA4 initialization error:', error);
-}
+// GA4 will be initialized after user consent
+export const initializeGA4 = () => {
+  try {
+    ReactGA.initialize('G-7MCMFEBTTZ', {
+      gaOptions: {
+        send_page_view: false,
+        cookie_domain: 'auto',
+        // Use SameSite=Lax for non-HTTPS (better Firefox compatibility)
+        cookie_flags: window.location.protocol === 'https:' ? 'SameSite=None;Secure' : 'SameSite=Lax'
+      },
+      gtagOptions: {
+        debug_mode: import.meta.env.DEV,
+      }
+    });
+    console.log('GA4 initialized successfully after consent');
+  } catch (error) {
+    console.error('GA4 initialization error:', error);
+  }
+};
 
 const AppRoutes = () => {
   usePageTracking();
@@ -92,6 +96,9 @@ const AppRoutes = () => {
         </div>
       )}
 
+      {/* Cookie Consent Banner */}
+      <CookieConsent />
+
       {/* Accessibility Widget & Reading Guide */}
       <AccessibilityWidget />
       <ReadingGuide />
@@ -128,19 +135,21 @@ const App = () => (
     <HelmetProvider>
       <ThemeProvider defaultTheme="dark" storageKey="cinematch-theme">
         <TooltipProvider>
-          <AuthProvider>
-            <DevModeProvider>
-              <AccessibilityProvider>
-                <Toaster />
-                <Sonner />
-                <BrowserRouter>
-                  <FilterProvider>
-                    <AppRoutes />
-                  </FilterProvider>
-                </BrowserRouter>
-              </AccessibilityProvider>
-            </DevModeProvider>
-          </AuthProvider>
+          <CookieConsentProvider>
+            <AuthProvider>
+              <DevModeProvider>
+                <AccessibilityProvider>
+                  <Toaster />
+                  <Sonner />
+                  <BrowserRouter>
+                    <FilterProvider>
+                      <AppRoutes />
+                    </FilterProvider>
+                  </BrowserRouter>
+                </AccessibilityProvider>
+              </DevModeProvider>
+            </AuthProvider>
+          </CookieConsentProvider>
         </TooltipProvider>
       </ThemeProvider>
     </HelmetProvider>

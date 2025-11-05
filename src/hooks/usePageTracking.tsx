@@ -1,9 +1,18 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import ReactGA from 'react-ga4';
+import { useCookieConsent } from '@/contexts/CookieConsentContext';
+import { initializeGA4 } from '@/App';
 
 export const usePageTracking = () => {
   const location = useLocation();
+  const { hasConsent } = useCookieConsent();
+
+  useEffect(() => {
+    // Initialize GA4 if user has consented and it hasn't been initialized yet
+    if (hasConsent && typeof window.gtag !== 'function') {
+      initializeGA4();
+    }
+  }, [hasConsent]);
 
   useEffect(() => {
     // Get page title based on route
@@ -35,27 +44,33 @@ export const usePageTracking = () => {
     document.title = pageTitle;
 
     // Send page view event to GA4 using native gtag (better Firefox compatibility)
-    try {
-      // Check if gtag is available and not blocked
-      if (typeof window.gtag === 'function') {
-        window.gtag('event', 'page_view', {
-          page_path: location.pathname + location.search,
-          page_title: pageTitle,
-        });
-        console.log('GA4 Page View Tracked (gtag):', { 
-          title: pageTitle, 
-          path: location.pathname + location.search,
-          gtag_available: true,
-          dataLayer_available: !!window.dataLayer
-        });
-      } else {
-        console.warn('GA4 gtag unavailable (blocked or not loaded):', {
-          gtag_exists: typeof window.gtag,
-          dataLayer_exists: !!window.dataLayer
-        });
+    // Only track if user has consented
+    if (hasConsent) {
+      try {
+        // Check if gtag is available and not blocked
+        if (typeof window.gtag === 'function') {
+          window.gtag('event', 'page_view', {
+            page_path: location.pathname + location.search,
+            page_title: pageTitle,
+          });
+          console.log('GA4 Page View Tracked (gtag):', { 
+            title: pageTitle, 
+            path: location.pathname + location.search,
+            gtag_available: true,
+            dataLayer_available: !!window.dataLayer,
+            consent: hasConsent
+          });
+        } else {
+          console.warn('GA4 gtag unavailable (blocked or not loaded):', {
+            gtag_exists: typeof window.gtag,
+            dataLayer_exists: !!window.dataLayer
+          });
+        }
+      } catch (error) {
+        console.error('GA4 tracking error:', error);
       }
-    } catch (error) {
-      console.error('GA4 tracking error:', error);
+    } else {
+      console.log('GA4 tracking skipped - no user consent');
     }
-  }, [location]);
+  }, [location, hasConsent]);
 };
