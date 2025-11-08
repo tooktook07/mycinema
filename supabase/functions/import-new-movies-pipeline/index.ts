@@ -191,8 +191,8 @@ serve(async (req) => {
 
       let allMovies: any[] = [];
       
-      // Fetch multiple pages to get more variety
-      for (let page = 1; page <= 5; page++) {
+      // Fetch 15 pages to get more variety (increased from 5 to ~300 movies/day)
+      for (let page = 1; page <= 15; page++) {
         try {
           const tmdbResponse = await fetch(
             `https://api.themoviedb.org/3/discover/movie?api_key=${tmdbApiKey}&release_date.gte=${threeYearsAgoStr}&release_date.lte=${todayStr}&sort_by=popularity.desc&vote_count.gte=50&page=${page}`
@@ -218,6 +218,21 @@ serve(async (req) => {
       
       const movies = allMovies;
       addLog(`Total found: ${movies.length} movies from TMDB`);
+      
+      // DEDUPLICATION: Fetch all existing IMDb IDs to avoid expensive API calls
+      addLog('Fetching existing movie IMDb IDs for deduplication...');
+      const { data: existingMovies, error: existingError } = await supabase
+        .from('movies')
+        .select('imdb_id');
+      
+      if (existingError) {
+        addLog(`⚠ Error fetching existing movies: ${existingError.message}`);
+      }
+      
+      const existingImdbIds = new Set(
+        (existingMovies || []).map(m => m.imdb_id).filter(Boolean)
+      );
+      addLog(`Loaded ${existingImdbIds.size} existing IMDb IDs for quick deduplication`);
 
       for (const tmdbMovie of movies) {
         try {
@@ -243,22 +258,20 @@ serve(async (req) => {
             }
           }
 
-          // Get detailed movie data including IMDb ID
-          const detailResponse = await fetch(
-            `https://api.themoviedb.org/3/movie/${tmdbMovie.id}?api_key=${tmdbApiKey}&append_to_response=external_ids,keywords,credits`
+          // DEDUPLICATION STEP 1: Fetch ONLY external IDs (lightweight call)
+          const externalIdsResponse = await fetch(
+            `https://api.themoviedb.org/3/movie/${tmdbMovie.id}/external_ids?api_key=${tmdbApiKey}`
           );
 
-          if (!detailResponse.ok) {
+          if (!externalIdsResponse.ok) {
             skipped++;
             continue;
           }
 
-          const detailData = await detailResponse.json();
-          const imdbId = detailData.external_ids?.imdb_id;
+          const externalIds = await externalIdsResponse.json();
+          const imdbId = externalIds.imdb_id;
 
           if (!imdbId) {
-            addLog(`⚠ No IMDb ID for: ${detailData.title}`);
-            
             // Record that we checked this movie
             await supabase.from('tmdb_processed_movies').upsert({
               tmdb_id: tmdbMovie.id,
@@ -271,16 +284,8 @@ serve(async (req) => {
             continue;
           }
 
-          // Check if movie already exists
-          const { data: existingMovie } = await supabase
-            .from('movies')
-            .select('id')
-            .eq('imdb_id', imdbId)
-            .single();
-
-          if (existingMovie) {
-            addLog(`⊘ Movie already exists: ${detailData.title}`);
-            
+          // DEDUPLICATION STEP 2: Check against pre-fetched IMDb IDs (instant)
+          if (existingImdbIds.has(imdbId)) {
             // Record that we checked this movie
             await supabase.from('tmdb_processed_movies').upsert({
               tmdb_id: tmdbMovie.id,
@@ -292,6 +297,18 @@ serve(async (req) => {
             skipped++;
             continue;
           }
+
+          // NOW fetch full details (only for movies that don't exist)
+          const detailResponse = await fetch(
+            `https://api.themoviedb.org/3/movie/${tmdbMovie.id}?api_key=${tmdbApiKey}&append_to_response=keywords,credits`
+          );
+
+          if (!detailResponse.ok) {
+            skipped++;
+            continue;
+          }
+
+          const detailData = await detailResponse.json();
 
           // Fetch OMDb data BEFORE inserting to apply quality filters
           let omdbData: any = null;
@@ -462,16 +479,16 @@ serve(async (req) => {
       // CLEANUP PHASE: Remove existing movies that don't meet quality threshold
       addLog('Starting cleanup phase: checking existing movies for quality compliance...');
       
-      const { data: existingMovies, error: fetchError } = await supabase
+      const { data: allExistingMovies, error: fetchError } = await supabase
         .from('movies')
         .select('id, imdb_id, title, imdb_rating, rating, imdb_votes, vote_count');
 
       if (fetchError) {
         addLog(`⚠ Error fetching movies for cleanup: ${fetchError.message}`);
-      } else if (existingMovies) {
-        addLog(`Checking ${existingMovies.length} movies against quality threshold...`);
+      } else if (allExistingMovies) {
+        addLog(`Checking ${allExistingMovies.length} movies against quality threshold...`);
         
-        for (const movie of existingMovies) {
+        for (const movie of allExistingMovies) {
           // Prefer IMDB data, fallback to TMDB
           const effectiveRating = movie.imdb_rating || movie.rating || 0;
           const effectiveVotes = movie.imdb_votes || movie.vote_count || 0;
