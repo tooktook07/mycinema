@@ -27,6 +27,17 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
+    // Verify admin role
+    const { data: roles } = await supabaseClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id);
+
+    const isAdmin = roles?.some(r => r.role === 'admin');
+    if (!isAdmin) {
+      throw new Error('Admin access required');
+    }
+
     const { searchQuery, filters } = await req.json();
     const TMDB_API_KEY = Deno.env.get('TMDB_API_KEY');
 
