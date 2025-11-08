@@ -22,21 +22,39 @@ serve(async (req) => {
       }
     );
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    console.log('Checking authentication...');
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    
+    if (authError) {
+      console.error('Auth error:', authError);
+      throw new Error(`Authentication failed: ${authError.message}`);
+    }
+    
     if (!user) {
-      throw new Error('Unauthorized');
+      console.error('No user found in token');
+      throw new Error('Unauthorized - no user found');
     }
 
+    console.log('User authenticated:', user.id);
+
     // Verify admin role
-    const { data: roles } = await supabaseClient
+    const { data: roles, error: rolesError } = await supabaseClient
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id);
 
+    if (rolesError) {
+      console.error('Error fetching roles:', rolesError);
+      throw new Error('Failed to verify permissions');
+    }
+
     const isAdmin = roles?.some(r => r.role === 'admin');
     if (!isAdmin) {
+      console.error('User is not admin:', user.id);
       throw new Error('Admin access required');
     }
+
+    console.log('Admin access verified');
 
     const { searchQuery, filters } = await req.json();
     const TMDB_API_KEY = Deno.env.get('TMDB_API_KEY');
