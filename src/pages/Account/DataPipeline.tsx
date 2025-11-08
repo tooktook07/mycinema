@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { Database, Cloud, Image } from "lucide-react";
+import { Database, Cloud, Image, Search } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SyncMovies } from "./SyncMovies";
 import { OMDbEnrichment } from "./OMDbEnrichment";
 import { PosterStorage } from "./PosterStorage";
+import { MovieImportChecker } from "./MovieImportChecker";
 
 interface DataPipelineProps {
   initialTab?: string;
@@ -114,7 +115,7 @@ export const DataPipeline = ({ initialTab = "sync", initialFilters, autoStart = 
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="sync" className="gap-2">
                 <Cloud className="h-4 w-4" />
                 TMDB Sync
@@ -126,6 +127,10 @@ export const DataPipeline = ({ initialTab = "sync", initialFilters, autoStart = 
               <TabsTrigger value="posters" className="gap-2">
                 <Image className="h-4 w-4" />
                 Poster Storage
+              </TabsTrigger>
+              <TabsTrigger value="checker" className="gap-2">
+                <Search className="h-4 w-4" />
+                Movie Checker
               </TabsTrigger>
             </TabsList>
 
@@ -157,6 +162,22 @@ export const DataPipeline = ({ initialTab = "sync", initialFilters, autoStart = 
 
             <TabsContent value="posters" className="mt-6">
               <PosterStorage />
+            </TabsContent>
+
+            <TabsContent value="checker" className="mt-6">
+              <MovieImportChecker
+                currentFilters={{
+                  minRating: ratingRange[0],
+                  maxRating: ratingRange[1],
+                  minVoteCount,
+                  yearRange,
+                  genres: selectedGenres,
+                  excludedGenres,
+                  languages: selectedLanguages,
+                  statuses: selectedStatuses,
+                  minPopularity,
+                }}
+              />
             </TabsContent>
           </Tabs>
         </CardContent>
