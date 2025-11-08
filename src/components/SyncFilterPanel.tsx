@@ -3,6 +3,7 @@ import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { VoteTierConfig } from "@/data/types";
 
 interface SyncFilterPanelProps {
   selectedGenres: string[];
@@ -15,8 +16,8 @@ interface SyncFilterPanelProps {
   onRatingRangeChange: (range: [number, number]) => void;
   yearRange: [number, number];
   onYearRangeChange: (range: [number, number]) => void;
-  minVoteCount: number;
-  onMinVoteCountChange: (value: number) => void;
+  voteTiers: VoteTierConfig;
+  onVoteTiersChange: (tiers: VoteTierConfig) => void;
   minPopularity: number;
   onMinPopularityChange: (value: number) => void;
   selectedLanguages: string[];
@@ -74,20 +75,22 @@ export const SyncFilterPanel = ({
   onRatingRangeChange,
   yearRange,
   onYearRangeChange,
-  minVoteCount,
-  onMinVoteCountChange,
+  voteTiers,
+  onVoteTiersChange,
   minPopularity,
   onMinPopularityChange,
   selectedLanguages,
   onLanguageToggle,
 }: SyncFilterPanelProps) => {
+  const currentYear = new Date().getFullYear();
+  
   const selectedCount = selectedGenres.length + 
     excludedGenres.length +
     selectedStatuses.length +
     selectedLanguages.length +
     (ratingRange[0] > 6.0 || ratingRange[1] < 10 ? 1 : 0) + 
     (yearRange[0] !== 2020 || yearRange[1] !== 2025 ? 1 : 0) +
-    (minVoteCount > 1000 ? 1 : 0) +
+    (voteTiers.currentYear !== 300 || voteTiers.lastYear !== 500 || voteTiers.twoToThreeYears !== 750 || voteTiers.older !== 1000 ? 1 : 0) +
     (minPopularity > 0 ? 1 : 0);
 
   return (
@@ -275,30 +278,81 @@ export const SyncFilterPanel = ({
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-3 md:col-span-2">
           <div>
-            <Label className="text-base font-semibold text-foreground flex items-center justify-between">
-              <span>Minimum Vote Count</span>
-              <Badge variant="secondary" className="text-sm font-bold">
-                {minVoteCount.toLocaleString()}+
-              </Badge>
-            </Label>
-            <p className="text-xs text-muted-foreground mt-1">Filter by minimum number of votes</p>
+            <Label className="text-base font-semibold text-foreground">Vote Count Tiers</Label>
+            <p className="text-xs text-muted-foreground mt-1">
+              Set minimum vote requirements based on movie age
+            </p>
           </div>
-          <div className="pt-2">
-            <Slider
-              value={[minVoteCount]}
-              onValueChange={([value]) => onMinVoteCountChange(value)}
-              min={0}
-              max={10000}
-              step={100}
-              className="w-full"
-            />
-            <div className="flex justify-between text-xs text-muted-foreground mt-2">
-              <span>0</span>
-              <span>5,000</span>
-              <span>10,000+</span>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="tier-current" className="text-xs text-muted-foreground mb-1.5 block">
+                Current Year ({currentYear})
+              </Label>
+              <Input
+                id="tier-current"
+                type="number"
+                value={voteTiers.currentYear}
+                onChange={(e) => onVoteTiersChange({ ...voteTiers, currentYear: parseInt(e.target.value) || 0 })}
+                min={0}
+                max={10000}
+                step={50}
+                className="bg-background text-center font-semibold"
+              />
             </div>
+            <div>
+              <Label htmlFor="tier-last" className="text-xs text-muted-foreground mb-1.5 block">
+                Last Year ({currentYear - 1})
+              </Label>
+              <Input
+                id="tier-last"
+                type="number"
+                value={voteTiers.lastYear}
+                onChange={(e) => onVoteTiersChange({ ...voteTiers, lastYear: parseInt(e.target.value) || 0 })}
+                min={0}
+                max={10000}
+                step={50}
+                className="bg-background text-center font-semibold"
+              />
+            </div>
+            <div>
+              <Label htmlFor="tier-2-3" className="text-xs text-muted-foreground mb-1.5 block">
+                2-3 Years ({currentYear - 3}-{currentYear - 2})
+              </Label>
+              <Input
+                id="tier-2-3"
+                type="number"
+                value={voteTiers.twoToThreeYears}
+                onChange={(e) => onVoteTiersChange({ ...voteTiers, twoToThreeYears: parseInt(e.target.value) || 0 })}
+                min={0}
+                max={10000}
+                step={50}
+                className="bg-background text-center font-semibold"
+              />
+            </div>
+            <div>
+              <Label htmlFor="tier-older" className="text-xs text-muted-foreground mb-1.5 block">
+                Older (≤{currentYear - 4})
+              </Label>
+              <Input
+                id="tier-older"
+                type="number"
+                value={voteTiers.older}
+                onChange={(e) => onVoteTiersChange({ ...voteTiers, older: parseInt(e.target.value) || 0 })}
+                min={0}
+                max={10000}
+                step={50}
+                className="bg-background text-center font-semibold"
+              />
+            </div>
+          </div>
+          <div className="text-xs text-muted-foreground space-y-1 p-3 rounded-lg bg-muted/50 border">
+            <div className="font-medium mb-1">Current Tier Settings:</div>
+            <div>• {currentYear}: {voteTiers.currentYear.toLocaleString()}+ votes</div>
+            <div>• {currentYear - 1}: {voteTiers.lastYear.toLocaleString()}+ votes</div>
+            <div>• {currentYear - 3}-{currentYear - 2}: {voteTiers.twoToThreeYears.toLocaleString()}+ votes</div>
+            <div>• ≤{currentYear - 4}: {voteTiers.older.toLocaleString()}+ votes</div>
           </div>
         </div>
 

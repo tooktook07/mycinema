@@ -27,6 +27,30 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface VoteTierConfig {
+  currentYear: number;
+  lastYear: number;
+  twoToThreeYears: number;
+  older: number;
+}
+
+const DEFAULT_TIERS: VoteTierConfig = {
+  currentYear: 300,
+  lastYear: 500,
+  twoToThreeYears: 750,
+  older: 1000
+};
+
+function getRequiredVoteCount(movieYear: number, tiers: VoteTierConfig): number {
+  const currentYear = new Date().getFullYear();
+  const yearsDiff = currentYear - movieYear;
+  
+  if (yearsDiff === 0) return tiers.currentYear;
+  if (yearsDiff === 1) return tiers.lastYear;
+  if (yearsDiff >= 2 && yearsDiff <= 3) return tiers.twoToThreeYears;
+  return tiers.older;
+}
+
 serve(async (req) => {
   // === FUNCTION BOOT LOGGING ===
   console.log('═══════════════════════════════════════════');
@@ -299,7 +323,7 @@ serve(async (req) => {
             addLog(`⚠ OMDb fetch failed for ${detailData.title}: ${omdbError}`);
           }
 
-          // Quality check - 6+ stars and 1000+ votes (IMDB or TMDB fallback)
+          // Quality check - 6+ stars and dynamic vote threshold based on year
           const tmdbRating = detailData.vote_average || 0;
           const tmdbVotes = detailData.vote_count || 0;
 
@@ -307,15 +331,21 @@ serve(async (req) => {
           const effectiveRating = imdbRating > 0 ? imdbRating : tmdbRating;
           const effectiveVotes = imdbVotes > 0 ? imdbVotes : tmdbVotes;
 
-          // Must meet BOTH thresholds (6+ stars AND 1000+ votes)
-          if (effectiveRating < 6.0 || effectiveVotes < 1000) {
-            addLog(`⊘ Below quality threshold: ${detailData.title} (Rating: ${effectiveRating}/10, Votes: ${effectiveVotes.toLocaleString()})`);
+          // Get required votes based on movie year
+          const movieYear = detailData.release_date 
+            ? parseInt(detailData.release_date.split('-')[0]) 
+            : 0;
+          const requiredVotes = getRequiredVoteCount(movieYear, DEFAULT_TIERS);
+
+          // Must meet BOTH thresholds (6+ stars AND required votes for year)
+          if (effectiveRating < 6.0 || effectiveVotes < requiredVotes) {
+            addLog(`⊘ Below quality threshold: ${detailData.title} (Rating: ${effectiveRating}/10, Votes: ${effectiveVotes.toLocaleString()}, Required: ${requiredVotes} for ${movieYear})`);
             
             // Record that we checked this movie (will retry after 30 days)
             await supabase.from('tmdb_processed_movies').upsert({
               tmdb_id: tmdbMovie.id,
               import_status: 'skipped_quality',
-              skip_reason: `Below threshold - Rating: ${effectiveRating}/10, Votes: ${effectiveVotes}`,
+              skip_reason: `Below threshold - Rating: ${effectiveRating}/10, Votes: ${effectiveVotes}/${requiredVotes} for year ${movieYear}`,
               checked_at: new Date().toISOString()
             });
             
@@ -323,7 +353,7 @@ serve(async (req) => {
             continue;
           }
 
-          addLog(`✓ Meets quality threshold: ${detailData.title} (Rating: ${effectiveRating}/10, Votes: ${effectiveVotes.toLocaleString()})`);
+          addLog(`✓ Meets quality threshold: ${detailData.title} (Rating: ${effectiveRating}/10, Votes: ${effectiveVotes.toLocaleString()}/${requiredVotes} for ${movieYear})`);
 
           addLog(`Importing: ${detailData.title} (IMDB: ${imdbRating}/10, TMDB: ${tmdbRating}/10)`);
 
@@ -445,9 +475,19 @@ serve(async (req) => {
           // Prefer IMDB data, fallback to TMDB
           const effectiveRating = movie.imdb_rating || movie.rating || 0;
           const effectiveVotes = movie.imdb_votes || movie.vote_count || 0;
+          
+          // Get the year from the movie record
+          const { data: movieData } = await supabase
+            .from('movies')
+            .select('year')
+            .eq('id', movie.id)
+            .single();
+          
+          const movieYear = movieData?.year || 0;
+          const requiredVotes = getRequiredVoteCount(movieYear, DEFAULT_TIERS);
 
-          // Check if movie fails quality threshold (below 6 stars OR below 1000 votes)
-          if (effectiveRating < 6.0 || effectiveVotes < 1000) {
+          // Check if movie fails quality threshold (below 6 stars OR below required votes for year)
+          if (effectiveRating < 6.0 || effectiveVotes < requiredVotes) {
             const { error: deleteError } = await supabase
               .from('movies')
               .delete()
@@ -458,7 +498,7 @@ serve(async (req) => {
               failed++;
             } else {
               removed++;
-              addLog(`✕ Removed: "${movie.title}" (Rating: ${effectiveRating}/10, Votes: ${effectiveVotes.toLocaleString()})`);
+              addLog(`✕ Removed: "${movie.title}" (Rating: ${effectiveRating}/10, Votes: ${effectiveVotes.toLocaleString()}/${requiredVotes} for year ${movieYear})`);
             }
           }
         }

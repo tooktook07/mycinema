@@ -6,6 +6,7 @@ import { SyncMovies } from "./SyncMovies";
 import { OMDbEnrichment } from "./OMDbEnrichment";
 import { PosterStorage } from "./PosterStorage";
 import { MovieImportChecker } from "./MovieImportChecker";
+import { VoteTierConfig } from "@/data/types";
 
 interface DataPipelineProps {
   initialTab?: string;
@@ -17,7 +18,7 @@ interface DataPipelineProps {
     minRating?: number;
     maxRating?: number;
     yearRange?: [number, number];
-    minVoteCount?: number;
+    voteTiers?: VoteTierConfig;
     minPopularity?: number;
   };
   autoStart?: boolean;
@@ -36,7 +37,14 @@ export const DataPipeline = ({ initialTab = "sync", initialFilters, autoStart = 
     initialFilters?.maxRating || 10.0
   ]);
   const [yearRange, setYearRange] = useState<[number, number]>(initialFilters?.yearRange || [2020, 2025]);
-  const [minVoteCount, setMinVoteCount] = useState(initialFilters?.minVoteCount || 1000);
+  const [voteTiers, setVoteTiers] = useState<VoteTierConfig>(
+    initialFilters?.voteTiers || {
+      currentYear: 300,
+      lastYear: 500,
+      twoToThreeYears: 750,
+      older: 1000,
+    }
+  );
   const [minPopularity, setMinPopularity] = useState(initialFilters?.minPopularity || 0);
   const [triggerAutoStart, setTriggerAutoStart] = useState(autoStart);
 
@@ -50,7 +58,7 @@ export const DataPipeline = ({ initialTab = "sync", initialFilters, autoStart = 
         setRatingRange([initialFilters.minRating, initialFilters.maxRating]);
       }
       if (initialFilters.yearRange) setYearRange(initialFilters.yearRange);
-      if (initialFilters.minVoteCount !== undefined) setMinVoteCount(initialFilters.minVoteCount);
+      if (initialFilters.voteTiers) setVoteTiers(initialFilters.voteTiers);
       if (initialFilters.minPopularity !== undefined) setMinPopularity(initialFilters.minPopularity);
     }
   }, [initialFilters]);
@@ -149,8 +157,8 @@ export const DataPipeline = ({ initialTab = "sync", initialFilters, autoStart = 
                 onRatingRangeChange={setRatingRange}
                 yearRange={yearRange}
                 onYearRangeChange={setYearRange}
-                minVoteCount={minVoteCount}
-                onMinVoteCountChange={setMinVoteCount}
+                voteTiers={voteTiers}
+                onVoteTiersChange={setVoteTiers}
                 minPopularity={minPopularity}
                 onMinPopularityChange={setMinPopularity}
               />
@@ -169,7 +177,7 @@ export const DataPipeline = ({ initialTab = "sync", initialFilters, autoStart = 
                 currentFilters={{
                   minRating: ratingRange[0],
                   maxRating: ratingRange[1],
-                  minVoteCount,
+                  voteTiers,
                   yearRange,
                   genres: selectedGenres,
                   excludedGenres,

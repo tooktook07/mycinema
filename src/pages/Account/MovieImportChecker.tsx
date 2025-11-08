@@ -7,12 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { VoteTierConfig } from "@/data/types";
 
 interface MovieImportCheckerProps {
   currentFilters: {
     minRating: number;
     maxRating: number;
-    minVoteCount: number;
+    voteTiers: VoteTierConfig;
     yearRange: [number, number];
     genres: string[];
     excludedGenres: string[];

@@ -6,6 +6,23 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+interface VoteTierConfig {
+  currentYear: number;
+  lastYear: number;
+  twoToThreeYears: number;
+  older: number;
+}
+
+function getRequiredVoteCount(movieYear: number, tiers: VoteTierConfig): number {
+  const currentYear = new Date().getFullYear();
+  const yearsDiff = currentYear - movieYear;
+  
+  if (yearsDiff === 0) return tiers.currentYear;
+  if (yearsDiff === 1) return tiers.lastYear;
+  if (yearsDiff >= 2 && yearsDiff <= 3) return tiers.twoToThreeYears;
+  return tiers.older;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -31,7 +48,12 @@ serve(async (req) => {
     const excludedGenres = Array.isArray(body.excludedGenres) ? body.excludedGenres.filter((g: any) => typeof g === 'string') : undefined;
     const statuses = Array.isArray(body.statuses) ? body.statuses.filter((s: any) => typeof s === 'string') : undefined;
     const languages = Array.isArray(body.languages) ? body.languages.filter((l: any) => typeof l === 'string') : undefined;
-    const minVoteCount = typeof body.minVoteCount === 'number' && body.minVoteCount >= 0 && body.minVoteCount <= 100000 ? body.minVoteCount : 100;
+    const voteTiers: VoteTierConfig = body.voteTiers || {
+      currentYear: 300,
+      lastYear: 500,
+      twoToThreeYears: 750,
+      older: 1000
+    };
     const minPopularity = typeof body.minPopularity === 'number' && body.minPopularity >= 0 ? body.minPopularity : 0;
     const syncMode = typeof body.syncMode === 'boolean' ? body.syncMode : false;
     const maxPages = typeof body.maxPages === 'number' && body.maxPages >= 1 && body.maxPages <= 50 ? body.maxPages : 25;
@@ -98,7 +120,7 @@ serve(async (req) => {
       excludedGenres,
       statuses,
       languages,
-      minVoteCount,
+      voteTiers,
       minPopularity,
     };
 
@@ -241,7 +263,7 @@ serve(async (req) => {
     };
 
     logMsg(
-      `Starting ${syncMode ? "sync" : "import"} with filters: ratingRange=${minRating}-${maxRating}, yearRange=${yearRange.join("-")}, genres=${genres?.join(",") || "all"}, excludedGenres=${excludedGenres?.join(",") || "none"}, languages=${languages?.join(",") || "all"}, statuses=${statuses?.join(",") || "all"}, minVoteCount=${minVoteCount}+, minPopularity=${minPopularity}`,
+      `Starting ${syncMode ? "sync" : "import"} with filters: ratingRange=${minRating}-${maxRating}, yearRange=${yearRange.join("-")}, genres=${genres?.join(",") || "all"}, excludedGenres=${excludedGenres?.join(",") || "none"}, languages=${languages?.join(",") || "all"}, statuses=${statuses?.join(",") || "all"}, voteTiers=current:${voteTiers.currentYear}/last:${voteTiers.lastYear}/2-3y:${voteTiers.twoToThreeYears}/older:${voteTiers.older}, minPopularity=${minPopularity}`,
     );
 
     // Get genre IDs from TMDB if genres or excludedGenres filter is specified
@@ -264,8 +286,9 @@ serve(async (req) => {
 
     // Fetch pages up to maxPages limit to prevent timeout
     while (page <= Math.min(totalPages, maxPages)) {
-      // Build query parameters
-      let queryParams = `api_key=${TMDB_API_KEY}&primary_release_date.gte=${yearRange[0]}-01-01&primary_release_date.lte=${yearRange[1]}-12-31&vote_average.gte=${minRating}&vote_average.lte=${maxRating}&vote_count.gte=${minVoteCount}&sort_by=vote_average.desc&page=${page}`;
+      // Build query parameters - use the oldest/highest threshold for API query to avoid over-filtering
+      const tmdbApiVoteThreshold = voteTiers.older; // Most restrictive
+      let queryParams = `api_key=${TMDB_API_KEY}&primary_release_date.gte=${yearRange[0]}-01-01&primary_release_date.lte=${yearRange[1]}-12-31&vote_average.gte=${minRating}&vote_average.lte=${maxRating}&vote_count.gte=${tmdbApiVoteThreshold}&sort_by=vote_average.desc&page=${page}`;
       if (genreIds && genreIds.length > 0) {
         queryParams += `&with_genres=${genreIds.join(",")}`;
       }
@@ -302,6 +325,19 @@ serve(async (req) => {
         try {
           // Filter by popularity if specified
           if (minPopularity > 0 && movie.popularity < minPopularity) {
+            continue;
+          }
+          
+          // Get movie year for dynamic vote count check
+          const movieYear = movie.release_date 
+            ? parseInt(movie.release_date.split('-')[0]) 
+            : yearRange[0];
+          const requiredVotes = getRequiredVoteCount(movieYear, voteTiers);
+          
+          // Apply dynamic vote count filter
+          if (movie.vote_count < requiredVotes) {
+            logMsg(`⊘ Skipped: "${movie.title}" - insufficient votes (${movie.vote_count}/${requiredVotes} for ${movieYear})`);
+            skippedMovies++;
             continue;
           }
 
@@ -494,7 +530,7 @@ serve(async (req) => {
       // Get all movies from database
       const { data: allMovies, error: fetchError } = await supabaseAdmin
         .from("movies")
-        .select("id, imdb_id, title, rating, vote_count, status, genres, original_language");
+        .select("id, imdb_id, title, rating, vote_count, year, status, genres, original_language");
 
       if (fetchError) {
         logMsg(`✗ Error fetching movies for cleanup: ${fetchError.message}`);
@@ -519,8 +555,10 @@ serve(async (req) => {
             shouldRemove = true;
           }
 
-          // Check vote count
-          if (movie.vote_count !== null && movie.vote_count < minVoteCount) {
+          // Check vote count using dynamic tiers
+          const movieYear = movie.year || yearRange[0];
+          const requiredVotes = getRequiredVoteCount(movieYear, voteTiers);
+          if (movie.vote_count !== null && movie.vote_count < requiredVotes) {
             shouldRemove = true;
           }
 

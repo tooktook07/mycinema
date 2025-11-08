@@ -6,6 +6,32 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface VoteTierConfig {
+  currentYear: number;
+  lastYear: number;
+  twoToThreeYears: number;
+  older: number;
+}
+
+function getRequiredVoteCount(movieYear: number, tiers: VoteTierConfig): number {
+  const currentYear = new Date().getFullYear();
+  const yearsDiff = currentYear - movieYear;
+  
+  if (yearsDiff === 0) return tiers.currentYear;
+  if (yearsDiff === 1) return tiers.lastYear;
+  if (yearsDiff >= 2 && yearsDiff <= 3) return tiers.twoToThreeYears;
+  return tiers.older;
+}
+
+function getYearLabel(movieYear: number): string {
+  const currentYear = new Date().getFullYear();
+  const diff = currentYear - movieYear;
+  if (diff === 0) return 'current year';
+  if (diff === 1) return 'last year';
+  if (diff >= 2 && diff <= 3) return '2-3 years';
+  return 'older';
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -62,6 +88,12 @@ serve(async (req) => {
     console.log('Admin access verified');
 
     const { searchQuery, filters } = await req.json();
+    const voteTiers: VoteTierConfig = filters.voteTiers || {
+      currentYear: 300,
+      lastYear: 500,
+      twoToThreeYears: 750,
+      older: 1000
+    };
     const TMDB_API_KEY = Deno.env.get('TMDB_API_KEY');
 
     if (!TMDB_API_KEY) {
@@ -141,6 +173,9 @@ serve(async (req) => {
       poster_path: tmdbMovie.poster_path,
     };
 
+    const requiredVotes = getRequiredVoteCount(movieData.year, voteTiers);
+    const votesPassed = movieData.vote_count >= requiredVotes;
+    
     const filterResults = {
       rating: {
         passes: movieData.rating >= filters.minRating && movieData.rating <= filters.maxRating,
@@ -148,9 +183,9 @@ serve(async (req) => {
         required: `${filters.minRating}-${filters.maxRating}`,
       },
       vote_count: {
-        passes: movieData.vote_count >= filters.minVoteCount,
+        passes: votesPassed,
         current: movieData.vote_count,
-        required: `${filters.minVoteCount}+`,
+        required: `${requiredVotes}+ (${getYearLabel(movieData.year)})`,
       },
       year: {
         passes: movieData.year >= filters.yearRange[0] && movieData.year <= filters.yearRange[1],

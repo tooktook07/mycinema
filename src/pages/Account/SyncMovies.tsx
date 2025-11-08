@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { VoteTierConfig } from "@/data/types";
 
 interface SyncResult {
   totalFound: number;
@@ -42,8 +43,8 @@ interface SyncMoviesProps {
   onRatingRangeChange: (range: [number, number]) => void;
   yearRange: [number, number];
   onYearRangeChange: (range: [number, number]) => void;
-  minVoteCount: number;
-  onMinVoteCountChange: (count: number) => void;
+  voteTiers: VoteTierConfig;
+  onVoteTiersChange: (tiers: VoteTierConfig) => void;
   minPopularity: number;
   onMinPopularityChange: (popularity: number) => void;
 }
@@ -63,8 +64,8 @@ export const SyncMovies = ({
   onRatingRangeChange,
   yearRange,
   onYearRangeChange,
-  minVoteCount,
-  onMinVoteCountChange,
+  voteTiers,
+  onVoteTiersChange,
   minPopularity,
   onMinPopularityChange,
 }: SyncMoviesProps) => {
@@ -128,7 +129,7 @@ export const SyncMovies = ({
           excludedGenres: excludedGenres.length > 0 ? excludedGenres : undefined,
           statuses: selectedStatuses.length > 0 ? selectedStatuses : undefined,
           languages: selectedLanguages.length > 0 ? selectedLanguages : undefined,
-          minVoteCount,
+          voteTiers,
           minPopularity,
           syncMode: true,
           enrichWithOMDb,
@@ -207,8 +208,8 @@ export const SyncMovies = ({
           onRatingRangeChange={onRatingRangeChange}
           yearRange={yearRange}
           onYearRangeChange={onYearRangeChange}
-          minVoteCount={minVoteCount}
-          onMinVoteCountChange={onMinVoteCountChange}
+          voteTiers={voteTiers}
+          onVoteTiersChange={onVoteTiersChange}
           minPopularity={minPopularity}
           onMinPopularityChange={onMinPopularityChange}
         />
@@ -256,7 +257,7 @@ export const SyncMovies = ({
               onLanguageToggle(''); // Clear by setting empty
               onRatingRangeChange([6.0, 10.0]);
               onYearRangeChange([2020, 2025]);
-              onMinVoteCountChange(1000);
+              onVoteTiersChange({ currentYear: 300, lastYear: 500, twoToThreeYears: 750, older: 1000 });
               onMinPopularityChange(0);
             }}
             size="lg"

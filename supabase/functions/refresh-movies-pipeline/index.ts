@@ -25,6 +25,30 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface VoteTierConfig {
+  currentYear: number;
+  lastYear: number;
+  twoToThreeYears: number;
+  older: number;
+}
+
+const DEFAULT_TIERS: VoteTierConfig = {
+  currentYear: 300,
+  lastYear: 500,
+  twoToThreeYears: 750,
+  older: 1000
+};
+
+function getRequiredVoteCount(movieYear: number, tiers: VoteTierConfig): number {
+  const currentYear = new Date().getFullYear();
+  const yearsDiff = currentYear - movieYear;
+  
+  if (yearsDiff === 0) return tiers.currentYear;
+  if (yearsDiff === 1) return tiers.lastYear;
+  if (yearsDiff >= 2 && yearsDiff <= 3) return tiers.twoToThreeYears;
+  return tiers.older;
+}
+
 serve(async (req) => {
   // === FUNCTION BOOT LOGGING ===
   console.log('═══════════════════════════════════════════');
@@ -302,20 +326,23 @@ serve(async (req) => {
       
       const { data: allMovies, error: fetchAllError } = await supabase
         .from('movies')
-        .select('id, imdb_id, title, imdb_rating, rating, imdb_votes, vote_count');
+        .select('id, imdb_id, title, year, imdb_rating, rating, imdb_votes, vote_count');
 
       if (fetchAllError) {
         addLog(`⚠ Error fetching movies for cleanup: ${fetchAllError.message}`);
       } else if (allMovies) {
-        addLog(`Checking ${allMovies.length} movies against quality threshold (6+ stars, 1000+ votes)...`);
+        addLog(`Checking ${allMovies.length} movies against quality threshold...`);
         
         for (const movie of allMovies) {
           // Prefer IMDB data, fallback to TMDB
           const effectiveRating = movie.imdb_rating || movie.rating || 0;
           const effectiveVotes = movie.imdb_votes || movie.vote_count || 0;
+          
+          const movieYear = movie.year || 0;
+          const requiredVotes = getRequiredVoteCount(movieYear, DEFAULT_TIERS);
 
-          // Check if movie fails quality threshold (below 6 stars OR below 1000 votes)
-          if (effectiveRating < 6.0 || effectiveVotes < 1000) {
+          // Check if movie fails quality threshold (below 6 stars OR below required votes for year)
+          if (effectiveRating < 6.0 || effectiveVotes < requiredVotes) {
             const { error: deleteError } = await supabase
               .from('movies')
               .delete()
@@ -326,7 +353,7 @@ serve(async (req) => {
               failed++;
             } else {
               removed++;
-              addLog(`✕ Removed: "${movie.title}" (Rating: ${effectiveRating}/10, Votes: ${effectiveVotes.toLocaleString()})`);
+              addLog(`✕ Removed: "${movie.title}" (Rating: ${effectiveRating}/10, Votes: ${effectiveVotes.toLocaleString()}/${requiredVotes} for year ${movieYear})`);
             }
           }
         }
