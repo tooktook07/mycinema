@@ -81,11 +81,15 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { data: existingMovie } = await supabaseAdmin
-      .from('movies')
-      .select('*')
-      .eq('imdb_id', tmdbMovie.imdb_id || '')
-      .maybeSingle();
+    let existingMovie = null;
+    if (tmdbMovie.imdb_id) {
+      const { data } = await supabaseAdmin
+        .from('movies')
+        .select('*')
+        .eq('imdb_id', tmdbMovie.imdb_id)
+        .maybeSingle();
+      existingMovie = data;
+    }
 
     // Step 3: Check if movie was processed but skipped
     const { data: processedRecord } = await supabaseAdmin
@@ -183,8 +187,9 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in check-movie-import:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
