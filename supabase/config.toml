@@ -1,8 +1,5 @@
 project_id = "kkeojjtopbpfbcmxlumx"
 
-[functions.setup-service-key]
-verify_jwt = true
-
 [functions.fetch-movie-data]
 verify_jwt = true
 
@@ -18,6 +15,7 @@ verify_jwt = true
 [functions.store-posters]
 verify_jwt = true
 
+# Automated pipelines - no JWT verification, use webhook secret instead
 [functions.refresh-movies-pipeline]
 verify_jwt = false
 

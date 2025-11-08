@@ -19,7 +19,16 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  
+  // ⚠️ SECURITY WARNING: This isAdmin flag is for UI display ONLY!
+  // It can be manipulated via browser devtools or React state.
+  // NEVER use this for authorization decisions.
+  // ALL sensitive operations MUST verify admin role server-side via:
+  // - adminService.ts verifyAdminAccess()
+  // - Edge functions using has_role() RPC
+  // - RLS policies
   const [isAdmin, setIsAdmin] = useState(false);
+  
   const [subscriptionTier, setSubscriptionTier] = useState<'free' | 'pro' | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
