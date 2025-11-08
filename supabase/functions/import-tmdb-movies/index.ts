@@ -98,9 +98,12 @@ serve(async (req) => {
     const userId = user.id;
 
     if (!TMDB_API_KEY) {
-      console.error("TMDB_API_KEY not configured");
-      return new Response(JSON.stringify({ error: "TMDB API key not configured" }), {
-        status: 500,
+      console.error("[INTERNAL] TMDB_API_KEY not configured");
+      return new Response(JSON.stringify({ 
+        error: "Service temporarily unavailable",
+        code: "SERVICE_ERROR" 
+      }), {
+        status: 503,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
