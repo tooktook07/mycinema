@@ -12,18 +12,23 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
+    // Create admin client for authentication check
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    console.log('Checking authentication...');
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    // Get JWT from Authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.error('No Authorization header found');
+      throw new Error('Unauthorized - no token provided');
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Verify the JWT and get user
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
     
     if (authError) {
       console.error('Auth error:', authError);
@@ -32,13 +37,13 @@ serve(async (req) => {
     
     if (!user) {
       console.error('No user found in token');
-      throw new Error('Unauthorized - no user found');
+      throw new Error('Unauthorized - invalid token');
     }
 
     console.log('User authenticated:', user.id);
 
     // Verify admin role
-    const { data: roles, error: rolesError } = await supabaseClient
+    const { data: roles, error: rolesError } = await supabaseAdmin
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id);
@@ -105,11 +110,6 @@ serve(async (req) => {
     }
 
     // Step 2: Check if movie exists in our database
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
     let existingMovie = null;
     if (tmdbMovie.imdb_id) {
       const { data } = await supabaseAdmin
