@@ -90,6 +90,14 @@ if (!TMDB_API_KEY) {
 }
 ```
 
+### Standard Error Codes
+| Code | HTTP Status | Client Message | Internal Log |
+|------|-------------|----------------|--------------|
+| `SERVICE_ERROR` | 503 | Service temporarily unavailable | [INTERNAL] Detailed error |
+| `AUTH_REQUIRED` | 401 | Authentication required | [INTERNAL] Missing/invalid auth |
+| `DELETE_ERROR` | 400 | Operation failed | [INTERNAL] Database error |
+| `LOGGING_ERROR` | 500 | Operation failed | [INTERNAL] Log insertion failed |
+
 ---
 
 ## 🔑 Secrets Management
@@ -279,6 +287,28 @@ test('Cron job without secret is rejected', async () => {
 - [Supabase RLS Guide](https://supabase.com/docs/guides/auth/row-level-security)
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/)
 - [OWASP API Security Top 10](https://owasp.org/www-project-api-security/)
+
+---
+
+## 🔄 Ongoing Security Maintenance
+
+### Weekly Tasks
+- [ ] Review edge function logs for errors
+- [ ] Check cron job execution status
+- [ ] Monitor for failed authentication attempts
+- [ ] Review user activity logs for suspicious patterns
+
+### Monthly Tasks
+- [ ] Run security test suite (`npm test`)
+- [ ] Review and rotate CRON_SECRET
+- [ ] Conduct manual security review using this checklist
+- [ ] Check for dependency vulnerabilities (`npm audit`)
+
+### Quarterly Tasks
+- [ ] Rotate API keys (TMDB_API_KEY, OMDB_API_KEY)
+- [ ] Comprehensive security audit
+- [ ] Update security documentation
+- [ ] Review and update RLS policies
 
 ---
 
