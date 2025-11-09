@@ -294,7 +294,8 @@ test('Cron job without secret is rejected', async () => {
 
 ### Weekly Tasks
 - [ ] Review edge function logs for errors
-- [ ] Check cron job execution status
+- [ ] Check cron job execution status: `SELECT * FROM sync_history ORDER BY created_at DESC LIMIT 10`
+- [ ] Verify pipelines ran in last 48 hours (should see recent entries)
 - [ ] Monitor for failed authentication attempts
 - [ ] Review user activity logs for suspicious patterns
 
