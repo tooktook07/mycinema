@@ -310,6 +310,11 @@ test('Cron job without secret is rejected', async () => {
 - [ ] Update security documentation
 - [ ] Review and update RLS policies
 
+### Cron Job Monitoring (Simple)
+- [ ] **Weekly**: Check recent pipeline runs with: `SELECT * FROM sync_history ORDER BY created_at DESC LIMIT 10`
+- [ ] **If no runs in 48 hours**: Check edge function logs for authentication errors
+- [ ] **On errors**: Verify CRON_SECRET value in cron job commands matches edge function expectations
+
 ---
 
 ## 📝 Review Sign-Off
