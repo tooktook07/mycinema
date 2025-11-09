@@ -4,20 +4,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/ThemeProvider";
-import { Moon, Sun, Monitor, Accessibility } from "lucide-react";
+import { Moon, Sun, Monitor, Accessibility, Database, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { format } from "date-fns";
 
 export const GeneralSettings = () => {
   const { theme, setTheme } = useTheme();
   const { user, isAdmin } = useAuth();
   const [accessibilityWidgetEnabled, setAccessibilityWidgetEnabled] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [setupLoading, setSetupLoading] = useState(false);
+  const [serviceKeyInfo, setServiceKeyInfo] = useState<{ updatedAt: string } | null>(null);
 
   useEffect(() => {
     fetchSettings();
+    if (isAdmin) {
+      fetchServiceKeyInfo();
+    }
   }, [isAdmin]);
 
   const fetchSettings = async () => {
@@ -43,26 +49,59 @@ export const GeneralSettings = () => {
     }
   };
 
+  const fetchServiceKeyInfo = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('system_settings')
+        .select('updated_at')
+        .eq('key', 'service_role_key')
+        .maybeSingle();
+
+      if (error) throw error;
+      
+      if (data) {
+        setServiceKeyInfo({ updatedAt: data.updated_at });
+      }
+    } catch (error) {
+      console.error('Error fetching service key info:', error);
+    }
+  };
+
+  const handleSetupServiceKey = async () => {
+    setSetupLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('setup-service-key');
+      
+      if (error) throw error;
+      
+      toast.success('Service key configured successfully! Automated pipelines will now work.');
+      await fetchServiceKeyInfo();
+    } catch (error: any) {
+      console.error('Error setting up service key:', error);
+      toast.error('Failed to setup service key: ' + (error.message || 'Unknown error'));
+    } finally {
+      setSetupLoading(false);
+    }
+  };
+
   const updateAccessibilityWidgetSetting = async (enabled: boolean) => {
     try {
       const { error } = await supabase
         .from('system_settings')
-        .upsert({
-          key: 'accessibility_widget_enabled',
+        .update({ 
           value: enabled,
-          updated_at: new Date().toISOString(),
-          updated_by: user?.id
-        }, {
-          onConflict: 'key'
-        });
+          updated_by: user?.id,
+          updated_at: new Date().toISOString()
+        })
+        .eq('key', 'accessibility_widget_enabled');
 
       if (error) throw error;
       
       setAccessibilityWidgetEnabled(enabled);
-      toast.success('Accessibility widget setting updated');
-    } catch (error: any) {
-      console.error('Error updating accessibility widget setting:', error);
-      toast.error('Failed to update accessibility widget setting');
+      toast.success(`Accessibility widget ${enabled ? 'enabled' : 'disabled'}`);
+    } catch (error) {
+      console.error('Error updating setting:', error);
+      toast.error('Failed to update setting');
     }
   };
 
@@ -125,6 +164,40 @@ export const GeneralSettings = () => {
                   disabled={isLoading}
                 />
               </div>
+            </div>
+
+            <div className="space-y-3 pt-4 border-t">
+              <div className="space-y-1">
+                <Label className="flex items-center gap-2">
+                  <Database className="h-4 w-4" />
+                  Automation Pipeline Configuration
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Fix automated pipelines if they're not running on schedule
+                </p>
+              </div>
+              <Button 
+                onClick={handleSetupServiceKey}
+                disabled={setupLoading}
+                className="w-full"
+              >
+                {setupLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Configuring...
+                  </>
+                ) : (
+                  <>
+                    <Database className="mr-2 h-4 w-4" />
+                    Fix Automation Pipelines
+                  </>
+                )}
+              </Button>
+              {serviceKeyInfo && (
+                <p className="text-xs text-muted-foreground">
+                  Last configured: {format(new Date(serviceKeyInfo.updatedAt), 'PPpp')}
+                </p>
+              )}
             </div>
           </>
         )}

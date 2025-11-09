@@ -47,95 +47,38 @@ Deno.serve(async (req) => {
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
   try {
-    // Check for webhook secret (cron jobs)
-    const cronSecret = req.headers.get('x-cron-secret');
-    let isAutomated = false;
-    let authenticatedUserId: string | null = null;
-
-    if (cronSecret) {
-      // Webhook secret authentication for cron jobs
-      const expectedSecret = Deno.env.get('CRON_SECRET');
-      if (!expectedSecret || cronSecret !== expectedSecret) {
-        console.error('❌ Invalid webhook secret');
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      console.log('✅ Authenticated via webhook secret (automated cron job)');
-      isAutomated = true;
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.error('❌ Missing authorization header');
+      throw new Error('Missing authorization header');
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Authenticate based on call source
-    if (!isAutomated) {
-      // JWT authentication for manual calls
-      const authHeader = req.headers.get('Authorization');
-      if (!authHeader) {
-        console.error('❌ Missing authorization header');
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      console.log('🔐 Authenticating user...');
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-      
-      if (authError || !user) {
-        console.error('❌ Authentication failed:', authError);
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      authenticatedUserId = user.id;
-      console.log(`✅ Authenticated user: ${authenticatedUserId}`);
-
-      // Verify admin role
-      console.log(`🔍 Verifying admin role for user: ${user.id}`);
-      const { data: hasAdminRole, error: roleError } = await supabase.rpc('has_role', {
-        _user_id: authenticatedUserId,
-        _role: 'admin'
-      });
-
-      if (roleError || !hasAdminRole) {
-        console.error('❌ Admin verification failed:', roleError);
-        return new Response(JSON.stringify({ error: 'Unauthorized: Admin access required' }), {
-          status: 403,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      console.log(`✅ Admin verified: ${user.email}`);
-    } else {
-      // For automated cron jobs, find first admin user
-      console.log('🔐 Automated cron job - finding admin user...');
-      const { data: adminUsers } = await supabase
-        .from('user_roles')
-        .select('user_id')
-        .eq('role', 'admin')
-        .limit(1)
-        .maybeSingle();
-
-      if (!adminUsers) {
-        console.error('❌ No admin user available');
-        return new Response(JSON.stringify({ error: 'No admin user available for automated sync' }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      authenticatedUserId = adminUsers.user_id;
-      console.log(`✅ Using admin user: ${authenticatedUserId} for automated sync`);
+    const token = authHeader.replace('Bearer ', '');
+    
+    console.log('🔐 Authenticating user...');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      console.error('❌ Authentication failed:', authError?.message);
+      throw new Error('Unauthorized');
     }
 
-    const { limit = 100, offset = 0, syncHistoryId, trigger_source = isAutomated ? 'automated' : 'manual' } = await req.json();
+    console.log(`🔍 Verifying admin role for user: ${user.id}`);
+    const { data: hasAdminRole } = await supabase
+      .rpc('has_role', { _user_id: user.id, _role: 'admin' });
+
+    if (!hasAdminRole) {
+      console.error('❌ User does not have admin role');
+      throw new Error('Admin access required');
+    }
+
+    console.log(`✅ Admin verified: ${user.email}`);
+
+    const { limit = 100, offset = 0, syncHistoryId, trigger_source = 'manual' } = await req.json();
     
     console.log(`📊 Parameters: limit=${limit}, offset=${offset}, trigger=${trigger_source}`);
 
@@ -144,7 +87,7 @@ Deno.serve(async (req) => {
     await supabase
       .from('user_activity_logs')
       .insert({
-        user_id: authenticatedUserId,
+        user_id: user.id,
         action_type: 'poster_storage_started',
         ip_address: clientIP,
         user_agent: userAgent,
@@ -156,7 +99,7 @@ Deno.serve(async (req) => {
       const { data: syncRecord, error: syncError } = await supabase
         .from('sync_history')
         .insert({
-          user_id: authenticatedUserId,
+          user_id: user.id,
           sync_type: 'poster_storage',
           status: 'running',
           sync_mode: false,

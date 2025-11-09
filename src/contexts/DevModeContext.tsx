@@ -15,10 +15,6 @@ const DevModeContext = createContext<DevModeContextType | undefined>(undefined);
 
 export const DevModeProvider = ({ children }: { children: ReactNode }) => {
   const [devMode, setDevMode] = useState<DevModeType>(() => {
-    // Disable dev mode in production builds
-    if (import.meta.env.PROD) {
-      return 'off';
-    }
     const saved = localStorage.getItem('dev-mode');
     return (saved as DevModeType) || 'off';
   });
@@ -26,10 +22,7 @@ export const DevModeProvider = ({ children }: { children: ReactNode }) => {
   const { user: realUser, isAdmin: realIsAdmin } = useAuth();
 
   useEffect(() => {
-    // Only allow dev mode changes in development
-    if (!import.meta.env.PROD) {
-      localStorage.setItem('dev-mode', devMode);
-    }
+    localStorage.setItem('dev-mode', devMode);
   }, [devMode]);
 
   // Mock user for dev mode
@@ -43,15 +36,14 @@ export const DevModeProvider = ({ children }: { children: ReactNode }) => {
   } as User;
 
   // Determine effective user and admin status based on dev mode
-  // In production, always use real auth state
-  const effectiveUser = import.meta.env.PROD ? realUser :
+  const effectiveUser = 
     devMode === 'off' ? realUser :
     devMode === 'visitor' ? null :
     devMode === 'user' ? (realUser || mockUser) :
     devMode === 'admin' ? (realUser || mockUser) :
     null;
 
-  const effectiveIsAdmin = import.meta.env.PROD ? realIsAdmin :
+  const effectiveIsAdmin = 
     devMode === 'off' ? realIsAdmin :
     devMode === 'admin' ? true :
     false;

@@ -82,25 +82,25 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Webhook secret authentication for automated cron jobs
-    const cronSecret = req.headers.get('x-cron-secret');
+    // Get auth header for authorization check
     const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'No authorization header' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
     
+    // Check if this is a service role key (automated call)
+    const isServiceRole = token === supabaseKey;
+
     let userId: string;
 
-    if (cronSecret) {
-      // Automated cron job - validate webhook secret
-      const expectedSecret = Deno.env.get('CRON_SECRET');
-      if (!expectedSecret || cronSecret !== expectedSecret) {
-        console.error('❌ Invalid webhook secret');
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      
-      console.log('🤖 AUTOMATED EXECUTION via webhook secret');
-      // Use first admin user for automated execution
+    if (isServiceRole) {
+      // Automated call - use first admin user
+      console.log('🤖 AUTOMATED EXECUTION via service role key');
       const { data: adminUser, error: adminError } = await supabase
         .from('user_roles')
         .select('user_id')
@@ -110,17 +110,18 @@ serve(async (req) => {
       
       if (adminError || !adminUser) {
         console.error('❌ CRITICAL: No admin user found for automated execution');
-        return new Response(JSON.stringify({ error: 'No admin user found' }), {
+        console.error('This means automated jobs cannot run!');
+        console.error('Please ensure at least one user has the admin role in user_roles table');
+        return new Response(JSON.stringify({ error: 'No admin user found for automated execution' }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
       console.log(`✅ Using admin user: ${adminUser.user_id}`);
       userId = adminUser.user_id;
-    } else if (authHeader) {
-      // Manual call - verify user JWT and admin role
+    } else {
+      // Manual call - verify user is admin
       console.log('👤 MANUAL EXECUTION via user JWT');
-      const token = authHeader.replace('Bearer ', '');
       const { data: { user }, error: authError } = await supabase.auth.getUser(token);
       
       if (authError || !user) {
@@ -149,29 +150,22 @@ serve(async (req) => {
       
       console.log(`✅ Admin verified: ${user.email}`);
       userId = user.id;
-    } else {
-      // No authentication provided
-      return new Response(JSON.stringify({ error: 'Authentication required' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
     }
 
-    const isAutomated = !!cronSecret;
     const logs: string[] = [];
     const addLog = (message: string) => {
       console.log(message);
       logs.push(`${new Date().toISOString()}: ${message}`);
     };
 
-    addLog(isAutomated ? '🤖 Starting new movies import pipeline (automated)' : '✨ Starting new movies import pipeline (manual)');
+    addLog(isServiceRole ? '🤖 Starting new movies import pipeline (automated)' : '✨ Starting new movies import pipeline (manual)');
 
     // Create sync history record
     const { data: syncHistory, error: syncError } = await supabase
       .from('sync_history')
       .insert({
         sync_type: 'new_imports',
-        trigger_source: isAutomated ? 'automated' : 'manual',
+        trigger_source: isServiceRole ? 'automated' : 'manual',
         user_id: userId,
         status: 'running',
       })

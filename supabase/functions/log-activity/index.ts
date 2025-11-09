@@ -15,12 +15,8 @@ serve(async (req) => {
     // Get authenticated user
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      console.error("[INTERNAL] Missing authorization header");
       return new Response(
-        JSON.stringify({ 
-          error: "Authentication required",
-          code: "AUTH_REQUIRED" 
-        }),
+        JSON.stringify({ error: "No authorization header" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -76,12 +72,9 @@ serve(async (req) => {
       });
 
     if (insertError) {
-      console.error("[INTERNAL] Failed to log activity:", insertError);
+      console.error("Failed to log activity:", insertError);
       return new Response(
-        JSON.stringify({ 
-          error: "Operation failed",
-          code: "LOGGING_ERROR" 
-        }),
+        JSON.stringify({ error: "Failed to log activity" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -92,12 +85,9 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error("[INTERNAL] Error in log-activity function:", error);
+    console.error("Error in log-activity function:", error);
     return new Response(
-      JSON.stringify({ 
-        error: "Service temporarily unavailable",
-        code: "SERVICE_ERROR" 
-      }),
+      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

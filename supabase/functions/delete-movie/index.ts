@@ -14,8 +14,7 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      console.error('[INTERNAL] Missing authorization header');
-      throw new Error('Authentication required');
+      throw new Error('No authorization header');
     }
 
     const supabase = createClient(
@@ -27,8 +26,7 @@ serve(async (req) => {
     // Verify admin role
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      console.error('[INTERNAL] User not authenticated');
-      throw new Error('Authentication required');
+      throw new Error('Not authenticated');
     }
 
     const { data: hasRole } = await supabase.rpc('has_role', {
@@ -37,8 +35,7 @@ serve(async (req) => {
     });
 
     if (!hasRole) {
-      console.error('[INTERNAL] User lacks admin role:', user.id);
-      throw new Error('Insufficient permissions');
+      throw new Error('Unauthorized: Admin role required');
     }
 
     const { movieId } = await req.json();
@@ -98,8 +95,7 @@ serve(async (req) => {
       .eq('id', movieId);
 
     if (deleteError) {
-      console.error('[INTERNAL] Failed to delete movie:', deleteError);
-      throw new Error('Operation failed');
+      throw new Error(`Failed to delete movie: ${deleteError.message}`);
     }
 
     console.log('Movie deleted successfully');
@@ -113,12 +109,9 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('[INTERNAL] Error in delete-movie:', error);
+    console.error('Error:', error);
     return new Response(
-      JSON.stringify({ 
-        error: error.message || 'Operation failed',
-        code: 'DELETE_ERROR' 
-      }),
+      JSON.stringify({ error: error.message }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
