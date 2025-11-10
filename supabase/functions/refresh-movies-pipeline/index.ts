@@ -80,20 +80,26 @@ serve(async (req) => {
     const omdbApiKey = Deno.env.get('OMDB_API_KEY')!;
     
     const supabase = createClient(supabaseUrl, supabaseKey);
+    const cronSecret = Deno.env.get('CRON_SECRET');
+
+    // Check for cron secret authentication
+    const cronSecretHeader = req.headers.get('x-cron-secret');
+    const isCronAuth = cronSecret && cronSecretHeader === cronSecret;
 
     // Get auth header for authorization check
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'No authorization header' }), {
+    
+    if (!isCronAuth && !authHeader) {
+      return new Response(JSON.stringify({ error: 'No authorization provided' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const token = authHeader.replace('Bearer ', '');
+    const token = authHeader ? authHeader.replace('Bearer ', '') : '';
     
-    // Check if this is a service role key (automated call)
-    const isServiceRole = token === supabaseKey;
+    // Check if this is a service role key or cron authenticated call
+    const isServiceRole = isCronAuth || token === supabaseKey;
 
     let userId: string;
 

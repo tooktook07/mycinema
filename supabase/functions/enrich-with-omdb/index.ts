@@ -59,45 +59,85 @@ serve(async (req) => {
     console.log(`📊 Parameters: batchSize=${batchSize}, forceRefresh=${forceRefresh}, trigger=${trigger_source}`);
     
     const OMDB_API_KEY = Deno.env.get("OMDB_API_KEY");
+    const cronSecret = Deno.env.get('CRON_SECRET');
 
-    // Initialize Supabase client with auth
-    const authHeader = req.headers.get('Authorization')!;
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: authHeader } } }
-    );
+    // Check for cron secret authentication
+    const cronSecretHeader = req.headers.get('x-cron-secret');
+    const isCronAuth = cronSecret && cronSecretHeader === cronSecret;
 
-    // Get authenticated user
-    console.log('🔐 Authenticating user...');
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    const authHeader = req.headers.get('Authorization');
     
-    if (userError || !user) {
-      console.error('❌ Authentication failed:', userError?.message);
+    if (!isCronAuth && !authHeader) {
+      console.error('❌ Missing authorization');
       return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
+        JSON.stringify({ error: "Missing authorization" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`🔍 Verifying admin role for user: ${user.id}`);
-    // Verify admin role
-    const { data: roleData } = await supabaseClient
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('role', 'admin')
-      .single();
+    // Initialize Supabase client
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
 
-    if (!roleData) {
-      console.error('❌ User does not have admin role');
-      return new Response(
-        JSON.stringify({ error: 'Admin access required' }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    let userId: string;
+
+    // Check if this is a cron authenticated call
+    if (!isCronAuth) {
+      // Manual call - authenticate user
+      console.log('🔐 Authenticating user...');
+      const token = authHeader!.replace('Bearer ', '');
+      const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+      
+      if (userError || !user) {
+        console.error('❌ Authentication failed:', userError?.message);
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      console.log(`🔍 Verifying admin role for user: ${user.id}`);
+      // Verify admin role
+      const { data: roleData } = await supabaseClient
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .single();
+
+      if (!roleData) {
+        console.error('❌ User does not have admin role');
+        return new Response(
+          JSON.stringify({ error: 'Admin access required' }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      console.log(`✅ Admin verified: ${user.email}`);
+      userId = user.id;
+    } else {
+      console.log('🤖 CRON authenticated call');
+      // Get first admin user for automated execution
+      const { data: adminUser, error: adminError } = await supabaseClient
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'admin')
+        .limit(1)
+        .single();
+      
+      if (adminError || !adminUser) {
+        console.error('❌ No admin user found for automated execution');
+        return new Response(
+          JSON.stringify({ error: 'No admin user found for automated execution' }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      console.log(`✅ Using admin user: ${adminUser.user_id}`);
+      userId = adminUser.user_id;
     }
-    
-    console.log(`✅ Admin verified: ${user.email}`);
 
     if (!OMDB_API_KEY) {
       return new Response(
@@ -122,7 +162,7 @@ serve(async (req) => {
     const { data: syncRecord, error: syncCreateError } = await supabaseAdmin
       .from("sync_history")
       .insert({
-        user_id: user.id,
+        user_id: userId,
         sync_mode: false,
         sync_type: 'omdb_enrichment',
         status: 'running',
@@ -149,7 +189,7 @@ serve(async (req) => {
     await supabaseAdmin
       .from('user_activity_logs')
       .insert({
-        user_id: user.id,
+        user_id: userId,
         action_type: 'omdb_enrichment_started',
         ip_address: clientIP,
         user_agent: userAgent,
