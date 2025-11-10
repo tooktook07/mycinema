@@ -530,7 +530,6 @@ export type Database = {
           genre: string
         }[]
       }
-      get_service_role_key: { Args: never; Returns: string }
       get_user_activity_summary: {
         Args: { p_days?: number; p_user_id: string }
         Returns: Json
