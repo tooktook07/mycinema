@@ -27,8 +27,8 @@ export const checkWatchlistLimit = async (userId: string): Promise<WatchlistLimi
   if (countError) throw countError;
 
   const current = countData || 0;
-  const limit = tier === 'pro' ? null : 10; // null = unlimited for pro
-  const canAdd = tier === 'pro' || current < 10;
+  const limit = null; // Unlimited for all users (temporarily)
+  const canAdd = true; // Allow all users to add unlimited movies
 
   return { canAdd, current, limit, tier };
 };
