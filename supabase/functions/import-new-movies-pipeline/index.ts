@@ -1,5 +1,5 @@
 /**
- * IMPORT NEW MOVIES PIPELINE v2.1
+ * IMPORT NEW MOVIES PIPELINE v2.2
  * 
  * AUTHENTICATION FLOW:
  * - Automated (cron): Uses service role key → finds first admin user → runs as that admin
@@ -13,11 +13,12 @@
  * 
  * FUNCTIONALITY:
  * - Imports movies from last 3 years (5 pages from TMDB, catches "sleeper hits")
- * - Applies quality filter: 6+ stars AND 1000+ votes
+ * - Applies quality filter: 6+ stars AND dynamic vote threshold
  * - Fetches OMDb data before inserting
  * - Downloads posters immediately
  * - Tracks processed movies to avoid duplicates
  * - Removes existing movies below quality threshold
+ * - TIMEOUT DETECTION: Saves progress before function times out
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
@@ -26,6 +27,11 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// CONFIGURATION
+const MAX_PAGES = 5; // Reduced from 15 to stay within timeout
+const TIMEOUT_MS = 50000; // 50 seconds - leave 10s buffer before 60s timeout
+const API_DELAY_MS = 50; // Delay between API calls
 
 interface VoteTierConfig {
   currentYear: number;
@@ -49,6 +55,15 @@ function getRequiredVoteCount(movieYear: number, tiers: VoteTierConfig): number 
   if (yearsDiff === 1) return tiers.lastYear;
   if (yearsDiff >= 2 && yearsDiff <= 3) return tiers.twoToThreeYears;
   return tiers.older;
+}
+
+// Timeout detection helper
+function createTimeoutChecker(startTime: number, timeoutMs: number) {
+  return {
+    isNearTimeout: () => Date.now() - startTime > timeoutMs,
+    getRemainingMs: () => Math.max(0, timeoutMs - (Date.now() - startTime)),
+    getElapsedMs: () => Date.now() - startTime,
+  };
 }
 
 serve(async (req) => {
@@ -183,6 +198,11 @@ serve(async (req) => {
     }
 
     let imported = 0, updated = 0, failed = 0, skipped = 0, removed = 0, alreadyChecked = 0;
+    let timedOut = false;
+    
+    // Create timeout checker - start tracking from function boot
+    const functionStartTime = Date.now();
+    const timeout = createTimeoutChecker(functionStartTime, TIMEOUT_MS);
 
     try {
       // Calculate date range: last 3 years (to catch "sleeper hits")
@@ -194,11 +214,19 @@ serve(async (req) => {
       const threeYearsAgoStr = threeYearsAgo.toISOString().split('T')[0];
       
       addLog(`Fetching movies released between ${threeYearsAgoStr} and ${todayStr}`);
+      addLog(`⏱ Timeout set to ${TIMEOUT_MS / 1000}s, will process max ${MAX_PAGES} pages`);
 
       let allMovies: any[] = [];
       
-      // Fetch 15 pages to get more variety (increased from 5 to ~300 movies/day)
-      for (let page = 1; page <= 15; page++) {
+      // Fetch pages (reduced from 15 to MAX_PAGES to stay within timeout)
+      for (let page = 1; page <= MAX_PAGES; page++) {
+        // Check for timeout before each page fetch
+        if (timeout.isNearTimeout()) {
+          addLog(`⚠ TIMEOUT APPROACHING - stopping at page ${page - 1} after ${timeout.getElapsedMs()}ms`);
+          timedOut = true;
+          break;
+        }
+        
         try {
           const tmdbResponse = await fetch(
             `https://api.themoviedb.org/3/discover/movie?api_key=${tmdbApiKey}&release_date.gte=${threeYearsAgoStr}&release_date.lte=${todayStr}&sort_by=popularity.desc&vote_count.gte=50&page=${page}`
@@ -213,10 +241,10 @@ serve(async (req) => {
           const pageMovies = tmdbData.results || [];
           allMovies = allMovies.concat(pageMovies);
           
-          addLog(`Fetched ${pageMovies.length} movies from page ${page}`);
+          addLog(`Fetched ${pageMovies.length} movies from page ${page} (${timeout.getRemainingMs()}ms remaining)`);
           
           // Small delay to respect TMDB rate limits
-          await new Promise(resolve => setTimeout(resolve, 50));
+          await new Promise(resolve => setTimeout(resolve, API_DELAY_MS));
         } catch (pageError) {
           addLog(`⚠ Error fetching page ${page}: ${pageError}`);
         }
@@ -241,6 +269,14 @@ serve(async (req) => {
       addLog(`Loaded ${existingImdbIds.size} existing IMDb IDs for quick deduplication`);
 
       for (const tmdbMovie of movies) {
+        // Check for timeout before processing each movie
+        if (timeout.isNearTimeout()) {
+          addLog(`⚠ TIMEOUT APPROACHING - stopping movie processing after ${timeout.getElapsedMs()}ms`);
+          addLog(`📊 Progress: ${imported} imported, ${skipped} skipped, ${failed} failed before timeout`);
+          timedOut = true;
+          break;
+        }
+        
         try {
           if (!tmdbMovie.id) {
             skipped++;
@@ -474,7 +510,7 @@ serve(async (req) => {
           }
 
           // Small delay to respect TMDB rate limits
-          await new Promise(resolve => setTimeout(resolve, 50));
+          await new Promise(resolve => setTimeout(resolve, API_DELAY_MS));
 
         } catch (movieError) {
           failed++;
@@ -482,58 +518,69 @@ serve(async (req) => {
         }
       }
 
+      // Skip cleanup phase if we're near timeout
+      if (timeout.isNearTimeout()) {
+        addLog(`⚠ Skipping cleanup phase due to timeout - will run in next execution`);
+        timedOut = true;
+      }
+
       // CLEANUP PHASE: Remove existing movies that don't meet quality threshold
-      addLog('Starting cleanup phase: checking existing movies for quality compliance...');
-      
-      const { data: allExistingMovies, error: fetchError } = await supabase
-        .from('movies')
-        .select('id, imdb_id, title, imdb_rating, rating, imdb_votes, vote_count');
-
-      if (fetchError) {
-        addLog(`⚠ Error fetching movies for cleanup: ${fetchError.message}`);
-      } else if (allExistingMovies) {
-        addLog(`Checking ${allExistingMovies.length} movies against quality threshold...`);
+      // Only run if we haven't timed out
+      if (!timedOut) {
+        addLog('Starting cleanup phase: checking existing movies for quality compliance...');
         
-        for (const movie of allExistingMovies) {
-          // Prefer IMDB data, fallback to TMDB
-          const effectiveRating = movie.imdb_rating || movie.rating || 0;
-          const effectiveVotes = movie.imdb_votes || movie.vote_count || 0;
-          
-          // Get the year from the movie record
-          const { data: movieData } = await supabase
-            .from('movies')
-            .select('year')
-            .eq('id', movie.id)
-            .single();
-          
-          const movieYear = movieData?.year || 0;
-          const requiredVotes = getRequiredVoteCount(movieYear, DEFAULT_TIERS);
+        const { data: allExistingMovies, error: fetchError } = await supabase
+          .from('movies')
+          .select('id, imdb_id, title, imdb_rating, rating, imdb_votes, vote_count, year');
 
-          // Check if movie fails quality threshold (below 6 stars OR below required votes for year)
-          if (effectiveRating < 6.0 || effectiveVotes < requiredVotes) {
-            const { error: deleteError } = await supabase
-              .from('movies')
-              .delete()
-              .eq('id', movie.id);
+        if (fetchError) {
+          addLog(`⚠ Error fetching movies for cleanup: ${fetchError.message}`);
+        } else if (allExistingMovies) {
+          addLog(`Checking ${allExistingMovies.length} movies against quality threshold...`);
+          
+          for (const movie of allExistingMovies) {
+            // Check for timeout during cleanup
+            if (timeout.isNearTimeout()) {
+              addLog(`⚠ TIMEOUT during cleanup - processed ${removed} removals before stopping`);
+              timedOut = true;
+              break;
+            }
+            
+            // Prefer IMDB data, fallback to TMDB
+            const effectiveRating = movie.imdb_rating || movie.rating || 0;
+            const effectiveVotes = movie.imdb_votes || movie.vote_count || 0;
+            const movieYear = movie.year || 0;
+            const requiredVotes = getRequiredVoteCount(movieYear, DEFAULT_TIERS);
 
-            if (deleteError) {
-              addLog(`✗ Error removing: "${movie.title}" - ${deleteError.message}`);
-              failed++;
-            } else {
-              removed++;
-              addLog(`✕ Removed: "${movie.title}" (Rating: ${effectiveRating}/10, Votes: ${effectiveVotes.toLocaleString()}/${requiredVotes} for year ${movieYear})`);
+            // Check if movie fails quality threshold (below 6 stars OR below required votes for year)
+            if (effectiveRating < 6.0 || effectiveVotes < requiredVotes) {
+              const { error: deleteError } = await supabase
+                .from('movies')
+                .delete()
+                .eq('id', movie.id);
+
+              if (deleteError) {
+                addLog(`✗ Error removing: "${movie.title}" - ${deleteError.message}`);
+                failed++;
+              } else {
+                removed++;
+                addLog(`✕ Removed: "${movie.title}" (Rating: ${effectiveRating}/10, Votes: ${effectiveVotes.toLocaleString()}/${requiredVotes} for year ${movieYear})`);
+              }
             }
           }
+          
+          addLog(`Cleanup complete: ${removed} movies removed for not meeting quality standards`);
         }
-        
-        addLog(`Cleanup complete: ${removed} movies removed for not meeting quality standards`);
       }
 
       // Update sync history with results
+      const finalStatus = timedOut ? 'completed_partial' : 'completed';
+      const elapsedSeconds = Math.round(timeout.getElapsedMs() / 1000);
+      
       await supabase
         .from('sync_history')
         .update({
-          status: 'completed',
+          status: finalStatus,
           completed_at: new Date().toISOString(),
           imported,
           updated,
@@ -542,14 +589,17 @@ serve(async (req) => {
           removed,
           total_found: movies.length,
           logs,
+          error_message: timedOut ? `Completed partially due to timeout after ${elapsedSeconds}s` : null,
         })
         .eq('id', syncHistory.id);
 
-      addLog(`✓ New movies pipeline completed: ${imported} imported, ${removed} removed, ${skipped} skipped, ${alreadyChecked} already checked, ${failed} failed`);
+      const statusEmoji = timedOut ? '⚡' : '✓';
+      addLog(`${statusEmoji} New movies pipeline ${finalStatus}: ${imported} imported, ${removed} removed, ${skipped} skipped, ${alreadyChecked} already checked, ${failed} failed (${elapsedSeconds}s)`);
 
       return new Response(
         JSON.stringify({
           success: true,
+          timedOut,
           imported,
           updated,
           failed,
@@ -557,6 +607,7 @@ serve(async (req) => {
           removed,
           alreadyChecked,
           total_found: movies.length,
+          elapsed_seconds: elapsedSeconds,
           logs,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
