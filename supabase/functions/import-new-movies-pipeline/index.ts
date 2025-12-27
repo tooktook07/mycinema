@@ -453,21 +453,28 @@ serve(async (req) => {
             last_omdb_fetch: omdbData?.Response === 'True' ? new Date().toISOString() : null,
           };
 
-          // Insert movie with both TMDB and IMDB data
-          const { data: newMovie, error: insertError } = await supabase
+          // Upsert movie with both TMDB and IMDB data (handles race conditions with duplicates)
+          const { data: newMovie, error: upsertError } = await supabase
             .from('movies')
-            .insert(movieData)
+            .upsert(movieData, { onConflict: 'imdb_id' })
             .select()
             .single();
 
-          if (insertError) {
-            addLog(`✗ Failed to insert ${detailData.title}: ${insertError.message}`);
+          if (upsertError) {
+            addLog(`✗ Failed to upsert ${detailData.title}: ${upsertError.message}`);
             failed++;
             continue;
           }
 
-          imported++;
-          addLog(`✓ Imported: ${detailData.title}`);
+          // Check if this was an insert or update by comparing created_at to now
+          const isNewImport = new Date(newMovie.created_at).getTime() > Date.now() - 5000;
+          if (isNewImport) {
+            imported++;
+            addLog(`✓ Imported: ${detailData.title}`);
+          } else {
+            updated++;
+            addLog(`✓ Updated existing: ${detailData.title}`);
+          }
           
           // Record successful import
           await supabase.from('tmdb_processed_movies').upsert({
