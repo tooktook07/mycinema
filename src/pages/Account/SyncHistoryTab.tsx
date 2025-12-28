@@ -396,6 +396,7 @@ export const SyncHistoryTab = ({ onRerunSync, onNavigateToSettings }: SyncHistor
   const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       completed: "default",
+      completed_partial: "secondary",
       failed: "destructive",
       running: "secondary",
       cancelled: "outline",
@@ -404,14 +405,16 @@ export const SyncHistoryTab = ({ onRerunSync, onNavigateToSettings }: SyncHistor
   };
 
   const getStatusIcon = (status: string) => {
-    switch(status) {
-      case 'completed':
+    switch (status) {
+      case "completed":
         return <CheckCircle2 className="h-4 w-4" />;
-      case 'failed':
+      case "completed_partial":
+        return <AlertTriangle className="h-4 w-4" />;
+      case "failed":
         return <XCircle className="h-4 w-4" />;
-      case 'running':
+      case "running":
         return <Loader2 className="h-4 w-4 animate-spin" />;
-      case 'cancelled':
+      case "cancelled":
         return <StopCircle className="h-4 w-4" />;
       default:
         return null;
@@ -1084,9 +1087,14 @@ export const SyncHistoryTab = ({ onRerunSync, onNavigateToSettings }: SyncHistor
               )}
 
               {/* Summary Indicator */}
-              {sync.status === 'completed' && (
+              {(sync.status === 'completed' || sync.status === 'completed_partial') && (
                 <div className="mt-4 p-3 rounded-md bg-muted/30 text-sm">
-                  {sync.failed === 0 && sync.skipped === 0 ? (
+                  {sync.status === 'completed_partial' ? (
+                    <p className="flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4" />
+                      Sync completed partially. You can re-run to continue processing.
+                    </p>
+                  ) : sync.failed === 0 && sync.skipped === 0 ? (
                     <p className="text-green-600 dark:text-green-400 flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4" />
                       Sync completed successfully! All {sync.imported + sync.updated} items processed.
@@ -1100,14 +1108,24 @@ export const SyncHistoryTab = ({ onRerunSync, onNavigateToSettings }: SyncHistor
                 </div>
               )}
 
-              {/* Error Message */}
+              {/* Status Message */}
               {sync.error_message && (
-                <Alert variant="destructive" className="mb-4">
-                  <AlertTriangle className="h-4 w-4" />
+                <Alert variant={sync.status === 'failed' ? 'destructive' : 'default'} className="mb-4">
+                  {sync.status === 'failed' ? (
+                    <XCircle className="h-4 w-4" />
+                  ) : (
+                    <AlertTriangle className="h-4 w-4" />
+                  )}
                   <AlertDescription>
-                    <div className="font-semibold mb-1">❌ SYNC FAILED</div>
+                    <div className="font-semibold mb-1">
+                      {sync.status === 'failed'
+                        ? '❌ SYNC FAILED'
+                        : sync.status === 'completed_partial'
+                          ? '⚠️ COMPLETED PARTIAL'
+                          : '⚠️ NOTICE'}
+                    </div>
                     <div className="text-sm">{sync.error_message}</div>
-                    {sync.logs && sync.logs.some(log => log.includes('✗')) && (
+                    {sync.status === 'failed' && sync.logs && sync.logs.some(log => log.includes('✗')) && (
                       <Collapsible className="mt-2">
                         <CollapsibleTrigger className="text-xs font-medium hover:underline cursor-pointer">
                           View Error Logs ▼
