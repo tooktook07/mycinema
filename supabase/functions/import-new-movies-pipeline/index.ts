@@ -29,7 +29,7 @@ const corsHeaders = {
 };
 
 // CONFIGURATION
-const MAX_PAGES = 5; // Reduced from 15 to stay within timeout
+const MAX_PAGES = 3; // Reduced from 5 to complete within 50s timeout
 const TIMEOUT_MS = 50000; // 50 seconds - leave 10s buffer before 60s timeout
 const API_DELAY_MS = 50; // Delay between API calls
 
