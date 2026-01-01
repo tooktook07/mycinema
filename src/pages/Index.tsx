@@ -261,7 +261,7 @@ const Index = () => {
         user?.id || null,
         RECOMMENDATIONS_COUNT,
         allExcludedIds,
-        guestRatings,
+        guestRatings
       );
 
       // Check for pool exhaustion
@@ -272,7 +272,7 @@ const Index = () => {
       }
 
       // Map to Recommendation type
-      const newRecommendations: Recommendation[] = results.map((rec) => ({
+      const newRecommendations: Recommendation[] = results.map(rec => ({
         id: rec.id,
         title: rec.title,
         year: rec.year,
@@ -317,12 +317,12 @@ const Index = () => {
     setExcludedRecommendationIds([...excludedRecommendationIds, ...currentIds]);
     await fetchRecommendations([...excludedRecommendationIds, ...currentIds], true);
     setIsLoadingMore(false);
-
+    
     // Scroll to the first new item after a short delay to ensure DOM is updated
     setTimeout(() => {
       const targetElement = movieRefs.current[scrollToIndex];
       if (targetElement) {
-        targetElement.scrollIntoView({ behavior: "smooth", block: "start" });
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     }, 100);
   };
@@ -369,7 +369,7 @@ const Index = () => {
     totalAvailableMovies > 0 ? Math.min((totalMoviesViewed / totalAvailableMovies) * 100, 100) : 0;
 
   const organizationSchema = generateOrganizationSchema();
-
+  
   return (
     <div className="min-h-screen pb-32">
       <SEOHead
@@ -503,9 +503,9 @@ const Index = () => {
         {/* Recommendations for all users */}
         <div className="space-y-6">
           <div className="space-y-2">
-            <h2 className="text-lg sm:text-3xl font-semibold leading-none tracking-tight flex items-center gap-2">
+            <h2 className="text-lg sm:text-2xl font-semibold leading-none tracking-tight flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-yellow-500" />
-              AI Recommendations For You !!!! 
+              AI Recommendations For You
             </h2>
             <p className="text-sm text-muted-foreground">
               {user
@@ -583,7 +583,7 @@ const Index = () => {
                   </div>
                 ))}
               </div>
-
+              
               {/* Loading indicator at the end while loading more */}
               {isLoadingMore && (
                 <div className="flex items-center justify-center py-8">
