@@ -328,18 +328,37 @@ serve(async (req) => {
             continue;
           }
 
-          // DEDUPLICATION STEP 2: Check against pre-fetched IMDb IDs (instant)
+          // OPTIMIZATION: Check if movie already exists and was recently updated (BEFORE expensive API calls)
+          let existingMovie = null;
+          let skipAsRecentlyUpdated = false;
+          
           if (existingImdbIds.has(imdbId)) {
-            // Record that we checked this movie
-            await supabase.from('tmdb_processed_movies').upsert({
-              tmdb_id: tmdbMovie.id,
-              import_status: 'skipped_duplicate',
-              skip_reason: `Already exists with IMDb ID: ${imdbId}`,
-              checked_at: new Date().toISOString()
-            });
+            // Fetch existing movie to check update time and poster status
+            const { data: existing } = await supabase
+              .from('movies')
+              .select('id, local_poster_url, updated_at')
+              .eq('imdb_id', imdbId)
+              .single();
             
-            skipped++;
-            continue;
+            existingMovie = existing;
+            
+            if (existingMovie?.updated_at) {
+              const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+              if (new Date(existingMovie.updated_at) > sevenDaysAgo) {
+                // Skip recently updated movies - saves 2 API calls (TMDB details + OMDb)
+                addLog(`⏭ Skipping recently updated: ${tmdbMovie.title || `TMDB ID ${tmdbMovie.id}`}`);
+                
+                await supabase.from('tmdb_processed_movies').upsert({
+                  tmdb_id: tmdbMovie.id,
+                  import_status: 'imported',
+                  skip_reason: null,
+                  checked_at: new Date().toISOString()
+                });
+                
+                skipped++;
+                continue;
+              }
+            }
           }
 
           // NOW fetch full details (only for movies that don't exist)
@@ -455,31 +474,7 @@ serve(async (req) => {
             last_omdb_fetch: omdbData?.Response === 'True' ? new Date().toISOString() : null,
           };
 
-          // Check if movie already exists and was recently updated (within 7 days)
-          const { data: existingMovie } = await supabase
-            .from('movies')
-            .select('id, local_poster_url, updated_at')
-            .eq('imdb_id', imdbId)
-            .single();
-
-          const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-          const wasRecentlyUpdated = existingMovie?.updated_at && 
-            new Date(existingMovie.updated_at) > sevenDaysAgo;
-
-          // Skip if movie was recently updated (saves time on unchanged data)
-          if (wasRecentlyUpdated) {
-            addLog(`⏭ Skipping recently updated: ${detailData.title}`);
-            skipped++;
-            
-            // Still record that we checked it
-            await supabase.from('tmdb_processed_movies').upsert({
-              tmdb_id: tmdbMovie.id,
-              import_status: 'imported',
-              skip_reason: null,
-              checked_at: new Date().toISOString()
-            });
-            continue;
-          }
+          // Note: existingMovie was already fetched early (after IMDB ID check) for optimization
 
           // Upsert movie with both TMDB and IMDB data (handles race conditions with duplicates)
           const { data: newMovie, error: upsertError } = await supabase
