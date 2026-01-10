@@ -283,7 +283,7 @@ serve(async (req) => {
             continue;
           }
 
-          // Check if this TMDB movie was already processed recently
+          // EARLY CHECK: Skip movies already processed recently (BEFORE any API calls)
           const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
           const { data: processed } = await supabase
             .from('tmdb_processed_movies')
@@ -294,6 +294,7 @@ serve(async (req) => {
 
           if (processed) {
             // If it was recently checked and not imported, skip it (will retry after 30 days)
+            // This saves external API calls for movies we've already evaluated
             if (processed.import_status !== 'imported') {
               alreadyChecked++;
               continue;
@@ -301,6 +302,7 @@ serve(async (req) => {
           }
 
           // DEDUPLICATION STEP 1: Fetch ONLY external IDs (lightweight call)
+          // This only runs for movies NOT in tmdb_processed_movies
           const externalIdsResponse = await fetch(
             `https://api.themoviedb.org/3/movie/${tmdbMovie.id}/external_ids?api_key=${tmdbApiKey}`
           );
