@@ -455,6 +455,32 @@ serve(async (req) => {
             last_omdb_fetch: omdbData?.Response === 'True' ? new Date().toISOString() : null,
           };
 
+          // Check if movie already exists and was recently updated (within 7 days)
+          const { data: existingMovie } = await supabase
+            .from('movies')
+            .select('id, local_poster_url, updated_at')
+            .eq('imdb_id', imdbId)
+            .single();
+
+          const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+          const wasRecentlyUpdated = existingMovie?.updated_at && 
+            new Date(existingMovie.updated_at) > sevenDaysAgo;
+
+          // Skip if movie was recently updated (saves time on unchanged data)
+          if (wasRecentlyUpdated) {
+            addLog(`⏭ Skipping recently updated: ${detailData.title}`);
+            skipped++;
+            
+            // Still record that we checked it
+            await supabase.from('tmdb_processed_movies').upsert({
+              tmdb_id: tmdbMovie.id,
+              import_status: 'imported',
+              skip_reason: null,
+              checked_at: new Date().toISOString()
+            });
+            continue;
+          }
+
           // Upsert movie with both TMDB and IMDB data (handles race conditions with duplicates)
           const { data: newMovie, error: upsertError } = await supabase
             .from('movies')
@@ -486,8 +512,10 @@ serve(async (req) => {
             checked_at: new Date().toISOString()
           });
 
-          // Immediately download poster
-          if (posterUrl) {
+          // OPTIMIZATION: Only download poster if movie doesn't already have one stored
+          const needsPoster = posterUrl && !existingMovie?.local_poster_url;
+          
+          if (needsPoster) {
             try {
               addLog(`Downloading poster for: ${detailData.title}`);
               const posterResponse = await fetch(posterUrl);
@@ -516,6 +544,8 @@ serve(async (req) => {
             } catch (posterError) {
               addLog(`⚠ Poster download failed for ${detailData.title}: ${posterError}`);
             }
+          } else if (existingMovie?.local_poster_url) {
+            addLog(`⏭ Poster exists for: ${detailData.title}`);
           }
 
           // Small delay to respect TMDB rate limits
