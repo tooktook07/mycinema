@@ -12,7 +12,7 @@
  * - OMDb API key configured
  * 
  * FUNCTIONALITY:
- * - Imports movies from last 3 years (10 pages from TMDB, catches "sleeper hits")
+ * - Imports movies from last 3 years (10 pages from TMDB, sorted by newest releases)
  * - Applies quality filter: 6+ stars AND dynamic vote threshold
  * - Fetches OMDb data before inserting
  * - Downloads posters immediately
@@ -229,7 +229,7 @@ serve(async (req) => {
         
         try {
           const tmdbResponse = await fetch(
-            `https://api.themoviedb.org/3/discover/movie?api_key=${tmdbApiKey}&release_date.gte=${threeYearsAgoStr}&release_date.lte=${todayStr}&sort_by=popularity.desc&vote_count.gte=50&page=${page}`
+            `https://api.themoviedb.org/3/discover/movie?api_key=${tmdbApiKey}&release_date.gte=${threeYearsAgoStr}&release_date.lte=${todayStr}&sort_by=release_date.desc&vote_count.gte=50&page=${page}`
           );
 
           if (!tmdbResponse.ok) {
