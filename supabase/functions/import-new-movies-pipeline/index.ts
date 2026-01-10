@@ -12,7 +12,7 @@
  * - OMDb API key configured
  * 
  * FUNCTIONALITY:
- * - Imports movies from last 3 years (5 pages from TMDB, catches "sleeper hits")
+ * - Imports movies from last 3 years (10 pages from TMDB, catches "sleeper hits")
  * - Applies quality filter: 6+ stars AND dynamic vote threshold
  * - Fetches OMDb data before inserting
  * - Downloads posters immediately
@@ -29,7 +29,7 @@ const corsHeaders = {
 };
 
 // CONFIGURATION
-const MAX_PAGES = 3; // Reduced from 5 to complete within 50s timeout
+const MAX_PAGES = 10; // Increased to find more new movies (skip optimization prevents timeout)
 const TIMEOUT_MS = 50000; // 50 seconds - leave 10s buffer before 60s timeout
 const API_DELAY_MS = 50; // Delay between API calls
 
