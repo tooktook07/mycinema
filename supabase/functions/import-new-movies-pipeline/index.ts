@@ -30,7 +30,7 @@ const corsHeaders = {
 
 // CONFIGURATION
 const MAX_PAGES = 10; // Increased to find more new movies (skip optimization prevents timeout)
-const TIMEOUT_MS = 50000; // 50 seconds - leave 10s buffer before 60s timeout
+const TIMEOUT_MS = 55000; // 55 seconds - leave 5s buffer before 60s timeout
 const API_DELAY_MS = 50; // Delay between API calls
 
 interface VoteTierConfig {
