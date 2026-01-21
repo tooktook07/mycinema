@@ -1,11 +1,5 @@
 project_id = "kkeojjtopbpfbcmxlumx"
 
-[functions.setup-service-key]
-verify_jwt = true
-
-[functions.fetch-movie-data]
-verify_jwt = true
-
 [functions.import-tmdb-movies]
 verify_jwt = true
 
