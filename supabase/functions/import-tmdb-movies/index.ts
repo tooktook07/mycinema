@@ -56,7 +56,7 @@ serve(async (req) => {
     };
     const minPopularity = typeof body.minPopularity === 'number' && body.minPopularity >= 0 ? body.minPopularity : 0;
     const syncMode = typeof body.syncMode === 'boolean' ? body.syncMode : false;
-    const maxPages = typeof body.maxPages === 'number' && body.maxPages >= 1 && body.maxPages <= 50 ? body.maxPages : 25;
+    const maxPages = typeof body.maxPages === 'number' && body.maxPages >= 1 && body.maxPages <= 50 ? body.maxPages : 50;
     const trigger_source = body.trigger_source === 'automated' ? 'automated' : 'manual';
     const TMDB_API_KEY = Deno.env.get("TMDB_API_KEY");
 
