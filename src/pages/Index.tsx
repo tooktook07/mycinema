@@ -157,88 +157,65 @@ const Index = () => {
   };
   const fetchStats = async () => {
     try {
-      // Fetch total movies
-      const { count: moviesCount } = await supabase.from("movies").select("*", {
-        count: "exact",
-        head: true,
-      });
+      // Run all independent queries in parallel for maximum performance
+      const [
+        countResult,
+        genreStatsResult,
+        recentMoviesResult,
+        lastSyncResult,
+        yearMinResult,
+        yearMaxResult,
+        userRatingsResult,
+      ] = await Promise.all([
+        // 1. Total movies count (head-only, no data transfer)
+        supabase.from("movies").select("*", { count: "exact", head: true }),
+        // 2. Genre stats via DB function (server-side aggregation)
+        supabase.rpc("get_genre_stats"),
+        // 3. Recent top-rated movies (only 5 rows)
+        supabase.from("movies").select("title, rating, year, poster").order("rating", { ascending: false }).limit(5),
+        // 4. Last sync
+        supabase.from("sync_history").select("*").order("created_at", { ascending: false }).limit(1).maybeSingle(),
+        // 5-6. Year range (2 tiny queries instead of fetching all years)
+        supabase.from("movies").select("year").order("year", { ascending: true }).limit(1),
+        supabase.from("movies").select("year").order("year", { ascending: false }).limit(1),
+        // 7. User ratings count (head-only if logged in)
+        user && user.id !== "dev-user-id"
+          ? supabase.from("user_ratings").select("user_rating").eq("user_id", user.id).not("user_rating", "is", null)
+          : Promise.resolve({ data: null }),
+      ]);
 
-      // Fetch average rating
-      const { data: moviesData } = await supabase.from("movies").select("rating");
-      const avgRating =
-        moviesData && moviesData.length > 0
-          ? moviesData.reduce((acc, m) => acc + (m.rating || 0), 0) / moviesData.length
-          : 0;
+      // Process genre stats from DB function
+      const topGenres = (genreStatsResult.data || [])
+        .slice(0, 5)
+        .map((g: any) => ({ genre: g.genre, count: Number(g.count) }));
 
-      // Fetch all movies with genres to calculate top genres
-      const { data: allMovies } = await supabase.from("movies").select("genres");
-      const genreCounts: Record<string, number> = {};
-      allMovies?.forEach((movie) => {
-        movie.genres?.forEach((genre: string) => {
-          genreCounts[genre] = (genreCounts[genre] || 0) + 1;
-        });
-      });
-      const topGenres = Object.entries(genreCounts)
-        .map(([genre, count]) => ({
-          genre,
-          count,
-        }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 5);
-
-      // Fetch recent top-rated movies
-      const { data: recentMovies } = await supabase
-        .from("movies")
-        .select("title, rating, year, poster")
-        .order("rating", {
-          ascending: false,
-        })
-        .limit(5);
-
-      // Fetch last sync
-      const { data: lastSync } = await supabase
-        .from("sync_history")
-        .select("*")
-        .order("created_at", {
-          ascending: false,
-        })
-        .limit(1)
-        .maybeSingle();
-
-      // Fetch year range
-      const { data: yearData } = await supabase.from("movies").select("year").order("year", { ascending: true });
-
+      // Year range from min/max queries
       let yearRange = null;
-      if (yearData && yearData.length > 0) {
+      if (yearMinResult.data?.[0] && yearMaxResult.data?.[0]) {
         yearRange = {
-          earliest: yearData[0].year,
-          latest: yearData[yearData.length - 1].year,
+          earliest: yearMinResult.data[0].year,
+          latest: yearMaxResult.data[0].year,
         };
       }
 
-      // Fetch user-specific ratings if logged in (only for real users)
+      // User ratings
       let userRatingsCount = 0;
       let userAvgRating = 0;
-      if (user && user.id !== "dev-user-id") {
-        const { data: userRatings } = await supabase
-          .from("user_ratings")
-          .select("user_rating")
-          .eq("user_id", user.id)
-          .not("user_rating", "is", null);
-        if (userRatings?.length) {
-          userRatingsCount = userRatings.length;
-          userAvgRating = userRatings.reduce((acc, r) => acc + (r.user_rating || 0), 0) / userRatings.length;
-        }
+      const userRatings = userRatingsResult.data;
+      if (userRatings?.length) {
+        userRatingsCount = userRatings.length;
+        userAvgRating = userRatings.reduce((acc, r) => acc + (r.user_rating || 0), 0) / userRatings.length;
       }
+
       setStats({
-        totalMovies: moviesCount || 0,
-        avgMovieRating: avgRating,
+        totalMovies: countResult.count || 0,
+        avgMovieRating: 0, // No longer fetching all movies for this
         userRatingsCount,
         userAvgRating,
         yearRange,
         topGenres,
-        recentMovies: recentMovies || [],
-        lastSync,
+        recentMovies: recentMoviesResult.data || [],
+        lastSync: lastSyncResult.data,
       });
     } catch (error) {
       console.error("Error fetching stats:", error);

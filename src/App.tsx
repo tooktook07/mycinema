@@ -16,28 +16,46 @@ import { AccessibilityWidget } from "@/components/AccessibilityWidget";
 import { ReadingGuide } from "@/components/accessibility/ReadingGuide";
 import { CookieConsent } from "@/components/CookieConsent";
 import { usePageTracking } from "@/hooks/usePageTracking";
-import Index from "./pages/Index";
-import Movies from "./pages/Movies";
-import Account from "./pages/Account";
-import SignUp from "./pages/SignUp";
-import Login from "./pages/Login";
-import Profile from "./pages/Profile";
-import DiscoverMode from "./pages/DiscoverMode";
-import Watchlist from "./pages/Watchlist";
-import Help from "./pages/Help";
-import NotFound from "./pages/NotFound";
-import MovieDetail from "./pages/MovieDetail";
-import GenreArchive from "./pages/GenreArchive";
-import PersonArchive from "./pages/PersonArchive";
-import KeywordArchive from "./pages/KeywordArchive";
-import YearArchive from "./pages/YearArchive";
-import LanguageArchive from "./pages/LanguageArchive";
-import CompanyArchive from "./pages/CompanyArchive";
-import CountryArchive from "./pages/CountryArchive";
-import StreamingArchive from "./pages/StreamingArchive";
+import { Suspense, lazy } from "react";
+import { Loader2 } from "lucide-react";
 import ReactGA from "react-ga4";
 
-const queryClient = new QueryClient();
+// Lazy-loaded route components for code splitting
+const Index = lazy(() => import("./pages/Index"));
+const Movies = lazy(() => import("./pages/Movies"));
+const Account = lazy(() => import("./pages/Account"));
+const SignUp = lazy(() => import("./pages/SignUp"));
+const Login = lazy(() => import("./pages/Login"));
+const Profile = lazy(() => import("./pages/Profile"));
+const DiscoverMode = lazy(() => import("./pages/DiscoverMode"));
+const Watchlist = lazy(() => import("./pages/Watchlist"));
+const Help = lazy(() => import("./pages/Help"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const MovieDetail = lazy(() => import("./pages/MovieDetail"));
+const GenreArchive = lazy(() => import("./pages/GenreArchive"));
+const PersonArchive = lazy(() => import("./pages/PersonArchive"));
+const KeywordArchive = lazy(() => import("./pages/KeywordArchive"));
+const YearArchive = lazy(() => import("./pages/YearArchive"));
+const LanguageArchive = lazy(() => import("./pages/LanguageArchive"));
+const CompanyArchive = lazy(() => import("./pages/CompanyArchive"));
+const CountryArchive = lazy(() => import("./pages/CountryArchive"));
+const StreamingArchive = lazy(() => import("./pages/StreamingArchive"));
+
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+  </div>
+);
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes - prevents redundant refetches
+      gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 // GA4 will be initialized after user consent
 export const initializeGA4 = () => {
@@ -65,6 +83,7 @@ const AppRoutes = () => {
   return (
     <>
       <Navigation />
+      <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/movies" element={<Movies />} />
@@ -87,6 +106,7 @@ const AppRoutes = () => {
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
+      </Suspense>
       
       
       {/* DevMode Floating Button */}
