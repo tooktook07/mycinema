@@ -429,6 +429,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
       }),
       { 
         status: 500,
