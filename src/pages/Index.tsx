@@ -675,7 +675,7 @@ const Index = () => {
               <>
                 <div className="flex items-center justify-center gap-2 mb-3">
                   <Sparkles className="h-6 w-6 text-primary" />
-                  <h2 className="text-2xl font-bold">Discover Your Perfect Movies</h2>
+                  <h2 className="text-2xl font-bold">Discover Perfect Movies</h2>
                 </div>
                 <p className="text-lg text-muted-foreground mb-6">
                   Rate just 5 movies to unlock AI-powered personalized recommendations tailored to your taste!
@@ -761,7 +761,7 @@ const Index = () => {
                 <div className="flex-1 text-center md:text-left">
                   <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
                     <Sparkles className="h-6 w-6 text-primary" />
-                    <h3 className="text-xl font-bold">Discover Your Perfect Movies</h3>
+                    <h3 className="text-xl font-bold">Discover Perfect Movies</h3>
                   </div>
                   <p className="text-muted-foreground mb-1">
                     Rate a few movies to get AI-powered personalized recommendations
