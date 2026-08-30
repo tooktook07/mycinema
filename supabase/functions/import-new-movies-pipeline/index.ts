@@ -183,6 +183,23 @@ serve(async (req) => {
       userId = user.id;
     }
 
+    // Parse request body for optional resume/relaxed flags (cron calls may have empty body)
+    let body: any = {};
+    try {
+      const clonedReq = req.clone();
+      body = await clonedReq.json();
+    } catch {
+      body = {};
+    }
+
+    const isRelaxed = body.relaxed === true;
+    const resumeFromPage = typeof body.resumeFromPage === 'number' && body.resumeFromPage >= 1
+      ? Math.min(body.resumeFromPage, MAX_PAGES)
+      : 1;
+
+    const activeTiers = isRelaxed ? RELAXED_TIERS : DEFAULT_TIERS;
+    const minRating = isRelaxed ? RELAXED_MIN_RATING : STRICT_MIN_RATING;
+
     const logs: string[] = [];
     const addLog = (message: string) => {
       console.log(message);
@@ -190,8 +207,17 @@ serve(async (req) => {
     };
 
     addLog(isServiceRole ? '🤖 Starting new movies import pipeline (automated)' : '✨ Starting new movies import pipeline (manual)');
+    if (isRelaxed) addLog('🔓 RELAXED MODE: lower thresholds active');
+    if (resumeFromPage > 1) addLog(`🔄 Resuming from page ${resumeFromPage}`);
 
     // Create sync history record
+    const filters = {
+      mode: isRelaxed ? 'relaxed' : 'strict',
+      resumeFromPage,
+      minRating,
+      voteTiers: activeTiers,
+    };
+
     const { data: syncHistory, error: syncError } = await supabase
       .from('sync_history')
       .insert({
@@ -199,6 +225,7 @@ serve(async (req) => {
         trigger_source: isServiceRole ? 'automated' : 'manual',
         user_id: userId,
         status: 'running',
+        filters,
       })
       .select()
       .single();
@@ -209,6 +236,7 @@ serve(async (req) => {
 
     let imported = 0, updated = 0, failed = 0, skipped = 0, removed = 0, alreadyChecked = 0;
     let timedOut = false;
+    let lastProcessedPage = resumeFromPage - 1;
     
     // Create timeout checker - start tracking from function boot
     const functionStartTime = Date.now();
