@@ -257,7 +257,7 @@ serve(async (req) => {
       let allMovies: any[] = [];
       
       // Fetch pages (reduced from 15 to MAX_PAGES to stay within timeout)
-      for (let page = 1; page <= MAX_PAGES; page++) {
+      for (let page = resumeFromPage; page <= MAX_PAGES; page++) {
         // Check for timeout before each page fetch
         if (timeout.isNearTimeout()) {
           addLog(`⚠ TIMEOUT APPROACHING - stopping at page ${page - 1} after ${timeout.getElapsedMs()}ms`);
@@ -278,6 +278,7 @@ serve(async (req) => {
           const tmdbData = await tmdbResponse.json();
           const pageMovies = tmdbData.results || [];
           allMovies = allMovies.concat(pageMovies);
+          lastProcessedPage = page;
           
           addLog(`Fetched ${pageMovies.length} movies from page ${page} (${timeout.getRemainingMs()}ms remaining)`);
           
