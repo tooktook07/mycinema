@@ -47,6 +47,16 @@ const DEFAULT_TIERS: VoteTierConfig = {
   older: 1000
 };
 
+const RELAXED_TIERS: VoteTierConfig = {
+  currentYear: 150,
+  lastYear: 250,
+  twoToThreeYears: 375,
+  older: 500
+};
+
+const RELAXED_MIN_RATING = 5.0;
+const STRICT_MIN_RATING = 6.0;
+
 function getRequiredVoteCount(movieYear: number, tiers: VoteTierConfig): number {
   const currentYear = new Date().getFullYear();
   const yearsDiff = currentYear - movieYear;
