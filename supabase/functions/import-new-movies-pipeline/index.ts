@@ -649,6 +649,8 @@ serve(async (req) => {
       // Update sync history with results
       const finalStatus = timedOut ? 'completed_partial' : 'completed';
       const elapsedSeconds = Math.round(timeout.getElapsedMs() / 1000);
+      const hasMorePages = timedOut && lastProcessedPage < MAX_PAGES;
+      const nextResumePage = hasMorePages ? lastProcessedPage + 1 : null;
       
       await supabase
         .from('sync_history')
@@ -663,11 +665,18 @@ serve(async (req) => {
           total_found: movies.length,
           logs,
           error_message: timedOut ? `Completed partially due to timeout after ${elapsedSeconds}s` : null,
+          filters: {
+            ...filters,
+            lastProcessedPage,
+            hasMorePages,
+            nextResumePage,
+          },
         })
         .eq('id', syncHistory.id);
 
       const statusEmoji = timedOut ? '⚡' : '✓';
       addLog(`${statusEmoji} New movies pipeline ${finalStatus}: ${imported} imported, ${removed} removed, ${skipped} skipped, ${alreadyChecked} already checked, ${failed} failed (${elapsedSeconds}s)`);
+      if (hasMorePages) addLog(`📌 Resume from page ${nextResumePage} to continue`);
 
       return new Response(
         JSON.stringify({
@@ -681,6 +690,10 @@ serve(async (req) => {
           alreadyChecked,
           total_found: movies.length,
           elapsed_seconds: elapsedSeconds,
+          lastProcessedPage,
+          hasMorePages,
+          nextResumePage,
+          isRelaxed,
           logs,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
