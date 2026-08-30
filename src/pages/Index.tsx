@@ -421,7 +421,7 @@ const Index = () => {
           <div className="container mx-auto max-w-7xl">
             <div className="flex items-center justify-center gap-3 mb-4">
               <Film className="h-10 w-10" />
-              <h1 className="text-4xl font-bold md:text-4xl">Welcome to My Cinema App</h1>
+              <h1 className="text-4xl font-bold md:text-4xl">Discover Perfect Movies</h1>
             </div>
             <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-6 text-base font-thin">
               {user
