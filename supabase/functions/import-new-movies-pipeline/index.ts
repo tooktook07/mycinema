@@ -442,7 +442,7 @@ serve(async (req) => {
             addLog(`⚠ OMDb fetch failed for ${detailData.title}: ${omdbError}`);
           }
 
-          // Quality check - 6+ stars and dynamic vote threshold based on year
+          // Quality check - minRating+ stars and dynamic vote threshold based on year
           const tmdbRating = detailData.vote_average || 0;
           const tmdbVotes = detailData.vote_count || 0;
 
@@ -454,17 +454,17 @@ serve(async (req) => {
           const movieYear = detailData.release_date 
             ? parseInt(detailData.release_date.split('-')[0]) 
             : 0;
-          const requiredVotes = getRequiredVoteCount(movieYear, DEFAULT_TIERS);
+          const requiredVotes = getRequiredVoteCount(movieYear, activeTiers);
 
-          // Must meet BOTH thresholds (6+ stars AND required votes for year)
-          if (effectiveRating < 6.0 || effectiveVotes < requiredVotes) {
-            addLog(`⊘ Below quality threshold: ${detailData.title} (Rating: ${effectiveRating}/10, Votes: ${effectiveVotes.toLocaleString()}, Required: ${requiredVotes} for ${movieYear})`);
+          // Must meet BOTH thresholds (minRating+ stars AND required votes for year)
+          if (effectiveRating < minRating || effectiveVotes < requiredVotes) {
+            addLog(`⊘ Below quality threshold: ${detailData.title} (Rating: ${effectiveRating}/10, Votes: ${effectiveVotes.toLocaleString()}, Required: ${requiredVotes} for ${movieYear}, Mode: ${isRelaxed ? 'relaxed' : 'strict'})`);
             
             // Record that we checked this movie (will retry after 30 days)
             await supabase.from('tmdb_processed_movies').upsert({
               tmdb_id: tmdbMovie.id,
               import_status: 'skipped_quality',
-              skip_reason: `Below threshold - Rating: ${effectiveRating}/10, Votes: ${effectiveVotes}/${requiredVotes} for year ${movieYear}`,
+              skip_reason: `Below threshold - Rating: ${effectiveRating}/10, Votes: ${effectiveVotes}/${requiredVotes} for year ${movieYear}, Mode: ${isRelaxed ? 'relaxed' : 'strict'}`,
               checked_at: new Date().toISOString()
             });
             
