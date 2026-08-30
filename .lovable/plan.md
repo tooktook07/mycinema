@@ -1,37 +1,36 @@
 # Improvement Plan
 
-## Goals
-1. Make the movie import pipeline resilient to timeouts so 50-page runs don't lose progress.
-2. Add a manual "Relaxed Import Mode" that temporarily lowers quality thresholds to discover more movies.
-3. Finish the frontend performance refactor started earlier (Movies.tsx search and MovieDetailModal).
+Based on your answers:
+- Top pain point: **Speed / performance**
+- Import goal: **Both modes** (strict default + relaxed manual option)
+- User-facing priority: **Recommendations**
+- Business priority: **Near-term monetization**
 
-## Changes
+## 1. Performance: finish frontend optimization
+- Refactor `Movies.tsx` search/filter so it does not re-render the full grid on every keystroke.
+- Split `MovieDetailModal` into smaller lazy-loaded chunks (poster, metadata, similar movies, actions).
+- Keep existing TanStack Query caching rules (staleTime 5m, gcTime 10m).
 
-### 1. Import Pipeline Resumption
-- Add `last_processed_page` and `continuation_token` fields to `sync_history`.
-- Update `import-new-movies-pipeline` to accept an optional `resumeFromPage` parameter.
-- On timeout (`COMPLETED_PARTIAL`), save the last successfully processed page.
-- UI: add a "Resume Last Import" button in Account → Data Pipeline when previous run is partial.
+## 2. Import pipeline: complete relaxed + resume mode
+- Finish the `relaxedMode` / `resumePage` controls in the admin UI for `import-new-movies-pipeline`.
+- Store and display resume metadata in sync history.
+- Add a visible toggle so a manual run can choose strict or relaxed thresholds.
 
-### 2. Relaxed Import Mode
-- Add a "Relaxed Mode" toggle in the Data Pipeline UI (manual runs only).
-- When enabled, lower thresholds:
-  - Minimum rating: 6.0 → 5.0
-  - Vote tiers: current year 300 → 150, last year 500 → 250, older 1000 → 500
-- Pass a `relaxed: true` flag to the edge function; apply thresholds only when flag is set.
-- Default mode stays strict to preserve catalog quality.
+## 3. Recommendations: improve similarity surface
+- Add a "Because you watched X" row on the movie detail modal using the existing similarity algorithm.
+- Cache top-N similar movies per movie in a lightweight derived table or materialized query to avoid runtime recomputation.
+- Expose a "More like this" section on the home page for logged-in users.
 
-### 3. Frontend Performance Refactor
-- Refactor `Movies.tsx` search/filter to use server-side search with a debounced query instead of client-side filtering of all movies.
-- Split `MovieDetailModal` into smaller lazy-loaded chunks (header, cast, recommendations, actions).
-- Keep existing UI behavior unchanged.
+## 4. Monetization: add subscription gating
+- Introduce a `pro` subscription tier in `profiles`.
+- Gate watchlist size and advanced filters behind the pro tier.
+- Add a paywall modal triggered when a free user hits the limit.
 
-## Out of Scope
-- New recommendation algorithm
-- Subscription/payment changes
-- Mobile redesign
+## Out of scope for this plan
+- Changing the core similarity algorithm, database architecture, movie card, watchlist rules, or discover mode logic unless required by the above work.
 
-## Verification
-- Run manual import in both strict and relaxed modes.
-- Simulate timeout and verify resume continues from correct page.
-- Check Lighthouse scores and network tab for reduced payload on Movies page.
+## Suggested order
+1. Performance (quick wins, visible to all users)
+2. Relaxed/resume import (improves catalog growth)
+3. Recommendations (drives engagement)
+4. Monetization gates (builds on watchlist/recommendations)
