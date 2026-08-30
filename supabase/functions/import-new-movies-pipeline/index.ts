@@ -47,6 +47,16 @@ const DEFAULT_TIERS: VoteTierConfig = {
   older: 1000
 };
 
+const RELAXED_TIERS: VoteTierConfig = {
+  currentYear: 150,
+  lastYear: 250,
+  twoToThreeYears: 375,
+  older: 500
+};
+
+const RELAXED_MIN_RATING = 5.0;
+const STRICT_MIN_RATING = 6.0;
+
 function getRequiredVoteCount(movieYear: number, tiers: VoteTierConfig): number {
   const currentYear = new Date().getFullYear();
   const yearsDiff = currentYear - movieYear;
@@ -173,6 +183,23 @@ serve(async (req) => {
       userId = user.id;
     }
 
+    // Parse request body for optional resume/relaxed flags (cron calls may have empty body)
+    let body: any = {};
+    try {
+      const clonedReq = req.clone();
+      body = await clonedReq.json();
+    } catch {
+      body = {};
+    }
+
+    const isRelaxed = body.relaxed === true;
+    const resumeFromPage = typeof body.resumeFromPage === 'number' && body.resumeFromPage >= 1
+      ? Math.min(body.resumeFromPage, MAX_PAGES)
+      : 1;
+
+    const activeTiers = isRelaxed ? RELAXED_TIERS : DEFAULT_TIERS;
+    const minRating = isRelaxed ? RELAXED_MIN_RATING : STRICT_MIN_RATING;
+
     const logs: string[] = [];
     const addLog = (message: string) => {
       console.log(message);
@@ -180,8 +207,17 @@ serve(async (req) => {
     };
 
     addLog(isServiceRole ? '🤖 Starting new movies import pipeline (automated)' : '✨ Starting new movies import pipeline (manual)');
+    if (isRelaxed) addLog('🔓 RELAXED MODE: lower thresholds active');
+    if (resumeFromPage > 1) addLog(`🔄 Resuming from page ${resumeFromPage}`);
 
     // Create sync history record
+    const filters = {
+      mode: isRelaxed ? 'relaxed' : 'strict',
+      resumeFromPage,
+      minRating,
+      voteTiers: activeTiers,
+    };
+
     const { data: syncHistory, error: syncError } = await supabase
       .from('sync_history')
       .insert({
@@ -189,6 +225,7 @@ serve(async (req) => {
         trigger_source: isServiceRole ? 'automated' : 'manual',
         user_id: userId,
         status: 'running',
+        filters,
       })
       .select()
       .single();
@@ -199,6 +236,7 @@ serve(async (req) => {
 
     let imported = 0, updated = 0, failed = 0, skipped = 0, removed = 0, alreadyChecked = 0;
     let timedOut = false;
+    let lastProcessedPage = resumeFromPage - 1;
     
     // Create timeout checker - start tracking from function boot
     const functionStartTime = Date.now();
@@ -219,7 +257,7 @@ serve(async (req) => {
       let allMovies: any[] = [];
       
       // Fetch pages (reduced from 15 to MAX_PAGES to stay within timeout)
-      for (let page = 1; page <= MAX_PAGES; page++) {
+      for (let page = resumeFromPage; page <= MAX_PAGES; page++) {
         // Check for timeout before each page fetch
         if (timeout.isNearTimeout()) {
           addLog(`⚠ TIMEOUT APPROACHING - stopping at page ${page - 1} after ${timeout.getElapsedMs()}ms`);
@@ -240,6 +278,7 @@ serve(async (req) => {
           const tmdbData = await tmdbResponse.json();
           const pageMovies = tmdbData.results || [];
           allMovies = allMovies.concat(pageMovies);
+          lastProcessedPage = page;
           
           addLog(`Fetched ${pageMovies.length} movies from page ${page} (${timeout.getRemainingMs()}ms remaining)`);
           
@@ -403,7 +442,7 @@ serve(async (req) => {
             addLog(`⚠ OMDb fetch failed for ${detailData.title}: ${omdbError}`);
           }
 
-          // Quality check - 6+ stars and dynamic vote threshold based on year
+          // Quality check - minRating+ stars and dynamic vote threshold based on year
           const tmdbRating = detailData.vote_average || 0;
           const tmdbVotes = detailData.vote_count || 0;
 
@@ -415,17 +454,17 @@ serve(async (req) => {
           const movieYear = detailData.release_date 
             ? parseInt(detailData.release_date.split('-')[0]) 
             : 0;
-          const requiredVotes = getRequiredVoteCount(movieYear, DEFAULT_TIERS);
+          const requiredVotes = getRequiredVoteCount(movieYear, activeTiers);
 
-          // Must meet BOTH thresholds (6+ stars AND required votes for year)
-          if (effectiveRating < 6.0 || effectiveVotes < requiredVotes) {
-            addLog(`⊘ Below quality threshold: ${detailData.title} (Rating: ${effectiveRating}/10, Votes: ${effectiveVotes.toLocaleString()}, Required: ${requiredVotes} for ${movieYear})`);
+          // Must meet BOTH thresholds (minRating+ stars AND required votes for year)
+          if (effectiveRating < minRating || effectiveVotes < requiredVotes) {
+            addLog(`⊘ Below quality threshold: ${detailData.title} (Rating: ${effectiveRating}/10, Votes: ${effectiveVotes.toLocaleString()}, Required: ${requiredVotes} for ${movieYear}, Mode: ${isRelaxed ? 'relaxed' : 'strict'})`);
             
             // Record that we checked this movie (will retry after 30 days)
             await supabase.from('tmdb_processed_movies').upsert({
               tmdb_id: tmdbMovie.id,
               import_status: 'skipped_quality',
-              skip_reason: `Below threshold - Rating: ${effectiveRating}/10, Votes: ${effectiveVotes}/${requiredVotes} for year ${movieYear}`,
+              skip_reason: `Below threshold - Rating: ${effectiveRating}/10, Votes: ${effectiveVotes}/${requiredVotes} for year ${movieYear}, Mode: ${isRelaxed ? 'relaxed' : 'strict'}`,
               checked_at: new Date().toISOString()
             });
             
@@ -610,6 +649,8 @@ serve(async (req) => {
       // Update sync history with results
       const finalStatus = timedOut ? 'completed_partial' : 'completed';
       const elapsedSeconds = Math.round(timeout.getElapsedMs() / 1000);
+      const hasMorePages = timedOut && lastProcessedPage < MAX_PAGES;
+      const nextResumePage = hasMorePages ? lastProcessedPage + 1 : null;
       
       await supabase
         .from('sync_history')
@@ -624,11 +665,18 @@ serve(async (req) => {
           total_found: movies.length,
           logs,
           error_message: timedOut ? `Completed partially due to timeout after ${elapsedSeconds}s` : null,
+          filters: {
+            ...filters,
+            lastProcessedPage,
+            hasMorePages,
+            nextResumePage,
+          },
         })
         .eq('id', syncHistory.id);
 
       const statusEmoji = timedOut ? '⚡' : '✓';
       addLog(`${statusEmoji} New movies pipeline ${finalStatus}: ${imported} imported, ${removed} removed, ${skipped} skipped, ${alreadyChecked} already checked, ${failed} failed (${elapsedSeconds}s)`);
+      if (hasMorePages) addLog(`📌 Resume from page ${nextResumePage} to continue`);
 
       return new Response(
         JSON.stringify({
@@ -642,6 +690,10 @@ serve(async (req) => {
           alreadyChecked,
           total_found: movies.length,
           elapsed_seconds: elapsedSeconds,
+          lastProcessedPage,
+          hasMorePages,
+          nextResumePage,
+          isRelaxed,
           logs,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

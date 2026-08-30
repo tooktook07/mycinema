@@ -71,12 +71,20 @@ export const SyncHistoryTab = ({ onRerunSync, onNavigateToSettings }: SyncHistor
   const { devMode } = useDevMode();
   const { toast } = useToast();
   const [testingPipeline, setTestingPipeline] = useState<string | null>(null);
+  const [relaxedMode, setRelaxedMode] = useState(false);
+  const [resumePage, setResumePage] = useState<number | null>(null);
 
-  const testPipeline = async (pipelineName: 'refresh-movies-pipeline' | 'import-new-movies-pipeline') => {
+  const testPipeline = async (pipelineName: 'refresh-movies-pipeline' | 'import-new-movies-pipeline', options: { relaxed?: boolean; resumeFromPage?: number | null } = {}) => {
     setTestingPipeline(pipelineName);
     try {
+      const body: any = {};
+      if (pipelineName === 'import-new-movies-pipeline') {
+        if (options.relaxed) body.relaxed = true;
+        if (options.resumeFromPage) body.resumeFromPage = options.resumeFromPage;
+      }
+
       const { data, error } = await supabase.functions.invoke(pipelineName, {
-        body: {}
+        body
       });
 
       if (error) throw error;
@@ -85,6 +93,11 @@ export const SyncHistoryTab = ({ onRerunSync, onNavigateToSettings }: SyncHistor
         title: "Pipeline Started",
         description: `${pipelineName} executed successfully. Check the logs below.`,
       });
+
+      // Clear resume page after a successful resume run
+      if (options.resumeFromPage) {
+        setResumePage(null);
+      }
 
       // Refresh history after a short delay
       setTimeout(() => {
